@@ -959,6 +959,296 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Export API routes - Protected by authentication
+  app.get("/api/export/csv",
+    requireAuth,
+    requirePermission(Permission.VIEW_PERSONAL_TRANSACTIONS, Permission.VIEW_COMPANY_TRANSACTIONS, Permission.VIEW_ALL_TRANSACTIONS),
+    logAccess("EXPORT_CSV"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        // CSV writer handled manually for security
+        const accounts = await storage.getAccounts();
+        const transactions = await storage.getTransactions();
+        
+        // Filter accounts and transactions based on user role
+        const allowedAccountIds = accounts
+          .filter(account => {
+            if (req.user!.role === UserRole.ADMIN) return true;
+            if (req.user!.role === UserRole.COMPANY_USER) return true;
+            if (req.user!.role === UserRole.PERSONAL_USER) return account.type === 'personal';
+            return false;
+          })
+          .map(account => account.id);
+        
+        const filteredAccounts = accounts.filter(account => 
+          allowedAccountIds.includes(account.id)
+        );
+        
+        const filteredTransactions = transactions.filter(transaction => 
+          allowedAccountIds.includes(transaction.accountId)
+        );
+
+        // Safe CSV escaping function to prevent injection
+        const escapeCsvValue = (value: string | number): string => {
+          if (value == null) return '';
+          let escaped = String(value).trimStart(); // Remove leading whitespace
+          // Neutralize formula injection (Excel formula prefixes)
+          if (escaped.match(/^[=+\-@]/)) {
+            escaped = "'" + escaped;
+          }
+          // Always wrap in quotes for safety
+          escaped = '"' + escaped.replace(/"/g, '""') + '"';
+          return escaped;
+        };
+
+        // Create safe CSV data with UNIVERSAL escaping for all fields
+        const csvData = filteredTransactions.map(transaction => {
+          const account = filteredAccounts.find(acc => acc.id === transaction.accountId);
+          const tipLabel = transaction.type === 'income' ? 'Gelir' : 
+                          transaction.type === 'expense' ? 'Gider' : 
+                          transaction.type === 'transfer_in' ? 'Gelen Virman' : 
+                          'Giden Virman';
+          
+          return {
+            tarih: escapeCsvValue(new Date(transaction.date).toLocaleDateString('tr-TR')),
+            hesap: escapeCsvValue(account ? account.bankName : 'Bilinmeyen'),
+            tip: escapeCsvValue(tipLabel),
+            miktar: escapeCsvValue(transaction.amount),
+            aciklama: escapeCsvValue(transaction.description),
+            kategori: escapeCsvValue(transaction.category || ''),
+            para_birimi: escapeCsvValue(account ? account.currency : 'TRY')
+          };
+        });
+
+        // Set response headers
+        const timestamp = new Date().toISOString().split('T')[0];
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="finbot-islemler-${timestamp}.csv"`);
+        
+        // Add BOM for Turkish characters in Excel
+        res.write('\uFEFF');
+
+        // Write CSV header
+        const headerRow = 'Tarih,Hesap,İşlem Tipi,Miktar,Açıklama,Kategori,Para Birimi\n';
+        res.write(headerRow);
+
+        // Write CSV data with safe escaping
+        csvData.forEach(row => {
+          const csvRow = `${row.tarih},${row.hesap},${row.tip},${row.miktar},${row.aciklama},${row.kategori},${row.para_birimi}\n`;
+          res.write(csvRow);
+        });
+
+        res.end();
+      } catch (error) {
+        console.error("CSV export error:", error);
+        res.status(500).json({ error: "CSV export sırasında hata oluştu" });
+      }
+    }
+  );
+
+  app.get("/api/export/pdf",
+    requireAuth,
+    requirePermission(Permission.VIEW_PERSONAL_TRANSACTIONS, Permission.VIEW_COMPANY_TRANSACTIONS, Permission.VIEW_ALL_TRANSACTIONS),
+    logAccess("EXPORT_PDF"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const puppeteer = require('puppeteer');
+        const accounts = await storage.getAccounts();
+        const transactions = await storage.getTransactions();
+        const dashboardStats = await storage.getDashboardStats();
+        
+        // Filter data based on user role
+        const allowedAccountIds = accounts
+          .filter(account => {
+            if (req.user!.role === UserRole.ADMIN) return true;
+            if (req.user!.role === UserRole.COMPANY_USER) return true;
+            if (req.user!.role === UserRole.PERSONAL_USER) return account.type === 'personal';
+            return false;
+          })
+          .map(account => account.id);
+        
+        const filteredAccounts = accounts.filter(account => 
+          allowedAccountIds.includes(account.id)
+        );
+        
+        const filteredTransactions = transactions.filter(transaction => 
+          allowedAccountIds.includes(transaction.accountId)
+        );
+
+        const formatCurrency = (amount: string) => {
+          const num = parseFloat(amount);
+          return new Intl.NumberFormat('tr-TR', {
+            style: 'currency',
+            currency: 'TRY'
+          }).format(num);
+        };
+
+        // HTML escape function to prevent XSS
+        const escapeHtml = (unsafe: string): string => {
+          if (unsafe == null) return '';
+          return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        };
+
+        // Create HTML content for PDF
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>FinBot - Finansal Rapor</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            h1 { color: #333; text-align: center; }
+            h2 { color: #666; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+            .summary { display: flex; justify-content: space-around; margin: 30px 0; }
+            .kpi { text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+            .kpi-value { font-size: 24px; font-weight: bold; color: #2563eb; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            .positive { color: #059669; }
+            .negative { color: #dc2626; }
+          </style>
+        </head>
+        <body>
+          <h1>FinBot - Finansal Rapor</h1>
+          <p style="text-align: center; color: #666;">Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}</p>
+          
+          <div class="summary">
+            <div class="kpi">
+              <div>Toplam Nakit</div>
+              <div class="kpi-value positive">${formatCurrency(dashboardStats.totalCash.toString())}</div>
+            </div>
+            <div class="kpi">
+              <div>Toplam Borç</div>
+              <div class="kpi-value negative">${formatCurrency(dashboardStats.totalDebt.toString())}</div>
+            </div>
+            <div class="kpi">
+              <div>Net Bakiye</div>
+              <div class="kpi-value">${formatCurrency(dashboardStats.totalBalance.toString())}</div>
+            </div>
+          </div>
+          
+          <h2>Hesaplar (${filteredAccounts.length})</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Banka</th>
+                <th>Hesap Adı</th>
+                <th>Tip</th>
+                <th>Bakiye</th>
+                <th>Para Birimi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredAccounts.map(account => `
+                <tr>
+                  <td>${escapeHtml(account.bankName)}</td>
+                  <td>${escapeHtml(account.accountName)}</td>
+                  <td>${account.type === 'company' ? 'Şirket' : 'Kişisel'}</td>
+                  <td class="${parseFloat(account.balance) >= 0 ? 'positive' : 'negative'}">${formatCurrency(account.balance)}</td>
+                  <td>${escapeHtml(account.currency)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <h2>Son İşlemler (${filteredTransactions.slice(0, 20).length})</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Hesap</th>
+                <th>İşlem Tipi</th>
+                <th>Miktar</th>
+                <th>Açıklama</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredTransactions.slice(0, 20).map(transaction => {
+                const account = filteredAccounts.find(acc => acc.id === transaction.accountId);
+                const tipLabel = transaction.type === 'income' ? 'Gelir' : 
+                               transaction.type === 'expense' ? 'Gider' : 
+                               transaction.type === 'transfer_in' ? 'Gelen Virman' : 'Giden Virman';
+                return `
+                <tr>
+                  <td>${escapeHtml(new Date(transaction.date).toLocaleDateString('tr-TR'))}</td>
+                  <td>${escapeHtml(account ? account.bankName : 'Bilinmeyen')}</td>
+                  <td>${escapeHtml(tipLabel)}</td>
+                  <td class="${transaction.type === 'income' || transaction.type === 'transfer_in' ? 'positive' : 'negative'}">${formatCurrency(transaction.amount)}</td>
+                  <td>${escapeHtml(transaction.description)}</td>
+                </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </body>
+        </html>
+        `;
+
+        // Generate PDF with hardened Puppeteer settings and proper resource management
+        let browser = null;
+        let pdfBuffer;
+        try {
+          browser = await puppeteer.launch({
+            headless: 'new',
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-gpu',
+              '--disable-web-security',
+              '--disable-features=VizDisplayCompositor',
+              '--no-first-run',
+              '--no-zygote',
+              '--single-process'
+            ]
+          });
+          const page = await browser.newPage();
+          await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+          
+          pdfBuffer = await page.pdf({
+            format: 'A4',
+            margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+          });
+        } finally {
+          if (browser) {
+            await browser.close();
+          }
+        }
+
+        // Set response headers
+        const timestamp = new Date().toISOString().split('T')[0];
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="finbot-rapor-${timestamp}.pdf"`);
+        
+        res.send(pdfBuffer);
+      } catch (error) {
+        console.error("PDF export error:", error);
+        res.status(500).json({ error: "PDF export sırasında hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/export/google-sheets",
+    requireAuth,
+    requirePermission(Permission.VIEW_PERSONAL_TRANSACTIONS, Permission.VIEW_COMPANY_TRANSACTIONS, Permission.VIEW_ALL_TRANSACTIONS),
+    logAccess("EXPORT_GOOGLE_SHEETS"),
+    async (req: AuthenticatedRequest, res) => {
+      // Google Sheets export not yet implemented
+      res.status(501).json({ 
+        error: "Google Sheets export henüz implementaston edilmedi",
+        message: "Bu özellik gelecekte eklenecek",
+        status: "not_implemented"
+      });
+    }
+  );
+
   const httpServer = createServer(app);
   return httpServer;
 }
