@@ -1,0 +1,302 @@
+# VERCEL İLE 5 DAKİKADA CANLI
+
+## Backend için (api klasörü)
+
+### 1. package.json
+```json
+{
+  "name": "finbot-api",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
+```
+
+### 2. api/index.js
+```javascript
+const express = require('express');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Basit in-memory database
+let accounts = [
+  {
+    id: '1',
+    type: 'company',
+    bankName: 'Yapı Kredi',
+    accountName: 'Demo Şirket Hesabı',
+    balance: 50000,
+    currency: 'TRY'
+  },
+  {
+    id: '2',
+    type: 'personal',
+    bankName: 'Garanti',
+    accountName: 'Demo Kişisel Hesap',
+    balance: 15000,
+    currency: 'TRY'
+  }
+];
+
+let transactions = [];
+
+// API endpoints
+app.get('/api/test', (req, res) => {
+  res.json({ status: 'FinBot API çalışıyor!', time: new Date() });
+});
+
+app.get('/api/accounts', (req, res) => {
+  res.json(accounts);
+});
+
+app.post('/api/accounts', (req, res) => {
+  const newAccount = {
+    id: Date.now().toString(),
+    ...req.body,
+    balance: req.body.balance || 0
+  };
+  accounts.push(newAccount);
+  res.json(newAccount);
+});
+
+app.get('/api/transactions', (req, res) => {
+  res.json(transactions);
+});
+
+app.post('/api/transactions', (req, res) => {
+  const newTransaction = {
+    id: Date.now().toString(),
+    date: new Date(),
+    ...req.body
+  };
+  transactions.push(newTransaction);
+  
+  const account = accounts.find(a => a.id === req.body.accountId);
+  if (account) {
+    if (req.body.type === 'income') {
+      account.balance += req.body.amount;
+    } else if (req.body.type === 'expense') {
+      account.balance -= req.body.amount;
+    }
+  }
+  
+  res.json(newTransaction);
+});
+
+app.post('/api/virman', (req, res) => {
+  const { fromAccountId, toAccountId, amount, description } = req.body;
+  
+  const fromAccount = accounts.find(a => a.id === fromAccountId);
+  const toAccount = accounts.find(a => a.id === toAccountId);
+  
+  if (!fromAccount || !toAccount) {
+    return res.status(400).json({ error: 'Hesap bulunamadı' });
+  }
+  
+  if (fromAccount.balance < amount) {
+    return res.status(400).json({ error: 'Yetersiz bakiye' });
+  }
+  
+  fromAccount.balance -= amount;
+  toAccount.balance += amount;
+  
+  const virmanId = Date.now().toString();
+  
+  transactions.push(
+    {
+      id: virmanId + '_out',
+      accountId: fromAccountId,
+      type: 'transfer_out',
+      amount: amount,
+      description: `Virman: ${description}`,
+      virmanPairId: virmanId,
+      date: new Date()
+    },
+    {
+      id: virmanId + '_in',
+      accountId: toAccountId,
+      type: 'transfer_in',
+      amount: amount,
+      description: `Virman: ${description}`,
+      virmanPairId: virmanId,
+      date: new Date()
+    }
+  );
+  
+  res.json({
+    message: 'Virman başarılı',
+    fromBalance: fromAccount.balance,
+    toBalance: toAccount.balance
+  });
+});
+
+// Vercel için önemli
+module.exports = app;
+
+// Local test için
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+```
+
+### 3. vercel.json
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
+```
+
+### 4. index.html (Frontend - root klasörde)
+```html
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinBot</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        // Önceki React kodunun aynısı, sadece API_URL'yi güncelleyin:
+        const API_URL = window.location.origin + '/api';
+        // ... rest of the React code
+    </script>
+</body>
+</html>
+```
+
+## DEPLOYMENT ADIMLARI:
+
+### 1. GitHub'a yükleyin:
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/finbot.git
+git push -u origin main
+```
+
+### 2. Vercel'e deploy edin:
+1. https://vercel.com adresine gidin
+2. "Sign up with GitHub" tıklayın
+3. "Import Git Repository" seçin
+4. finbot reposunu seçin
+5. Deploy tıklayın
+6. 2-3 dakika bekleyin
+
+### CANLI LİNK:
+https://finbot.vercel.app
+
+---
+
+## ALTERNATIF: Netlify + Supabase (Database'li)
+
+### 1. Supabase Setup (Ücretsiz PostgreSQL)
+```sql
+-- https://supabase.com üzerinden proje oluşturun
+-- SQL Editor'de çalıştırın:
+
+CREATE TABLE accounts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    type VARCHAR(20),
+    bank_name VARCHAR(100),
+    account_name VARCHAR(255),
+    balance DECIMAL(19,4) DEFAULT 0,
+    currency CHAR(3) DEFAULT 'TRY',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE transactions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    account_id UUID REFERENCES accounts(id),
+    type VARCHAR(20),
+    amount DECIMAL(19,4),
+    description TEXT,
+    category VARCHAR(50),
+    virman_pair_id UUID,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- RLS Policies
+ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Enable all for authenticated users" ON accounts
+    FOR ALL USING (true);
+    
+CREATE POLICY "Enable all for authenticated users" ON transactions
+    FOR ALL USING (true);
+```
+
+### 2. Frontend with Supabase
+```javascript
+// npm install @supabase/supabase-js
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+    'YOUR_SUPABASE_URL',
+    'YOUR_ANON_KEY'
+)
+
+// Hesapları çek
+const { data: accounts } = await supabase
+    .from('accounts')
+    .select('*')
+
+// İşlem ekle
+const { data, error } = await supabase
+    .from('transactions')
+    .insert([
+        { account_id: '...', type: 'expense', amount: 100 }
+    ])
+```
+
+## DEPLOYMENT SEÇENEKLERİ KARŞILAŞTIRMA:
+
+| Platform | Database | Ücretsiz Limit | Setup Süresi | Link |
+|----------|----------|----------------|--------------|------|
+| **Vercel** | In-memory | 100GB bandwidth/ay | 5 dk | vercel.com |
+| **Netlify** | Supabase | 500MB DB | 15 dk | netlify.com |
+| **Render** | PostgreSQL | 90 gün ücretsiz | 20 dk | render.com |
+| **Railway** | PostgreSQL | $5 credit/ay | 10 dk | railway.app |
+| **Replit** | Built-in | Always on | 3 dk | replit.com |
+
+## EN HIZLI ÇÖZÜM: Replit (3 dakika)
+
+1. https://replit.com gidin
+2. "Create Repl" → "Node.js" seçin
+3. Yukarıdaki server.js kodunu yapıştırın
+4. Run tuşuna basın
+5. Otomatik URL alırsınız: https://finbot.USERNAME.repl.co
