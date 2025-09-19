@@ -20,6 +20,7 @@ import Transfers from "@/pages/transfers";
 import FixedExpenses from "@/pages/fixed-expenses";
 import CreditCards from "@/pages/credit-cards";
 import Reports from "@/pages/reports";
+import Alerts from "@/pages/alerts";
 import Settings from "@/pages/settings";
 import Admin from "@/pages/admin";
 import Login from "@/pages/login";
@@ -140,6 +141,11 @@ function Router() {
             <Route path="/reports">
               <RouteGuard route="/reports">
                 <Reports />
+              </RouteGuard>
+            </Route>
+            <Route path="/alerts">
+              <RouteGuard route="/alerts">
+                <Alerts />
               </RouteGuard>
             </Route>
             <Route path="/settings">

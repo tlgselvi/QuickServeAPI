@@ -6,6 +6,7 @@ import {
   Calendar,
   CreditCard,
   FileText,
+  Bell,
   Settings,
   Home,
   BarChart3,
@@ -75,6 +76,11 @@ const menuItems: MenuItem[] = [
     title: "Raporlar",
     path: "/reports",
     icon: FileText,
+  },
+  {
+    title: "Uyarılar",
+    path: "/alerts",
+    icon: Bell,
   },
   {
     title: "Ayarlar",
