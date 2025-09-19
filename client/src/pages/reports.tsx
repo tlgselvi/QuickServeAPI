@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { TransactionJsonManager } from "@/components/TransactionJsonManager";
 import { Download, FileText, FileSpreadsheet, Calendar, AlertTriangle } from "lucide-react";
 
 export default function Reports() {
@@ -266,6 +267,11 @@ export default function Reports() {
           </div>
         </CardContent>
       </Card>
+
+      <Separator />
+
+      {/* Transaction JSON Manager */}
+      <TransactionJsonManager />
     </div>
   );
 }

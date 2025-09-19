@@ -1,12 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAccountSchema, insertTransactionSchema, loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, insertTeamSchema, updateTeamSchema, insertTeamMemberSchema, inviteUserSchema, acceptInviteSchema, insertSystemAlertSchema, Permission, UserRole, TeamPermission, hasTeamPermission, TeamRole } from "@shared/schema";
+import { insertAccountSchema, insertTransactionSchema, loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, insertTeamSchema, updateTeamSchema, insertTeamMemberSchema, inviteUserSchema, acceptInviteSchema, insertSystemAlertSchema, importTransactionJsonSchema, exportTransactionsByDateSchema, transactionJsonFileSchema, Permission, UserRole, TeamPermission, hasTeamPermission, TeamRole } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { randomBytes, randomUUID } from "crypto";
 import { requireAuth, requirePermission, requireAccountTypeAccess, optionalAuth, logAccess, AuthenticatedRequest } from "./middleware/auth";
 import { updateUserRoleSchema, updateUserStatusSchema } from "@shared/schema";
 import { alertService } from "./alert-service";
+import { transactionJsonService } from "./transaction-json-service";
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -1461,6 +1462,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Create alert error:", error);
         res.status(400).json({ error: "Uyarı oluşturulurken hata oluştu" });
+      }
+    }
+  );
+
+  // Transaction JSON Service API Routes
+  app.post("/api/transactions/export-json",
+    requireAuth,
+    requirePermission(Permission.VIEW_ALL_TRANSACTIONS),
+    logAccess("EXPORT_TRANSACTIONS_JSON"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const result = await transactionJsonService.exportTransactionsToJson();
+        
+        if (result.success) {
+          res.json({
+            message: result.message,
+            filePath: result.filePath,
+            success: true
+          });
+        } else {
+          res.status(400).json({
+            error: result.message,
+            success: false
+          });
+        }
+      } catch (error) {
+        console.error("Export transactions JSON error:", error);
+        res.status(500).json({ error: "İşlemler JSON'a aktarılırken hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/transactions/import-json",
+    requireAuth,
+    requirePermission(Permission.MANAGE_SETTINGS),
+    logAccess("IMPORT_TRANSACTIONS_JSON"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const validatedData = importTransactionJsonSchema.parse(req.body);
+        const result = await transactionJsonService.importTransactionsFromJson(validatedData.overwriteExisting);
+        
+        if (result.success) {
+          res.json({
+            message: result.message,
+            importedCount: result.importedCount,
+            success: true
+          });
+        } else {
+          res.status(400).json({
+            error: result.message,
+            success: false
+          });
+        }
+      } catch (error) {
+        console.error("Import transactions JSON error:", error);
+        res.status(500).json({ error: "JSON'dan işlemler içe aktarılırken hata oluştu" });
+      }
+    }
+  );
+
+  app.get("/api/transactions/json-status",
+    requireAuth,
+    requirePermission(Permission.VIEW_ALL_TRANSACTIONS),
+    logAccess("CHECK_TRANSACTIONS_JSON"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const status = await transactionJsonService.checkJsonFile();
+        res.json(status);
+      } catch (error) {
+        console.error("Check transactions JSON status error:", error);
+        res.status(500).json({ error: "JSON dosya durumu kontrol edilirken hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/transactions/export-json-by-date",
+    requireAuth,
+    requirePermission(Permission.VIEW_ALL_TRANSACTIONS),
+    logAccess("EXPORT_TRANSACTIONS_JSON_BY_DATE"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const validatedData = exportTransactionsByDateSchema.parse(req.body);
+
+        const result = await transactionJsonService.exportTransactionsByDateRange(
+          new Date(validatedData.startDate),
+          new Date(validatedData.endDate)
+        );
+        
+        if (result.success) {
+          res.json({
+            message: result.message,
+            filePath: result.filePath,
+            success: true
+          });
+        } else {
+          res.status(400).json({
+            error: result.message,
+            success: false
+          });
+        }
+      } catch (error) {
+        console.error("Export transactions by date JSON error:", error);
+        res.status(500).json({ error: "Tarihli işlemler JSON'a aktarılırken hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/transactions/export-category-analysis",
+    requireAuth,
+    requirePermission(Permission.VIEW_ALL_TRANSACTIONS),
+    logAccess("EXPORT_CATEGORY_ANALYSIS_JSON"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const result = await transactionJsonService.exportCategoryAnalysisToJson();
+        
+        if (result.success) {
+          res.json({
+            message: result.message,
+            filePath: result.filePath,
+            success: true
+          });
+        } else {
+          res.status(400).json({
+            error: result.message,
+            success: false
+          });
+        }
+      } catch (error) {
+        console.error("Export category analysis JSON error:", error);
+        res.status(500).json({ error: "Kategori analizi JSON'a aktarılırken hata oluştu" });
       }
     }
   );

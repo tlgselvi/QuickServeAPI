@@ -434,3 +434,58 @@ export const canManageTeamMember = (currentRole: TeamRoleType, targetRole: TeamR
   if (currentRole === TeamRole.ADMIN && (targetRole === TeamRole.MEMBER || targetRole === TeamRole.VIEWER)) return true;
   return false;
 };
+
+// =====================
+// TRANSACTION JSON API SCHEMAS
+// =====================
+
+// Schema for importing transactions from JSON
+export const importTransactionJsonSchema = z.object({
+  overwriteExisting: z.boolean().default(false),
+});
+
+// Schema for exporting transactions by date range
+export const exportTransactionsByDateSchema = z.object({
+  startDate: z.string().min(1, "Başlangıç tarihi gereklidir"),
+  endDate: z.string().min(1, "Bitiş tarihi gereklidir"),
+}).refine((data) => {
+  const start = new Date(data.startDate);
+  const end = new Date(data.endDate);
+  return !isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end;
+}, {
+  message: "Geçerli tarih aralığı giriniz (başlangıç ≤ bitiş)",
+});
+
+// Schema for transaction JSON file structure
+export const transactionJsonFileSchema = z.object({
+  exportDate: z.string(),
+  totalTransactions: z.number().nonnegative(),
+  transactions: z.array(z.object({
+    id: z.string().min(1),
+    accountId: z.string().min(1),
+    type: z.enum(['income', 'expense', 'transfer_in', 'transfer_out']),
+    amount: z.string().min(1),
+    description: z.string().min(1),
+    category: z.string().nullable(),
+    virmanPairId: z.string().nullable(),
+    date: z.union([z.string(), z.date()]),
+    accountInfo: z.object({
+      bankName: z.string(),
+      accountName: z.string(),
+      type: z.enum(['personal', 'company']),
+    }).nullable().optional(),
+  })),
+  summary: z.object({
+    totalIncome: z.number().nonnegative(),
+    totalExpenses: z.number().nonnegative(),
+    totalTransfers: z.number().nonnegative(),
+  }).optional(),
+  dateRange: z.object({
+    start: z.string(),
+    end: z.string(),
+  }).optional(),
+});
+
+export type ImportTransactionJson = z.infer<typeof importTransactionJsonSchema>;
+export type ExportTransactionsByDate = z.infer<typeof exportTransactionsByDateSchema>;
+export type TransactionJsonFile = z.infer<typeof transactionJsonFileSchema>;
