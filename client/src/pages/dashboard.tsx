@@ -7,6 +7,7 @@ import TransactionItem from "@/components/transaction-item";
 import AddAccountDialog from "@/components/add-account-dialog";
 import TransferForm from "@/components/transfer-form";
 import TransactionForm from "@/components/transaction-form";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -125,6 +126,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
+      
       {/* Header with Add Account Button */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold" data-testid="dashboard-title">Finansal Yönetim Panosu</h1>
