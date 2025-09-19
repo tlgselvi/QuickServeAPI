@@ -281,4 +281,5 @@ export class AlertService {
   }
 }
 
+// Export singleton instance
 export const alertService = new AlertService();
