@@ -9,6 +9,7 @@ import TransferForm from "@/components/transfer-form";
 import TransactionForm from "@/components/transaction-form";
 import KPIBar from "@/components/kpi-bar";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import { AlertsNotification } from "@/components/AlertsNotification";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,17 +133,20 @@ export default function Dashboard() {
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
       
-      {/* Header with Add Account Button */}
+      {/* Header with Add Account Button and Alerts */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold" data-testid="dashboard-title">Finansal Yönetim Panosu</h1>
-        <Button 
-          onClick={() => setShowAddAccountDialog(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-          data-testid="button-add-account"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Hesap Ekle
-        </Button>
+        <div className="flex items-center gap-3">
+          <AlertsNotification />
+          <Button 
+            onClick={() => setShowAddAccountDialog(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            data-testid="button-add-account"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Hesap Ekle
+          </Button>
+        </div>
       </div>
       
       {/* KPI Bar */}
