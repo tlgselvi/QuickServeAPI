@@ -37,22 +37,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/transactions", async (req, res) => {
     try {
       const validatedData = insertTransactionSchema.parse(req.body);
-      const transaction = await storage.createTransaction(validatedData);
       
-      // Update account balance
-      const account = await storage.getAccount(validatedData.accountId);
-      if (account) {
-        const currentBalance = parseFloat(account.balance);
-        let newBalance = currentBalance;
-        
-        if (validatedData.type === 'income') {
-          newBalance += parseFloat(validatedData.amount);
-        } else if (validatedData.type === 'expense') {
-          newBalance -= parseFloat(validatedData.amount);
-        }
-        
-        await storage.updateAccountBalance(validatedData.accountId, newBalance);
+      // Validate transaction type for this endpoint
+      if (!['income', 'expense'].includes(validatedData.type)) {
+        return res.status(400).json({ error: "Bu endpoint sadece gelir ve gider işlemlerini destekler" });
       }
+      
+      // Calculate balance adjustment
+      let balanceAdjustment = 0;
+      const amount = parseFloat(validatedData.amount);
+      
+      if (validatedData.type === 'income') {
+        balanceAdjustment = amount;
+      } else if (validatedData.type === 'expense') {
+        balanceAdjustment = -amount;
+      }
+      
+      // Use atomic transaction operation
+      const transaction = await storage.performTransaction(validatedData, balanceAdjustment);
       
       res.json(transaction);
     } catch (error) {
@@ -73,46 +75,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const transferAmount = parseFloat(amount);
-      const fromBalance = parseFloat(fromAccount.balance);
-      
-      if (fromBalance < transferAmount) {
-        return res.status(400).json({ error: "Yetersiz bakiye" });
-      }
-      
-      // Update balances
-      const newFromBalance = fromBalance - transferAmount;
-      const newToBalance = parseFloat(toAccount.balance) + transferAmount;
-      
-      await storage.updateAccountBalance(fromAccountId, newFromBalance);
-      await storage.updateAccountBalance(toAccountId, newToBalance);
-      
-      // Create transfer transactions
       const virmanId = randomUUID();
       
-      const outTransaction = await storage.createTransaction({
-        accountId: fromAccountId,
-        type: 'transfer_out',
-        amount: transferAmount.toFixed(4),
-        description: `Virman: ${description || 'Hesaplar arası transfer'}`,
-        virmanPairId: virmanId
-      });
+      // Use atomic transfer operation
+      const { outTransaction, inTransaction } = await storage.performTransfer(
+        fromAccountId, 
+        toAccountId, 
+        transferAmount, 
+        description || 'Hesaplar arası transfer',
+        virmanId
+      );
       
-      const inTransaction = await storage.createTransaction({
-        accountId: toAccountId,
-        type: 'transfer_in',
-        amount: transferAmount.toFixed(4),
-        description: `Virman: ${description || 'Hesaplar arası transfer'}`,
-        virmanPairId: virmanId
-      });
+      // Get updated balances
+      const updatedFromAccount = await storage.getAccount(fromAccountId);
+      const updatedToAccount = await storage.getAccount(toAccountId);
       
       res.json({
         message: 'Virman başarılı',
-        fromBalance: newFromBalance,
-        toBalance: newToBalance,
+        fromBalance: parseFloat(updatedFromAccount?.balance || '0'),
+        toBalance: parseFloat(updatedToAccount?.balance || '0'),
         transactions: [outTransaction, inTransaction]
       });
       
     } catch (error) {
+      if (error instanceof Error && error.message === 'Yetersiz bakiye') {
+        return res.status(400).json({ error: "Yetersiz bakiye" });
+      }
       res.status(400).json({ error: "Virman işleminde hata oluştu" });
     }
   });
