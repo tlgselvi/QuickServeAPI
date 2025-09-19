@@ -40,83 +40,52 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 
-const menuItems: MenuGroup[] = [
+const menuItems: MenuItem[] = [
   {
-    title: "Genel",
-    items: [
-      {
-        title: "Genel Özet",
-        path: "/",
-        icon: Home,
-      },
-      {
-        title: "Analiz",
-        path: "/analytics",
-        icon: BarChart3,
-      },
-    ],
+    title: "Genel Özet",
+    path: "/",
+    icon: Home,
   },
   {
-    title: "Hesap Yönetimi",
-    items: [
-      {
-        title: "Şirket",
-        path: "/company",
-        icon: Building2,
-      },
-      {
-        title: "Şahsi",
-        path: "/personal",
-        icon: User,
-      },
-      {
-        title: "Virman",
-        path: "/transfers",
-        icon: ArrowLeftRight,
-      },
-    ],
+    title: "Şirket",
+    path: "/company",
+    icon: Building2,
   },
   {
-    title: "Finansal İşlemler",
-    items: [
-      {
-        title: "Sabit Giderler",
-        path: "/fixed-expenses",
-        icon: Calendar,
-      },
-      {
-        title: "Kredi & Kartlar",
-        path: "/credit-cards",
-        icon: CreditCard,
-      },
-    ],
+    title: "Şahsi",
+    path: "/personal",
+    icon: User,
   },
   {
-    title: "Yönetim",
-    items: [
-      {
-        title: "Kullanıcı Yönetimi",
-        path: "/admin",
-        icon: Shield,
-        requiredRole: "admin",
-      },
-    ],
+    title: "Virman",
+    path: "/transfers",
+    icon: ArrowLeftRight,
+  },
+  {
+    title: "Sabit Gider",
+    path: "/fixed-expenses",
+    icon: Calendar,
+  },
+  {
+    title: "Kredi/Kart",
+    path: "/credit-cards",
+    icon: CreditCard,
+  },
+  {
+    title: "Raporlar",
+    path: "/reports",
+    icon: FileText,
+  },
+  {
+    title: "Ayarlar",
+    path: "/settings",
+    icon: Settings,
+  },
+  {
+    title: "Kullanıcı Yönetimi",
+    path: "/admin",
+    icon: Shield,
     requiredRole: "admin",
-  },
-  {
-    title: "Sistem",
-    items: [
-      {
-        title: "Raporlar",
-        path: "/reports",
-        icon: FileText,
-      },
-      {
-        title: "Ayarlar",
-        path: "/settings",
-        icon: Settings,
-      },
-    ],
   },
 ];
 
@@ -134,42 +103,32 @@ export function AppSidebar() {
       </SidebarHeader>
       
       <SidebarContent>
-        {menuItems.map((group) => {
-          // Hide admin sections for non-admin users
-          if (group.requiredRole && user?.role !== group.requiredRole) {
-            return null;
-          }
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => {
+                // Hide admin items for non-admin users
+                if (item.requiredRole && user?.role !== item.requiredRole) {
+                  return null;
+                }
 
-          return (
-            <SidebarGroup key={group.title}>
-              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {group.items.map((item) => {
-                    // Hide admin items for non-admin users
-                    if (item.requiredRole && user?.role !== item.requiredRole) {
-                      return null;
-                    }
-
-                    const Icon = item.icon;
-                    const isActive = location === item.path;
-                    
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild isActive={isActive}>
-                          <Link href={item.path} data-testid={`sidebar-${item.path.replace("/", "") || "home"}`}>
-                            <Icon className="h-4 w-4" />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          );
-        })}
+                const Icon = item.icon;
+                const isActive = location === item.path;
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link href={item.path} data-testid={`sidebar-${item.path.replace("/", "") || "home"}`}>
+                        <Icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );
