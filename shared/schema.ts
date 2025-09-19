@@ -50,3 +50,40 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Predefined transaction categories
+export const transactionCategories = {
+  income: [
+    { value: 'salary', label: 'Maaş' },
+    { value: 'freelance', label: 'Serbest Çalışma' },
+    { value: 'investment', label: 'Yatırım Geliri' },
+    { value: 'rental', label: 'Kira Geliri' },
+    { value: 'bonus', label: 'Bonus' },
+    { value: 'other_income', label: 'Diğer Gelirler' }
+  ],
+  expense: [
+    { value: 'food', label: 'Yiyecek & İçecek' },
+    { value: 'transportation', label: 'Ulaşım' },
+    { value: 'utilities', label: 'Faturalar' },
+    { value: 'rent', label: 'Kira' },
+    { value: 'shopping', label: 'Alışveriş' },
+    { value: 'healthcare', label: 'Sağlık' },
+    { value: 'entertainment', label: 'Eğlence' },
+    { value: 'education', label: 'Eğitim' },
+    { value: 'insurance', label: 'Sigorta' },
+    { value: 'savings', label: 'Tasarruf' },
+    { value: 'other_expense', label: 'Diğer Giderler' }
+  ]
+};
+
+export const getAllCategories = () => [
+  ...transactionCategories.income,
+  ...transactionCategories.expense
+];
+
+export const getCategoryLabel = (categoryValue: string | null | undefined): string => {
+  if (!categoryValue) return 'Kategori Yok';
+  const allCategories = getAllCategories();
+  const category = allCategories.find(cat => cat.value === categoryValue);
+  return category?.label || categoryValue;
+};

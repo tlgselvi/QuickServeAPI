@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowRight, ArrowLeftRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowLeftRight, Tag } from "lucide-react";
+import { getCategoryLabel } from "@shared/schema";
 import type { Transaction, Account } from "@/lib/types";
 
 interface TransactionItemProps {
@@ -87,9 +88,20 @@ export default function TransactionItem({ transaction, accounts, formatCurrency 
           <p className="text-sm font-medium text-foreground" data-testid={`text-description-${transaction.id}`}>
             {transaction.description}
           </p>
-          <p className="text-xs text-muted-foreground" data-testid={`text-date-${transaction.id}`}>
-            {formatDate(transaction.date)} • {account?.bankName || 'Bilinmeyen Hesap'}
-          </p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span data-testid={`text-date-${transaction.id}`}>
+              {formatDate(transaction.date)} • {account?.bankName || 'Bilinmeyen Hesap'}
+            </span>
+            {transaction.category && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-1" data-testid={`text-category-${transaction.id}`}>
+                  <Tag className="w-3 h-3" />
+                  <span>{getCategoryLabel(transaction.category)}</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
       <div className="text-right">

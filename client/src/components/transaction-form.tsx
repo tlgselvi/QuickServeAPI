@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { transactionCategories } from "@shared/schema";
 import type { Account } from "@/lib/types";
 
 interface TransactionFormProps {
@@ -17,6 +18,7 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,13 +32,14 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
       type: transactionType,
       amount: parseFloat(amount).toFixed(4),
       description,
-      category: transactionType === 'income' ? 'income' : 'expense'
+      category: category || null
     });
 
     // Reset form
     setAccountId('');
     setAmount('');
     setDescription('');
+    setCategory('');
     setTransactionType('income');
   };
 
@@ -108,6 +111,24 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
               />
               <span className="absolute right-3 top-2 text-sm text-muted-foreground">TRY</span>
             </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="transactionCategory" className="block text-sm font-medium text-foreground mb-2">
+              Kategori
+            </Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger data-testid="select-transaction-category">
+                <SelectValue placeholder="Kategori seçin (opsiyonel)" />
+              </SelectTrigger>
+              <SelectContent>
+                {transactionCategories[transactionType].map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div>

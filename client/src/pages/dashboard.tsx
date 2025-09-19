@@ -10,12 +10,14 @@ import TransactionForm from "@/components/transaction-form";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Plus, Filter } from "lucide-react";
+import { getAllCategories, getCategoryLabel } from "@shared/schema";
 import type { Account, Transaction } from "@/lib/types";
 
 export default function Dashboard() {
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<string>("all");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("all");
   const { toast } = useToast();
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery<Account[]>({
@@ -92,9 +94,11 @@ export default function Dashboard() {
     },
   });
 
-  const filteredTransactions = transactions.filter(transaction => 
-    selectedAccountFilter === "all" || transaction.accountId === selectedAccountFilter
-  );
+  const filteredTransactions = transactions.filter(transaction => {
+    const accountMatch = selectedAccountFilter === "all" || transaction.accountId === selectedAccountFilter;
+    const categoryMatch = selectedCategoryFilter === "all" || transaction.category === selectedCategoryFilter;
+    return accountMatch && categoryMatch;
+  });
 
   const formatCurrency = (amount: string) => {
     const num = parseFloat(amount);
@@ -207,7 +211,7 @@ export default function Dashboard() {
                   <CardTitle data-testid="transactions-title">Son İşlemler</CardTitle>
                   <div className="flex items-center space-x-2">
                     <Select value={selectedAccountFilter} onValueChange={setSelectedAccountFilter}>
-                      <SelectTrigger className="w-40" data-testid="select-account-filter">
+                      <SelectTrigger className="w-36" data-testid="select-account-filter">
                         <SelectValue placeholder="Hesap seçin" />
                       </SelectTrigger>
                       <SelectContent>
@@ -219,8 +223,22 @@ export default function Dashboard() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <Select value={selectedCategoryFilter} onValueChange={setSelectedCategoryFilter}>
+                      <SelectTrigger className="w-36" data-testid="select-category-filter">
+                        <SelectValue placeholder="Kategori seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tüm Kategoriler</SelectItem>
+                        {getAllCategories().map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Button variant="ghost" size="sm" data-testid="button-view-all-transactions">
-                      Tümünü Gör
+                      <Filter className="w-4 h-4 mr-1" />
+                      Filtrele
                     </Button>
                   </div>
                 </div>
