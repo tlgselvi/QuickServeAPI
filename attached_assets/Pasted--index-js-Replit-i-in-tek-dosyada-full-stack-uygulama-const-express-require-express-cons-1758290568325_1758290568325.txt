@@ -1,0 +1,585 @@
+// index.js - Replit için tek dosyada full-stack uygulama
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Basit in-memory database
+let accounts = [
+  {
+    id: '1',
+    type: 'company',
+    bankName: 'Yapı Kredi',
+    accountName: 'Şirket Ana Hesap',
+    balance: 50000,
+    currency: 'TRY'
+  },
+  {
+    id: '2',
+    type: 'personal',
+    bankName: 'Garanti',
+    accountName: 'Kişisel Hesap',
+    balance: 15000,
+    currency: 'TRY'
+  }
+];
+
+let transactions = [];
+
+// API Routes
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'FinBot API çalışıyor!', 
+    timestamp: new Date(),
+    stats: {
+      accounts: accounts.length,
+      transactions: transactions.length
+    }
+  });
+});
+
+app.get('/api/accounts', (req, res) => {
+  res.json(accounts);
+});
+
+app.post('/api/accounts', (req, res) => {
+  const newAccount = {
+    id: Date.now().toString(),
+    ...req.body,
+    balance: req.body.balance || 0,
+    currency: req.body.currency || 'TRY'
+  };
+  accounts.push(newAccount);
+  res.json(newAccount);
+});
+
+app.get('/api/transactions', (req, res) => {
+  res.json(transactions);
+});
+
+app.post('/api/transactions', (req, res) => {
+  const newTransaction = {
+    id: Date.now().toString(),
+    date: new Date(),
+    ...req.body
+  };
+  transactions.push(newTransaction);
+  
+  const account = accounts.find(a => a.id === req.body.accountId);
+  if (account) {
+    if (req.body.type === 'income') {
+      account.balance += req.body.amount;
+    } else if (req.body.type === 'expense') {
+      account.balance -= req.body.amount;
+    }
+  }
+  
+  res.json(newTransaction);
+});
+
+app.post('/api/virman', (req, res) => {
+  const { fromAccountId, toAccountId, amount, description } = req.body;
+  
+  const fromAccount = accounts.find(a => a.id === fromAccountId);
+  const toAccount = accounts.find(a => a.id === toAccountId);
+  
+  if (!fromAccount || !toAccount) {
+    return res.status(400).json({ error: 'Hesap bulunamadı' });
+  }
+  
+  if (fromAccount.balance < amount) {
+    return res.status(400).json({ error: 'Yetersiz bakiye' });
+  }
+  
+  fromAccount.balance -= amount;
+  toAccount.balance += amount;
+  
+  const virmanId = Date.now().toString();
+  
+  transactions.push(
+    {
+      id: virmanId + '_out',
+      accountId: fromAccountId,
+      type: 'transfer_out',
+      amount: amount,
+      description: `Virman: ${description}`,
+      virmanPairId: virmanId,
+      date: new Date()
+    },
+    {
+      id: virmanId + '_in',
+      accountId: toAccountId,
+      type: 'transfer_in',
+      amount: amount,
+      description: `Virman: ${description}`,
+      virmanPairId: virmanId,
+      date: new Date()
+    }
+  );
+  
+  res.json({
+    message: 'Virman başarılı',
+    fromBalance: fromAccount.balance,
+    toBalance: toAccount.balance
+  });
+});
+
+// Dashboard için özet endpoint
+app.get('/api/dashboard', (req, res) => {
+  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+  const companyBalance = accounts.filter(a => a.type === 'company').reduce((sum, acc) => sum + acc.balance, 0);
+  const personalBalance = accounts.filter(a => a.type === 'personal').reduce((sum, acc) => sum + acc.balance, 0);
+  
+  const recentTransactions = transactions.slice(-10).reverse();
+  
+  res.json({
+    totalBalance,
+    companyBalance,
+    personalBalance,
+    totalTransactions: transactions.length,
+    recentTransactions,
+    accounts
+  });
+});
+
+// Frontend HTML
+app.get('/', (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinBot - Finansal Yönetim</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .account-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .account-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        
+        .account-item:hover {
+            transform: translateX(5px);
+            background: #e9ecef;
+        }
+        
+        .account-type {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 11px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .account-type.personal {
+            background: #764ba2;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .quick-amounts {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-amount {
+            padding: 8px 15px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .quick-amount:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 FinBot - Finansal Yönetim Sistemi</h1>
+            <div class="stats" id="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Toplam Varlık</div>
+                    <div class="stat-value" id="totalBalance">₺0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Şirket</div>
+                    <div class="stat-value" id="companyBalance">₺0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Kişisel</div>
+                    <div class="stat-value" id="personalBalance">₺0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">İşlemler</div>
+                    <div class="stat-value" id="totalTransactions">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>💳 Hesaplarım</h2>
+                <div class="account-list" id="accountsList"></div>
+                <button class="btn btn-primary" style="margin-top: 20px" onclick="showAddAccount()">
+                    + Yeni Hesap Ekle
+                </button>
+                
+                <div id="addAccountForm" style="display: none; margin-top: 20px">
+                    <div class="form-group">
+                        <select class="form-control" id="accountType">
+                            <option value="company">Şirket Hesabı</option>
+                            <option value="personal">Kişisel Hesap</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="bankName" placeholder="Banka Adı">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="accountName" placeholder="Hesap Adı">
+                    </div>
+                    <div class="form-group">
+                        <input type="number" class="form-control" id="balance" placeholder="Başlangıç Bakiyesi">
+                    </div>
+                    <button class="btn btn-primary" onclick="addAccount()">Kaydet</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>➕ Hızlı İşlem</h2>
+                <div class="form-group">
+                    <select class="form-control" id="txAccountId">
+                        <option value="">Hesap Seçin...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select class="form-control" id="txType">
+                        <option value="expense">Gider</option>
+                        <option value="income">Gelir</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-control" id="txAmount" placeholder="Tutar">
+                    <div class="quick-amounts">
+                        <span class="quick-amount" onclick="setAmount(50)">₺50</span>
+                        <span class="quick-amount" onclick="setAmount(100)">₺100</span>
+                        <span class="quick-amount" onclick="setAmount(250)">₺250</span>
+                        <span class="quick-amount" onclick="setAmount(500)">₺500</span>
+                        <span class="quick-amount" onclick="setAmount(1000)">₺1000</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-control" id="txDescription" placeholder="Açıklama">
+                </div>
+                <button class="btn btn-primary" onclick="addTransaction()">İşlemi Kaydet</button>
+                
+                <h3 style="margin-top: 30px">Son İşlemler</h3>
+                <div id="recentTransactions"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        
+        async function loadDashboard() {
+            try {
+                const response = await fetch(API_URL + '/dashboard');
+                const data = await response.json();
+                
+                document.getElementById('totalBalance').textContent = '₺' + data.totalBalance.toLocaleString('tr-TR');
+                document.getElementById('companyBalance').textContent = '₺' + data.companyBalance.toLocaleString('tr-TR');
+                document.getElementById('personalBalance').textContent = '₺' + data.personalBalance.toLocaleString('tr-TR');
+                document.getElementById('totalTransactions').textContent = data.totalTransactions;
+                
+                // Hesapları listele
+                const accountsList = document.getElementById('accountsList');
+                accountsList.innerHTML = data.accounts.map(acc => \`
+                    <div class="account-item">
+                        <div>
+                            <span class="account-type \${acc.type === 'personal' ? 'personal' : ''}">\${acc.type === 'company' ? 'Şirket' : 'Kişisel'}</span>
+                            <div style="font-weight: 600">\${acc.accountName}</div>
+                            <div style="font-size: 12px; color: #666">\${acc.bankName}</div>
+                        </div>
+                        <div style="text-align: right">
+                            <div style="font-size: 20px; font-weight: bold; color: #2e7d32">₺\${acc.balance.toLocaleString('tr-TR')}</div>
+                        </div>
+                    </div>
+                \`).join('');
+                
+                // Hesap seçeneklerini güncelle
+                const txAccountSelect = document.getElementById('txAccountId');
+                txAccountSelect.innerHTML = '<option value="">Hesap Seçin...</option>' + 
+                    data.accounts.map(acc => \`<option value="\${acc.id}">\${acc.accountName} (\${acc.type === 'company' ? 'Şirket' : 'Kişisel'})</option>\`).join('');
+                
+                // Son işlemleri göster
+                const recentTx = document.getElementById('recentTransactions');
+                if (data.recentTransactions.length > 0) {
+                    recentTx.innerHTML = data.recentTransactions.map(tx => \`
+                        <div style="padding: 10px; background: #f8f9fa; margin-top: 10px; border-radius: 6px; display: flex; justify-content: space-between">
+                            <div>
+                                <div style="font-weight: 600">\${tx.description || 'İsimsiz işlem'}</div>
+                                <div style="font-size: 12px; color: #666">\${new Date(tx.date).toLocaleDateString('tr-TR')}</div>
+                            </div>
+                            <div style="color: \${tx.type === 'income' || tx.type === 'transfer_in' ? '#2e7d32' : '#d32f2f'}; font-weight: bold">
+                                \${tx.type === 'income' || tx.type === 'transfer_in' ? '+' : '-'}₺\${tx.amount}
+                            </div>
+                        </div>
+                    \`).join('');
+                } else {
+                    recentTx.innerHTML = '<p style="color: #666; margin-top: 10px">Henüz işlem yok</p>';
+                }
+            } catch (error) {
+                console.error('Dashboard yüklenemedi:', error);
+            }
+        }
+        
+        function showAddAccount() {
+            const form = document.getElementById('addAccountForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        async function addAccount() {
+            const accountData = {
+                type: document.getElementById('accountType').value,
+                bankName: document.getElementById('bankName').value,
+                accountName: document.getElementById('accountName').value,
+                balance: parseFloat(document.getElementById('balance').value) || 0
+            };
+            
+            if (!accountData.bankName || !accountData.accountName) {
+                alert('Lütfen tüm alanları doldurun');
+                return;
+            }
+            
+            try {
+                const response = await fetch(API_URL + '/accounts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(accountData)
+                });
+                
+                if (response.ok) {
+                    alert('Hesap başarıyla eklendi!');
+                    document.getElementById('addAccountForm').style.display = 'none';
+                    document.getElementById('bankName').value = '';
+                    document.getElementById('accountName').value = '';
+                    document.getElementById('balance').value = '';
+                    loadDashboard();
+                }
+            } catch (error) {
+                alert('Hesap eklenemedi: ' + error.message);
+            }
+        }
+        
+        function setAmount(amount) {
+            document.getElementById('txAmount').value = amount;
+        }
+        
+        async function addTransaction() {
+            const txData = {
+                accountId: document.getElementById('txAccountId').value,
+                type: document.getElementById('txType').value,
+                amount: parseFloat(document.getElementById('txAmount').value) || 0,
+                description: document.getElementById('txDescription').value
+            };
+            
+            if (!txData.accountId || !txData.amount) {
+                alert('Lütfen hesap seçin ve tutar girin');
+                return;
+            }
+            
+            try {
+                const response = await fetch(API_URL + '/transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(txData)
+                });
+                
+                if (response.ok) {
+                    alert('İşlem kaydedildi!');
+                    document.getElementById('txAmount').value = '';
+                    document.getElementById('txDescription').value = '';
+                    loadDashboard();
+                }
+            } catch (error) {
+                alert('İşlem kaydedilemedi: ' + error.message);
+            }
+        }
+        
+        // Sayfa yüklendiğinde dashboard'u yükle
+        loadDashboard();
+        
+        // Her 30 saniyede bir yenile
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>
+  `);
+});
+
+app.listen(PORT, () => {
+  console.log(\`
+🚀 FinBot başarıyla başlatıldı!
+
+📍 Local: http://localhost:\${PORT}
+📍 Network: http://\${require('os').hostname()}:\${PORT}
+
+✅ API Test: http://localhost:\${PORT}/api/test
+✅ Dashboard: http://localhost:\${PORT}
+
+Hazır hesaplar:
+- Şirket Hesabı: ₺50,000
+- Kişisel Hesap: ₺15,000
+  \`);
+});

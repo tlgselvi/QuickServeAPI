@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/analytics";
 import NotFound from "@/pages/not-found";
-import Navigation from "@/components/navigation";
+import Navigation from "./components/navigation";
 
 function Router() {
   return (
