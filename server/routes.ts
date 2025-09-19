@@ -212,7 +212,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const dashboardData = await storage.getDashboardStats();
         const accounts = await storage.getAccounts();
         
-        // Filter dashboard data based on user role
+        // Add optimized caching headers (30 seconds to match frontend refresh)
+        res.set({
+          'Cache-Control': 'private, max-age=30',
+        });
+        
+        // Filter dashboard data based on user role (security critical)
         if (req.user!.role === UserRole.ADMIN) {
           // Admin sees all data
           res.json(dashboardData);
@@ -223,16 +228,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Personal user only sees personal account data
           const personalAccounts = accounts.filter(account => account.type === 'personal');
           const personalBalance = personalAccounts.reduce((sum, account) => sum + parseFloat(account.balance), 0);
+          const personalAccountIds = new Set(personalAccounts.map(acc => acc.id));
+          const personalTransactions = dashboardData.recentTransactions.filter(tx => personalAccountIds.has(tx.accountId));
           
           res.json({
             totalBalance: personalBalance,
             companyBalance: 0, // Personal users don't see company data
-            personalBalance: personalBalance
+            personalBalance: personalBalance,
+            totalCash: personalAccounts
+              .filter(acc => parseFloat(acc.balance) > 0)
+              .reduce((sum, acc) => sum + parseFloat(acc.balance), 0),
+            totalDebt: personalAccounts
+              .filter(acc => parseFloat(acc.balance) < 0)
+              .reduce((sum, acc) => sum + Math.abs(parseFloat(acc.balance)), 0),
+            totalTransactions: personalTransactions.length,
+            recentTransactions: personalTransactions,
+            accounts: personalAccounts
           });
         } else {
-          res.json({ totalBalance: 0, companyBalance: 0, personalBalance: 0 });
+          res.json({ 
+            totalBalance: 0, 
+            companyBalance: 0, 
+            personalBalance: 0,
+            totalCash: 0,
+            totalDebt: 0,
+            totalTransactions: 0,
+            recentTransactions: [],
+            accounts: []
+          });
         }
       } catch (error) {
+        console.error("Dashboard error:", error);
         res.status(500).json({ error: "Dashboard verisi yüklenirken hata oluştu" });
       }
     }
