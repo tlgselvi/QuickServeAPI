@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -235,5 +235,159 @@ export const canManageAccountType = (userRole: UserRoleType, accountType: 'perso
   if (userRole === UserRole.ADMIN) return true;
   if (userRole === UserRole.COMPANY_USER && accountType === 'company') return true;
   if (userRole === UserRole.PERSONAL_USER && accountType === 'personal') return true;
+  return false;
+};
+
+// =====================
+// MULTI-USER SYSTEM SCHEMA
+// =====================
+
+export const teams = pgTable("teams", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  ownerId: varchar("owner_id").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`NOW()`).notNull(),
+});
+
+export const teamMembers = pgTable("team_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teamId: varchar("team_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  teamRole: varchar("team_role", { length: 20 }).default("member").notNull(), // 'owner', 'admin', 'member', 'viewer'
+  permissions: text("permissions").array(), // Custom permissions for team member
+  joinedAt: timestamp("joined_at").default(sql`NOW()`).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export const invites = pgTable("invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teamId: varchar("team_id").notNull(),
+  inviterUserId: varchar("inviter_user_id").notNull(),
+  invitedEmail: text("invited_email").notNull(),
+  invitedUserId: varchar("invited_user_id"), // null until user accepts
+  teamRole: varchar("team_role", { length: 20 }).default("member").notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // 'pending', 'accepted', 'declined', 'expired'
+  inviteToken: text("invite_token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
+  acceptedAt: timestamp("accepted_at"),
+});
+
+// Team Role Types
+export const TeamRole = {
+  OWNER: 'owner',
+  ADMIN: 'admin', 
+  MEMBER: 'member',
+  VIEWER: 'viewer'
+} as const;
+
+export type TeamRoleType = typeof TeamRole[keyof typeof TeamRole];
+
+// Team Permission System
+export const TeamPermission = {
+  // Team Management
+  MANAGE_TEAM: 'manage_team',
+  INVITE_MEMBERS: 'invite_members',
+  REMOVE_MEMBERS: 'remove_members',
+  MANAGE_ROLES: 'manage_roles',
+  
+  // Data Access
+  VIEW_ALL_DATA: 'view_all_data',
+  MANAGE_ALL_DATA: 'manage_all_data',
+  
+  // Financial Operations
+  CREATE_ACCOUNTS: 'create_accounts',
+  MANAGE_TRANSACTIONS: 'manage_transactions',
+  VIEW_REPORTS: 'view_reports',
+  EXPORT_DATA: 'export_data',
+} as const;
+
+export type TeamPermissionType = typeof TeamPermission[keyof typeof TeamPermission];
+
+// Team Role-Permission Mapping
+export const teamRolePermissions: Record<TeamRoleType, TeamPermissionType[]> = {
+  [TeamRole.OWNER]: [
+    TeamPermission.MANAGE_TEAM,
+    TeamPermission.INVITE_MEMBERS,
+    TeamPermission.REMOVE_MEMBERS,
+    TeamPermission.MANAGE_ROLES,
+    TeamPermission.VIEW_ALL_DATA,
+    TeamPermission.MANAGE_ALL_DATA,
+    TeamPermission.CREATE_ACCOUNTS,
+    TeamPermission.MANAGE_TRANSACTIONS,
+    TeamPermission.VIEW_REPORTS,
+    TeamPermission.EXPORT_DATA,
+  ],
+  [TeamRole.ADMIN]: [
+    TeamPermission.INVITE_MEMBERS,
+    TeamPermission.REMOVE_MEMBERS,
+    TeamPermission.VIEW_ALL_DATA,
+    TeamPermission.MANAGE_ALL_DATA,
+    TeamPermission.CREATE_ACCOUNTS,
+    TeamPermission.MANAGE_TRANSACTIONS,
+    TeamPermission.VIEW_REPORTS,
+    TeamPermission.EXPORT_DATA,
+  ],
+  [TeamRole.MEMBER]: [
+    TeamPermission.VIEW_ALL_DATA,
+    TeamPermission.MANAGE_TRANSACTIONS,
+    TeamPermission.VIEW_REPORTS,
+  ],
+  [TeamRole.VIEWER]: [
+    TeamPermission.VIEW_ALL_DATA,
+    TeamPermission.VIEW_REPORTS,
+  ],
+};
+
+// Schema Types and Validation
+export const insertTeamSchema = createInsertSchema(teams).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export const insertInviteSchema = createInsertSchema(invites).omit({
+  id: true,
+  createdAt: true,
+  acceptedAt: true,
+});
+
+export const inviteUserSchema = z.object({
+  teamId: z.string(),
+  email: z.string().email("Geçerli bir email adresi giriniz"),
+  teamRole: z.enum(['owner', 'admin', 'member', 'viewer']).default('member'),
+});
+
+export const acceptInviteSchema = z.object({
+  token: z.string(),
+  userId: z.string().optional(),
+});
+
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type Team = typeof teams.$inferSelect;
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertInvite = z.infer<typeof insertInviteSchema>;
+export type Invite = typeof invites.$inferSelect;
+export type InviteUserRequest = z.infer<typeof inviteUserSchema>;
+export type AcceptInviteRequest = z.infer<typeof acceptInviteSchema>;
+
+// Helper Functions for Team Management
+export const hasTeamPermission = (teamRole: TeamRoleType, permission: TeamPermissionType): boolean => {
+  return teamRolePermissions[teamRole]?.includes(permission) || false;
+};
+
+export const canManageTeamMember = (currentRole: TeamRoleType, targetRole: TeamRoleType): boolean => {
+  // Owner can manage everyone, Admin can manage Member/Viewer
+  if (currentRole === TeamRole.OWNER) return true;
+  if (currentRole === TeamRole.ADMIN && (targetRole === TeamRole.MEMBER || targetRole === TeamRole.VIEWER)) return true;
   return false;
 };
