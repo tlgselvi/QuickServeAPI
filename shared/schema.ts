@@ -126,3 +126,114 @@ export const getCategoryLabel = (categoryValue: string | null | undefined): stri
   const category = allCategories.find(cat => cat.value === categoryValue);
   return category?.label || categoryValue;
 };
+
+// RBAC System
+export const UserRole = {
+  ADMIN: 'admin',
+  COMPANY_USER: 'company_user', 
+  PERSONAL_USER: 'personal_user'
+} as const;
+
+export type UserRoleType = typeof UserRole[keyof typeof UserRole];
+
+export const Permission = {
+  // User Management
+  MANAGE_USERS: 'manage_users',
+  VIEW_USERS: 'view_users',
+  
+  // Account Management
+  MANAGE_ALL_ACCOUNTS: 'manage_all_accounts',
+  MANAGE_COMPANY_ACCOUNTS: 'manage_company_accounts',
+  MANAGE_PERSONAL_ACCOUNTS: 'manage_personal_accounts',
+  VIEW_ALL_ACCOUNTS: 'view_all_accounts',
+  VIEW_COMPANY_ACCOUNTS: 'view_company_accounts',
+  VIEW_PERSONAL_ACCOUNTS: 'view_personal_accounts',
+  
+  // Transaction Management
+  MANAGE_ALL_TRANSACTIONS: 'manage_all_transactions',
+  MANAGE_COMPANY_TRANSACTIONS: 'manage_company_transactions',
+  MANAGE_PERSONAL_TRANSACTIONS: 'manage_personal_transactions',
+  VIEW_ALL_TRANSACTIONS: 'view_all_transactions',
+  VIEW_COMPANY_TRANSACTIONS: 'view_company_transactions',
+  VIEW_PERSONAL_TRANSACTIONS: 'view_personal_transactions',
+  
+  // Reports & Analytics
+  VIEW_ALL_REPORTS: 'view_all_reports',
+  VIEW_COMPANY_REPORTS: 'view_company_reports',
+  VIEW_PERSONAL_REPORTS: 'view_personal_reports',
+  EXPORT_DATA: 'export_data',
+  
+  // System Settings
+  MANAGE_SETTINGS: 'manage_settings',
+  VIEW_SETTINGS: 'view_settings',
+  
+  // Credit & Cards
+  MANAGE_CREDIT: 'manage_credit',
+  VIEW_CREDIT: 'view_credit',
+} as const;
+
+export type PermissionType = typeof Permission[keyof typeof Permission];
+
+// Role-Permission Mapping
+export const rolePermissions: Record<UserRoleType, PermissionType[]> = {
+  [UserRole.ADMIN]: [
+    Permission.MANAGE_USERS,
+    Permission.VIEW_USERS,
+    Permission.MANAGE_ALL_ACCOUNTS,
+    Permission.VIEW_ALL_ACCOUNTS,
+    Permission.MANAGE_ALL_TRANSACTIONS,
+    Permission.VIEW_ALL_TRANSACTIONS,
+    Permission.VIEW_ALL_REPORTS,
+    Permission.EXPORT_DATA,
+    Permission.MANAGE_SETTINGS,
+    Permission.VIEW_SETTINGS,
+    Permission.MANAGE_CREDIT,
+    Permission.VIEW_CREDIT,
+  ],
+  [UserRole.COMPANY_USER]: [
+    Permission.MANAGE_COMPANY_ACCOUNTS,
+    Permission.VIEW_COMPANY_ACCOUNTS,
+    Permission.VIEW_PERSONAL_ACCOUNTS,
+    Permission.MANAGE_COMPANY_TRANSACTIONS,
+    Permission.VIEW_COMPANY_TRANSACTIONS,
+    Permission.VIEW_PERSONAL_TRANSACTIONS,
+    Permission.VIEW_COMPANY_REPORTS,
+    Permission.VIEW_PERSONAL_REPORTS,
+    Permission.EXPORT_DATA,
+    Permission.VIEW_SETTINGS,
+    Permission.MANAGE_CREDIT,
+    Permission.VIEW_CREDIT,
+  ],
+  [UserRole.PERSONAL_USER]: [
+    Permission.MANAGE_PERSONAL_ACCOUNTS,
+    Permission.VIEW_PERSONAL_ACCOUNTS,
+    Permission.MANAGE_PERSONAL_TRANSACTIONS,
+    Permission.VIEW_PERSONAL_TRANSACTIONS,
+    Permission.VIEW_PERSONAL_REPORTS,
+    Permission.VIEW_SETTINGS,
+    Permission.VIEW_CREDIT,
+  ],
+};
+
+// Helper functions for RBAC
+export const hasPermission = (userRole: UserRoleType, permission: PermissionType): boolean => {
+  return rolePermissions[userRole]?.includes(permission) || false;
+};
+
+export const hasAnyPermission = (userRole: UserRoleType, permissions: PermissionType[]): boolean => {
+  return permissions.some(permission => hasPermission(userRole, permission));
+};
+
+export const canAccessAccountType = (userRole: UserRoleType, accountType: 'personal' | 'company'): boolean => {
+  if (userRole === UserRole.ADMIN) return true;
+  if (userRole === UserRole.COMPANY_USER) return true; // Can access both
+  if (userRole === UserRole.PERSONAL_USER) return accountType === 'personal';
+  return false;
+};
+
+export const canManageAccountType = (userRole: UserRoleType, accountType: 'personal' | 'company'): boolean => {
+  if (userRole === UserRole.ADMIN) return true;
+  if (userRole === UserRole.COMPANY_USER && accountType === 'company') return true;
+  if (userRole === UserRole.PERSONAL_USER && accountType === 'personal') return true;
+  return false;
+};
