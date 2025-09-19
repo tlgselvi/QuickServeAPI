@@ -1,8 +1,31 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { pool } from "./db";
 
 const app = express();
+
+// Session configuration
+const PgSession = connectPgSimple(session);
+app.use(session({
+  store: new PgSession({
+    pool: pool, // Use raw Neon pool instead of Drizzle client
+    tableName: 'session', // Table name for sessions
+    createTableIfMissing: true, // Automatically create table
+  }),
+  secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS in production
+    httpOnly: true, // Prevent XSS
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax', // CSRF protection
+  },
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

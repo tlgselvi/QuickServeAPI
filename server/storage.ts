@@ -4,10 +4,16 @@ import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
-  // User methods
+  // User authentication methods
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+  updateUserPassword(id: string, hashedPassword: string): Promise<User | undefined>;
+  setResetToken(email: string, token: string, expires: Date): Promise<User | undefined>;
+  verifyEmail(id: string): Promise<User | undefined>;
+  updateLastLogin(id: string): Promise<User | undefined>;
   
   // Account methods
   getAccounts(): Promise<Account[]>;
@@ -83,9 +89,55 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const now = new Date();
+    const user: User = { 
+      ...insertUser, 
+      id,
+      emailVerified: null,
+      resetToken: null,
+      resetTokenExpires: null,
+      role: "user",
+      createdAt: now,
+      lastLogin: null
+    };
     this.users.set(id, user);
     return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email === email,
+    );
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (user) {
+      const updatedUser = { ...user, ...updates };
+      this.users.set(id, updatedUser);
+      return updatedUser;
+    }
+    return undefined;
+  }
+
+  async updateUserPassword(id: string, hashedPassword: string): Promise<User | undefined> {
+    return this.updateUser(id, { password: hashedPassword });
+  }
+
+  async setResetToken(email: string, token: string, expires: Date): Promise<User | undefined> {
+    const user = await this.getUserByEmail(email);
+    if (user) {
+      return this.updateUser(user.id, { resetToken: token, resetTokenExpires: expires });
+    }
+    return undefined;
+  }
+
+  async verifyEmail(id: string): Promise<User | undefined> {
+    return this.updateUser(id, { emailVerified: new Date() });
+  }
+
+  async updateLastLogin(id: string): Promise<User | undefined> {
+    return this.updateUser(id, { lastLogin: new Date() });
   }
 
   async getAccounts(): Promise<Account[]> {
@@ -222,6 +274,51 @@ export class PostgresStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.email, email));
+    return result[0];
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const result = await db.update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async updateUserPassword(id: string, hashedPassword: string): Promise<User | undefined> {
+    const result = await db.update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async setResetToken(email: string, token: string, expires: Date): Promise<User | undefined> {
+    const result = await db.update(users)
+      .set({ resetToken: token, resetTokenExpires: expires })
+      .where(eq(users.email, email))
+      .returning();
+    return result[0];
+  }
+
+  async verifyEmail(id: string): Promise<User | undefined> {
+    const result = await db.update(users)
+      .set({ emailVerified: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async updateLastLogin(id: string): Promise<User | undefined> {
+    const result = await db.update(users)
+      .set({ lastLogin: new Date() })
+      .where(eq(users.id, id))
+      .returning();
     return result[0];
   }
 

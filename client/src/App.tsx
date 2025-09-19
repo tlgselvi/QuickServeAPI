@@ -18,9 +18,22 @@ import FixedExpenses from "@/pages/fixed-expenses";
 import CreditCards from "@/pages/credit-cards";
 import Reports from "@/pages/reports";
 import Settings from "@/pages/settings";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
 import NotFound from "@/pages/not-found";
 
-function Router() {
+function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="w-full">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -33,6 +46,31 @@ function Router() {
           </div>
         </header>
         <main className="flex-1 space-y-4 p-6">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      {/* Auth routes - no sidebar */}
+      <Route path="/login">
+        <AuthLayout>
+          <Login />
+        </AuthLayout>
+      </Route>
+      <Route path="/register">
+        <AuthLayout>
+          <Register />
+        </AuthLayout>
+      </Route>
+      
+      {/* App routes - with sidebar */}
+      <Route path="/" nest>
+        <AppLayout>
           <Switch>
             <Route path="/" component={Dashboard} />
             <Route path="/analytics" component={Analytics} />
@@ -45,9 +83,9 @@ function Router() {
             <Route path="/settings" component={Settings} />
             <Route component={NotFound} />
           </Switch>
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+        </AppLayout>
+      </Route>
+    </Switch>
   );
 }
 

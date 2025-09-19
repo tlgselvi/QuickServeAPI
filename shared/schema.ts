@@ -40,16 +40,55 @@ export type Transaction = typeof transactions.$inferSelect;
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  emailVerified: timestamp("email_verified"),
+  resetToken: text("reset_token"),
+  resetTokenExpires: timestamp("reset_token_expires"),
+  role: varchar("role", { length: 20 }).default("user").notNull(),
+  createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
+  lastLogin: timestamp("last_login"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  email: true,
   password: true,
+});
+
+export const loginSchema = z.object({
+  email: z.string().email("Geçerli bir email adresi giriniz"),
+  password: z.string().min(6, "Şifre en az 6 karakter olmalıdır"),
+});
+
+export const registerSchema = insertUserSchema.extend({
+  email: z.string().email("Geçerli bir email adresi giriniz"),
+  password: z.string().min(6, "Şifre en az 6 karakter olmalıdır"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Şifreler eşleşmiyor",
+  path: ["confirmPassword"],
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Geçerli bir email adresi giriniz"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string(),
+  password: z.string().min(6, "Şifre en az 6 karakter olmalıdır"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Şifreler eşleşmiyor",
+  path: ["confirmPassword"],
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type LoginRequest = z.infer<typeof loginSchema>;
+export type RegisterRequest = z.infer<typeof registerSchema>;
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
 
 // Predefined transaction categories
 export const transactionCategories = {
