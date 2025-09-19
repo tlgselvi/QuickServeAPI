@@ -40,6 +40,8 @@ export interface IStorage {
     totalBalance: number;
     companyBalance: number;
     personalBalance: number;
+    totalCash: number;
+    totalDebt: number;
     totalTransactions: number;
     recentTransactions: Transaction[];
     accounts: Account[];
@@ -323,12 +325,24 @@ export class MemStorage implements IStorage {
     const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
     const companyBalance = accounts.filter(a => a.type === 'company').reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
     const personalBalance = accounts.filter(a => a.type === 'personal').reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    
+    // KPI Calculations
+    const totalCash = accounts
+      .filter(acc => parseFloat(acc.balance) > 0)
+      .reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    
+    const totalDebt = accounts
+      .filter(acc => parseFloat(acc.balance) < 0)
+      .reduce((sum, acc) => sum + Math.abs(parseFloat(acc.balance)), 0);
+    
     const recentTransactions = transactions.slice(0, 10);
     
     return {
       totalBalance,
       companyBalance,
       personalBalance,
+      totalCash,
+      totalDebt,
       totalTransactions: transactions.length,
       recentTransactions,
       accounts
@@ -682,12 +696,24 @@ export class PostgresStorage implements IStorage {
     const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
     const companyBalance = accounts.filter(a => a.type === 'company').reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
     const personalBalance = accounts.filter(a => a.type === 'personal').reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    
+    // KPI Calculations
+    const totalCash = accounts
+      .filter(acc => parseFloat(acc.balance) > 0)
+      .reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    
+    const totalDebt = accounts
+      .filter(acc => parseFloat(acc.balance) < 0)
+      .reduce((sum, acc) => sum + Math.abs(parseFloat(acc.balance)), 0);
+    
     const recentTransactions = transactions.slice(0, 10);
     
     return {
       totalBalance,
       companyBalance,
       personalBalance,
+      totalCash,
+      totalDebt,
       totalTransactions: transactions.length,
       recentTransactions,
       accounts

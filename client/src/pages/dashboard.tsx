@@ -7,6 +7,7 @@ import TransactionItem from "@/components/transaction-item";
 import AddAccountDialog from "@/components/add-account-dialog";
 import TransferForm from "@/components/transfer-form";
 import TransactionForm from "@/components/transaction-form";
+import KPIBar from "@/components/kpi-bar";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,6 +29,8 @@ export default function Dashboard() {
     totalBalance: number;
     companyBalance: number;
     personalBalance: number;
+    totalCash: number;
+    totalDebt: number;
     totalTransactions: number;
   }>({
     queryKey: ["/api/dashboard"],
@@ -141,6 +144,15 @@ export default function Dashboard() {
           Hesap Ekle
         </Button>
       </div>
+      
+      {/* KPI Bar */}
+      <KPIBar 
+        totalCash={dashboardData?.totalCash || 0}
+        totalDebt={dashboardData?.totalDebt || 0}
+        totalBalance={dashboardData?.totalBalance || 0}
+        formatCurrency={formatCurrency}
+        isLoading={isLoading}
+      />
       
       {/* Dashboard Overview */}
       <div>
