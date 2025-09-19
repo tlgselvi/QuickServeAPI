@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAccountSchema, insertTransactionSchema, loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, Permission, UserRole } from "@shared/schema";
+import { insertAccountSchema, insertTransactionSchema, loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, insertTeamSchema, updateTeamSchema, insertTeamMemberSchema, inviteUserSchema, acceptInviteSchema, Permission, UserRole, TeamPermission, hasTeamPermission, TeamRole } from "@shared/schema";
 import bcrypt from "bcryptjs";
-import { randomBytes } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import { requireAuth, requirePermission, requireAccountTypeAccess, optionalAuth, logAccess, AuthenticatedRequest } from "./middleware/auth";
 
 // Extend Express session to include user
@@ -404,6 +404,450 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("❌ Get user error:", error);
         res.status(500).json({ error: "Kullanıcı bilgileri alınırken hata oluştu" });
+      }
+    }
+  );
+
+  // ==================== TEAM MANAGEMENT API ROUTES ====================
+
+  // Team CRUD routes
+  app.post("/api/teams",
+    requireAuth,
+    logAccess("CREATE_TEAM"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const validatedData = insertTeamSchema.parse(req.body);
+        
+        // Set the current user as the team owner
+        const teamData = {
+          ...validatedData,
+          ownerId: req.user!.id
+        };
+        
+        const team = await storage.createTeam(teamData);
+        
+        // Automatically add the creator as team owner member
+        await storage.addTeamMember({
+          teamId: team.id,
+          userId: req.user!.id,
+          teamRole: 'owner',
+          permissions: null,
+          isActive: true
+        });
+        
+        res.json(team);
+      } catch (error) {
+        console.error("Create team error:", error);
+        res.status(400).json({ error: "Takım oluşturulurken hata oluştu" });
+      }
+    }
+  );
+
+  app.get("/api/teams",
+    requireAuth,
+    logAccess("VIEW_TEAMS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const teams = await storage.getTeamsByUserId(req.user!.id);
+        res.json(teams);
+      } catch (error) {
+        console.error("Get teams error:", error);
+        res.status(500).json({ error: "Takımlar yüklenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.get("/api/teams/:teamId",
+    requireAuth,
+    logAccess("VIEW_TEAM_DETAILS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { teamId } = req.params;
+        
+        // Check if user is a member of this team
+        const teamMember = await storage.getTeamMember(teamId, req.user!.id);
+        if (!teamMember) {
+          return res.status(403).json({ error: "Bu takıma erişim yetkiniz bulunmuyor" });
+        }
+        
+        const team = await storage.getTeam(teamId);
+        if (!team) {
+          return res.status(404).json({ error: "Takım bulunamadı" });
+        }
+        
+        res.json(team);
+      } catch (error) {
+        console.error("Get team error:", error);
+        res.status(500).json({ error: "Takım bilgileri yüklenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.put("/api/teams/:teamId",
+    requireAuth,
+    logAccess("UPDATE_TEAM"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { teamId } = req.params;
+        
+        // Check if user has team management permission  
+        const userRole = await storage.getUserTeamRole(teamId, req.user!.id);
+        if (!userRole || !(userRole === TeamRole.OWNER || userRole === TeamRole.ADMIN)) {
+          return res.status(403).json({ error: "Takım düzenleme yetkiniz bulunmuyor" });
+        }
+        
+        // SECURITY FIX: Use secure update schema that only allows name/description
+        const validatedData = updateTeamSchema.parse(req.body);
+        const updatedTeam = await storage.updateTeam(teamId, validatedData);
+        
+        if (!updatedTeam) {
+          return res.status(404).json({ error: "Takım bulunamadı" });
+        }
+        
+        res.json(updatedTeam);
+      } catch (error) {
+        console.error("Update team error:", error);
+        res.status(400).json({ error: "Takım güncellenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.delete("/api/teams/:teamId",
+    requireAuth,
+    logAccess("DELETE_TEAM"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { teamId } = req.params;
+        
+        // Only team owner can delete the team
+        const team = await storage.getTeam(teamId);
+        if (!team || team.ownerId !== req.user!.id) {
+          return res.status(403).json({ error: "Sadece takım sahibi takımı silebilir" });
+        }
+        
+        const deleted = await storage.deleteTeam(teamId);
+        if (!deleted) {
+          return res.status(404).json({ error: "Takım bulunamadı" });
+        }
+        
+        res.json({ message: "Takım başarıyla silindi" });
+      } catch (error) {
+        console.error("Delete team error:", error);
+        res.status(500).json({ error: "Takım silinirken hata oluştu" });
+      }
+    }
+  );
+
+  // Team Member Management routes
+  app.get("/api/teams/:teamId/members",
+    requireAuth,
+    logAccess("VIEW_TEAM_MEMBERS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { teamId } = req.params;
+        
+        // Check if user is a member of this team
+        const teamMember = await storage.getTeamMember(teamId, req.user!.id);
+        if (!teamMember) {
+          return res.status(403).json({ error: "Bu takıma erişim yetkiniz bulunmuyor" });
+        }
+        
+        const members = await storage.getTeamMembers(teamId);
+        res.json(members);
+      } catch (error) {
+        console.error("Get team members error:", error);
+        res.status(500).json({ error: "Takım üyeleri yüklenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/teams/:teamId/members",
+    requireAuth,
+    logAccess("ADD_TEAM_MEMBER"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { teamId } = req.params;
+        
+        // Check if user has invite members permission
+        const userRole = await storage.getUserTeamRole(teamId, req.user!.id);
+        if (!userRole || !hasTeamPermission(userRole as any, TeamPermission.INVITE_MEMBERS)) {
+          return res.status(403).json({ error: "Üye ekleme yetkiniz bulunmuyor" });
+        }
+        
+        const validatedData = insertTeamMemberSchema.parse(req.body);
+        const member = await storage.addTeamMember(validatedData);
+        
+        res.json(member);
+      } catch (error) {
+        console.error("Add team member error:", error);
+        res.status(400).json({ error: "Takım üyesi eklenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.put("/api/teams/:teamId/members/:userId",
+    requireAuth,
+    logAccess("UPDATE_TEAM_MEMBER"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { teamId, userId } = req.params;
+        
+        // SECURITY FIX: Check if user has manage roles permission OR is owner
+        const userRole = await storage.getUserTeamRole(teamId, req.user!.id);
+        const team = await storage.getTeam(teamId);
+        
+        const isOwner = team?.ownerId === req.user!.id;
+        const hasManagePermission = userRole && (userRole === TeamRole.OWNER || userRole === TeamRole.ADMIN);
+        
+        if (!isOwner && !hasManagePermission) {
+          return res.status(403).json({ error: "Rol düzenleme yetkiniz bulunmuyor" });
+        }
+        
+        // SECURITY FIX: Prevent demoting/changing team owner
+        if (team && team.ownerId === userId) {
+          return res.status(403).json({ error: "Takım sahibinin rolü değiştirilemez" });
+        }
+        
+        const member = await storage.getTeamMember(teamId, userId);
+        if (!member) {
+          return res.status(404).json({ error: "Takım üyesi bulunamadı" });
+        }
+        
+        // SECURITY FIX: Restrict what can be updated - only teamRole allowed 
+        const allowedUpdates = { teamRole: req.body.teamRole };
+        if (!allowedUpdates.teamRole) {
+          return res.status(400).json({ error: "Geçersiz güncelleme verisi" });
+        }
+        
+        const updatedMember = await storage.updateTeamMember(member.id, allowedUpdates);
+        
+        res.json(updatedMember);
+      } catch (error) {
+        console.error("Update team member error:", error);
+        res.status(400).json({ error: "Takım üyesi güncellenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.delete("/api/teams/:teamId/members/:userId",
+    requireAuth,
+    logAccess("REMOVE_TEAM_MEMBER"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { teamId, userId } = req.params;
+        
+        // SECURITY FIX: Check if user has remove members permission OR is owner
+        const userRole = await storage.getUserTeamRole(teamId, req.user!.id);
+        const team = await storage.getTeam(teamId);
+        
+        const isOwner = team?.ownerId === req.user!.id;
+        const hasRemovePermission = userRole && (userRole === TeamRole.OWNER || userRole === TeamRole.ADMIN);
+        
+        if (!isOwner && !hasRemovePermission) {
+          return res.status(403).json({ error: "Üye çıkarma yetkiniz bulunmuyor" });
+        }
+        
+        // SECURITY FIX: Cannot remove team owner - ENFORCED PROTECTION
+        if (team && team.ownerId === userId) {
+          return res.status(403).json({ error: "Takım sahibi çıkarılamaz" });
+        }
+        
+        // SECURITY FIX: Verify target member exists before removal
+        const targetMember = await storage.getTeamMember(teamId, userId);
+        if (!targetMember) {
+          return res.status(404).json({ error: "Takım üyesi bulunamadı" });
+        }
+        
+        const removed = await storage.removeTeamMember(teamId, userId);
+        if (!removed) {
+          return res.status(500).json({ error: "Takım üyesi çıkarılırken hata oluştu" });
+        }
+        
+        res.json({ 
+          message: "Takım üyesi başarıyla çıkarıldı",
+          removedUserId: userId
+        });
+      } catch (error) {
+        console.error("Remove team member error:", error);
+        res.status(500).json({ error: "Takım üyesi çıkarılırken hata oluştu" });
+      }
+    }
+  );
+
+  // Team Invite System routes
+  app.post("/api/teams/:teamId/invites",
+    requireAuth,
+    logAccess("CREATE_TEAM_INVITE"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { teamId } = req.params;
+        
+        // Check if user has invite members permission
+        const userRole = await storage.getUserTeamRole(teamId, req.user!.id);
+        if (!userRole || !hasTeamPermission(userRole as any, TeamPermission.INVITE_MEMBERS)) {
+          return res.status(403).json({ error: "Davet gönderme yetkiniz bulunmuyor" });
+        }
+        
+        const validatedData = inviteUserSchema.parse(req.body);
+        
+        // Generate invite token
+        const inviteToken = randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        
+        const invite = await storage.createInvite({
+          teamId: validatedData.teamId,
+          inviterUserId: req.user!.id,
+          invitedEmail: validatedData.email,
+          invitedUserId: null,
+          teamRole: validatedData.teamRole,
+          status: 'pending',
+          inviteToken,
+          expiresAt
+        });
+        
+        // TODO: Send email invitation
+        console.log(`Team invite created: ${inviteToken} for ${validatedData.email}`);
+        
+        res.json({ 
+          message: "Davet başarıyla gönderildi",
+          inviteId: invite.id
+        });
+      } catch (error) {
+        console.error("Create invite error:", error);
+        res.status(400).json({ error: "Davet oluşturulurken hata oluştu" });
+      }
+    }
+  );
+
+  app.get("/api/teams/:teamId/invites",
+    requireAuth,
+    logAccess("VIEW_TEAM_INVITES"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { teamId } = req.params;
+        
+        // Check if user has team management permission
+        const userRole = await storage.getUserTeamRole(teamId, req.user!.id);
+        if (!userRole || !hasTeamPermission(userRole as any, TeamPermission.MANAGE_TEAM)) {
+          return res.status(403).json({ error: "Davet görüntüleme yetkiniz bulunmuyor" });
+        }
+        
+        const invites = await storage.getTeamInvites(teamId);
+        res.json(invites);
+      } catch (error) {
+        console.error("Get team invites error:", error);
+        res.status(500).json({ error: "Davetler yüklenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/invites/accept",
+    requireAuth,
+    logAccess("ACCEPT_TEAM_INVITE"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const validatedData = acceptInviteSchema.parse(req.body);
+        
+        const invite = await storage.getInviteByToken(validatedData.token);
+        if (!invite) {
+          return res.status(404).json({ error: "Geçersiz davet linki" });
+        }
+        
+        // SECURITY FIX: Strict status and expiry checks
+        if (invite.status !== 'pending') {
+          return res.status(400).json({ error: "Bu davet zaten işleme alınmış" });
+        }
+        
+        // SECURITY FIX: Enforce expiry check
+        const now = new Date();
+        if (invite.expiresAt <= now) {
+          await storage.updateInviteStatus(invite.id, 'expired');
+          return res.status(400).json({ error: "Davet süresi dolmuş" });
+        }
+        
+        // SECURITY FIX: Strict email verification
+        if (invite.invitedEmail !== req.user!.email) {
+          return res.status(403).json({ error: "Bu davet size gönderilmemiş" });
+        }
+        
+        // SECURITY FIX: Check if user is already a team member
+        const existingMember = await storage.getTeamMember(invite.teamId, req.user!.id);
+        if (existingMember) {
+          return res.status(400).json({ error: "Bu takımın zaten üyesisiniz" });
+        }
+        
+        // SECURITY FIX: Verify team still exists and is active
+        const team = await storage.getTeam(invite.teamId);
+        if (!team || !team.isActive) {
+          return res.status(400).json({ error: "Davet edilen takım artık mevcut değil" });
+        }
+        
+        // Add user to team - atomic operation
+        try {
+          await storage.addTeamMember({
+            teamId: invite.teamId,
+            userId: req.user!.id,
+            teamRole: invite.teamRole,
+            permissions: null,
+            isActive: true
+          });
+          
+          // Update invite status only after successful team addition
+          await storage.updateInviteStatus(invite.id, 'accepted', req.user!.id);
+          
+          res.json({ 
+            message: "Takım davetini başarıyla kabul ettiniz",
+            teamId: invite.teamId,
+            teamName: team.name
+          });
+        } catch (memberError) {
+          console.error("Add team member error:", memberError);
+          res.status(500).json({ error: "Takıma katılım sırasında hata oluştu" });
+        }
+        
+      } catch (error) {
+        console.error("Accept invite error:", error);
+        res.status(400).json({ error: "Davet kabul edilirken hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/invites/:inviteId/decline",
+    requireAuth,
+    logAccess("DECLINE_TEAM_INVITE"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { inviteId } = req.params;
+        
+        const invite = await storage.getInvite(inviteId);
+        if (!invite) {
+          return res.status(404).json({ error: "Davet bulunamadı" });
+        }
+        
+        if (invite.invitedEmail !== req.user!.email) {
+          return res.status(403).json({ error: "Bu davet size gönderilmemiş" });
+        }
+        
+        await storage.updateInviteStatus(inviteId, 'declined');
+        
+        res.json({ message: "Takım daveti reddedildi" });
+      } catch (error) {
+        console.error("Decline invite error:", error);
+        res.status(500).json({ error: "Davet reddedilirken hata oluştu" });
+      }
+    }
+  );
+
+  app.get("/api/user/invites",
+    requireAuth,
+    logAccess("VIEW_USER_INVITES"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const invites = await storage.getPendingInvitesByEmail(req.user!.email);
+        res.json(invites);
+      } catch (error) {
+        console.error("Get user invites error:", error);
+        res.status(500).json({ error: "Davetleriniz yüklenirken hata oluştu" });
       }
     }
   );

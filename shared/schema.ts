@@ -349,6 +349,11 @@ export const insertTeamSchema = createInsertSchema(teams).omit({
   updatedAt: true,
 });
 
+export const updateTeamSchema = insertTeamSchema.pick({
+  name: true,
+  description: true,
+}).partial();
+
 export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
   id: true,
   joinedAt: true,

@@ -1,4 +1,4 @@
-import { type Account, type InsertAccount, type Transaction, type InsertTransaction, type User, type InsertUser, accounts, transactions, users } from "@shared/schema";
+import { type Account, type InsertAccount, type Transaction, type InsertTransaction, type User, type InsertUser, type Team, type InsertTeam, type TeamMember, type InsertTeamMember, type Invite, type InsertInvite, accounts, transactions, users, teams, teamMembers, invites } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -38,17 +38,47 @@ export interface IStorage {
     recentTransactions: Transaction[];
     accounts: Account[];
   }>;
+  
+  // Team Management methods
+  createTeam(team: InsertTeam): Promise<Team>;
+  getTeam(id: string): Promise<Team | undefined>;
+  getTeamsByUserId(userId: string): Promise<Team[]>;
+  updateTeam(id: string, updates: Partial<Team>): Promise<Team | undefined>;
+  deleteTeam(id: string): Promise<boolean>;
+  
+  // Team Member methods
+  addTeamMember(member: InsertTeamMember): Promise<TeamMember>;
+  getTeamMembers(teamId: string): Promise<TeamMember[]>;
+  getTeamMember(teamId: string, userId: string): Promise<TeamMember | undefined>;
+  updateTeamMember(id: string, updates: Partial<TeamMember>): Promise<TeamMember | undefined>;
+  removeTeamMember(teamId: string, userId: string): Promise<boolean>;
+  getUserTeamRole(teamId: string, userId: string): Promise<string | undefined>;
+  
+  // Invite methods
+  createInvite(invite: InsertInvite): Promise<Invite>;
+  getInvite(id: string): Promise<Invite | undefined>;
+  getInviteByToken(token: string): Promise<Invite | undefined>;
+  getTeamInvites(teamId: string): Promise<Invite[]>;
+  getPendingInvitesByEmail(email: string): Promise<Invite[]>;
+  updateInviteStatus(id: string, status: 'pending' | 'accepted' | 'declined' | 'expired', userId?: string): Promise<Invite | undefined>;
+  deleteInvite(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private accounts: Map<string, Account>;
   private transactions: Map<string, Transaction>;
+  private teams: Map<string, Team>;
+  private teamMembers: Map<string, TeamMember>;
+  private invites: Map<string, Invite>;
 
   constructor() {
     this.users = new Map();
     this.accounts = new Map();
     this.transactions = new Map();
+    this.teams = new Map();
+    this.teamMembers = new Map();
+    this.invites = new Map();
     
     // Initialize with demo data
     this.initializeDemoData();
@@ -258,6 +288,163 @@ export class MemStorage implements IStorage {
       accounts
     };
   }
+
+  // Team Management methods
+  async createTeam(insertTeam: InsertTeam): Promise<Team> {
+    const id = randomUUID();
+    const now = new Date();
+    const team: Team = { 
+      ...insertTeam, 
+      id,
+      description: insertTeam.description || null,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.teams.set(id, team);
+    return team;
+  }
+
+  async getTeam(id: string): Promise<Team | undefined> {
+    return this.teams.get(id);
+  }
+
+  async getTeamsByUserId(userId: string): Promise<Team[]> {
+    const userTeamMembers = Array.from(this.teamMembers.values()).filter(
+      member => member.userId === userId && member.isActive
+    );
+    const teamIds = userTeamMembers.map(member => member.teamId);
+    return Array.from(this.teams.values()).filter(team => 
+      teamIds.includes(team.id) && team.isActive
+    );
+  }
+
+  async updateTeam(id: string, updates: Partial<Team>): Promise<Team | undefined> {
+    const team = this.teams.get(id);
+    if (team) {
+      const updatedTeam = { ...team, ...updates, updatedAt: new Date() };
+      this.teams.set(id, updatedTeam);
+      return updatedTeam;
+    }
+    return undefined;
+  }
+
+  async deleteTeam(id: string): Promise<boolean> {
+    return this.teams.delete(id);
+  }
+
+  // Team Member methods
+  async addTeamMember(insertMember: InsertTeamMember): Promise<TeamMember> {
+    const id = randomUUID();
+    const member: TeamMember = { 
+      ...insertMember, 
+      id,
+      teamRole: insertMember.teamRole || 'member',
+      permissions: insertMember.permissions || null,
+      joinedAt: new Date(),
+      isActive: insertMember.isActive ?? true
+    };
+    this.teamMembers.set(id, member);
+    return member;
+  }
+
+  async getTeamMembers(teamId: string): Promise<TeamMember[]> {
+    return Array.from(this.teamMembers.values()).filter(
+      member => member.teamId === teamId && member.isActive
+    );
+  }
+
+  async getTeamMember(teamId: string, userId: string): Promise<TeamMember | undefined> {
+    return Array.from(this.teamMembers.values()).find(
+      member => member.teamId === teamId && member.userId === userId && member.isActive
+    );
+  }
+
+  async updateTeamMember(id: string, updates: Partial<TeamMember>): Promise<TeamMember | undefined> {
+    const member = this.teamMembers.get(id);
+    if (member) {
+      const updatedMember = { ...member, ...updates };
+      this.teamMembers.set(id, updatedMember);
+      return updatedMember;
+    }
+    return undefined;
+  }
+
+  async removeTeamMember(teamId: string, userId: string): Promise<boolean> {
+    // STORAGE GUARDRAIL: Cannot remove team owner at storage level
+    const team = await this.getTeam(teamId);
+    if (team && team.ownerId === userId) {
+      throw new Error("Cannot remove team owner - use transfer ownership first");
+    }
+    
+    const member = await this.getTeamMember(teamId, userId);
+    if (member) {
+      return this.teamMembers.delete(member.id);
+    }
+    return false;
+  }
+
+  async getUserTeamRole(teamId: string, userId: string): Promise<string | undefined> {
+    const member = await this.getTeamMember(teamId, userId);
+    return member?.teamRole;
+  }
+
+  // Invite methods
+  async createInvite(insertInvite: InsertInvite): Promise<Invite> {
+    const id = randomUUID();
+    const invite: Invite = { 
+      ...insertInvite, 
+      id,
+      status: insertInvite.status || 'pending',
+      teamRole: insertInvite.teamRole || 'member',
+      invitedUserId: insertInvite.invitedUserId || null,
+      createdAt: new Date(),
+      acceptedAt: null
+    };
+    this.invites.set(id, invite);
+    return invite;
+  }
+
+  async getInvite(id: string): Promise<Invite | undefined> {
+    return this.invites.get(id);
+  }
+
+  async getInviteByToken(token: string): Promise<Invite | undefined> {
+    return Array.from(this.invites.values()).find(
+      invite => invite.inviteToken === token
+    );
+  }
+
+  async getTeamInvites(teamId: string): Promise<Invite[]> {
+    return Array.from(this.invites.values()).filter(
+      invite => invite.teamId === teamId
+    );
+  }
+
+  async getPendingInvitesByEmail(email: string): Promise<Invite[]> {
+    return Array.from(this.invites.values()).filter(
+      invite => invite.invitedEmail === email && invite.status === 'pending'
+    );
+  }
+
+  async updateInviteStatus(id: string, status: 'pending' | 'accepted' | 'declined' | 'expired', userId?: string): Promise<Invite | undefined> {
+    const invite = this.invites.get(id);
+    if (invite) {
+      const updates: Partial<Invite> = { status };
+      if (status === 'accepted') {
+        updates.acceptedAt = new Date();
+        if (userId) updates.invitedUserId = userId;
+      }
+      const updatedInvite = { ...invite, ...updates };
+      this.invites.set(id, updatedInvite);
+      return updatedInvite;
+    }
+    return undefined;
+  }
+
+  async deleteInvite(id: string): Promise<boolean> {
+    return this.invites.delete(id);
+  }
 }
 
 export class PostgresStorage implements IStorage {
@@ -438,6 +625,133 @@ export class PostgresStorage implements IStorage {
       recentTransactions,
       accounts
     };
+  }
+
+  // Team Management methods
+  async createTeam(insertTeam: InsertTeam): Promise<Team> {
+    const result = await db.insert(teams).values(insertTeam).returning();
+    return result[0];
+  }
+
+  async getTeam(id: string): Promise<Team | undefined> {
+    const result = await db.select().from(teams).where(eq(teams.id, id));
+    return result[0];
+  }
+
+  async getTeamsByUserId(userId: string): Promise<Team[]> {
+    const result = await db.select({
+      id: teams.id,
+      name: teams.name,
+      description: teams.description,
+      ownerId: teams.ownerId,
+      isActive: teams.isActive,
+      createdAt: teams.createdAt,
+      updatedAt: teams.updatedAt,
+    })
+    .from(teams)
+    .innerJoin(teamMembers, eq(teams.id, teamMembers.teamId))
+    .where(sql`${teamMembers.userId} = ${userId} AND ${teamMembers.isActive} = true AND ${teams.isActive} = true`);
+    
+    return result;
+  }
+
+  async updateTeam(id: string, updates: Partial<Team>): Promise<Team | undefined> {
+    const result = await db.update(teams)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(teams.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteTeam(id: string): Promise<boolean> {
+    const result = await db.delete(teams).where(eq(teams.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Team Member methods
+  async addTeamMember(insertMember: InsertTeamMember): Promise<TeamMember> {
+    const result = await db.insert(teamMembers).values(insertMember).returning();
+    return result[0];
+  }
+
+  async getTeamMembers(teamId: string): Promise<TeamMember[]> {
+    return await db.select().from(teamMembers)
+      .where(sql`${teamMembers.teamId} = ${teamId} AND ${teamMembers.isActive} = true`);
+  }
+
+  async getTeamMember(teamId: string, userId: string): Promise<TeamMember | undefined> {
+    const result = await db.select().from(teamMembers)
+      .where(sql`${teamMembers.teamId} = ${teamId} AND ${teamMembers.userId} = ${userId} AND ${teamMembers.isActive} = true`);
+    return result[0];
+  }
+
+  async updateTeamMember(id: string, updates: Partial<TeamMember>): Promise<TeamMember | undefined> {
+    const result = await db.update(teamMembers)
+      .set(updates)
+      .where(eq(teamMembers.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async removeTeamMember(teamId: string, userId: string): Promise<boolean> {
+    // STORAGE GUARDRAIL: Cannot remove team owner at storage level
+    const team = await this.getTeam(teamId);
+    if (team && team.ownerId === userId) {
+      throw new Error("Cannot remove team owner - use transfer ownership first");
+    }
+    
+    const result = await db.delete(teamMembers)
+      .where(sql`${teamMembers.teamId} = ${teamId} AND ${teamMembers.userId} = ${userId}`)
+      .returning();
+    return result.length > 0;
+  }
+
+  async getUserTeamRole(teamId: string, userId: string): Promise<string | undefined> {
+    const member = await this.getTeamMember(teamId, userId);
+    return member?.teamRole;
+  }
+
+  // Invite methods
+  async createInvite(insertInvite: InsertInvite): Promise<Invite> {
+    const result = await db.insert(invites).values(insertInvite).returning();
+    return result[0];
+  }
+
+  async getInvite(id: string): Promise<Invite | undefined> {
+    const result = await db.select().from(invites).where(eq(invites.id, id));
+    return result[0];
+  }
+
+  async getInviteByToken(token: string): Promise<Invite | undefined> {
+    const result = await db.select().from(invites).where(eq(invites.inviteToken, token));
+    return result[0];
+  }
+
+  async getTeamInvites(teamId: string): Promise<Invite[]> {
+    return await db.select().from(invites).where(eq(invites.teamId, teamId));
+  }
+
+  async getPendingInvitesByEmail(email: string): Promise<Invite[]> {
+    return await db.select().from(invites)
+      .where(sql`${invites.invitedEmail} = ${email} AND ${invites.status} = 'pending'`);
+  }
+
+  async updateInviteStatus(id: string, status: 'pending' | 'accepted' | 'declined' | 'expired', userId?: string): Promise<Invite | undefined> {
+    const updates: Partial<Invite> = { status };
+    if (status === 'accepted') {
+      updates.acceptedAt = new Date();
+      if (userId) updates.invitedUserId = userId;
+    }
+    const result = await db.update(invites)
+      .set(updates)
+      .where(eq(invites.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteInvite(id: string): Promise<boolean> {
+    const result = await db.delete(invites).where(eq(invites.id, id)).returning();
+    return result.length > 0;
   }
 }
 
