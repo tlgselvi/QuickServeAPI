@@ -11,8 +11,8 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-// Authentication middleware - ensures user is logged in
-export const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+// Authentication middleware - ensures user is logged in and active (authoritative check)
+export const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   if (!req.session?.user) {
     return res.status(401).json({ 
       error: 'Oturum açmanız gerekiyor',
@@ -20,9 +20,46 @@ export const requireAuth = (req: AuthenticatedRequest, res: Response, next: Next
     });
   }
   
-  // Attach user to request object for convenience
-  req.user = req.session.user as any;
-  next();
+  try {
+    // Load fresh user data from authoritative storage
+    const { storage } = await import('../storage');
+    const currentUser = await storage.getUser(req.session.user.id);
+    
+    if (!currentUser) {
+      // User no longer exists - destroy session
+      req.session.destroy((err) => {});
+      return res.status(401).json({
+        error: 'Kullanıcı hesabı bulunamadı',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    
+    // Check if user account is active (authoritative check)
+    if (!currentUser.isActive) {
+      req.session.destroy((err) => {});
+      return res.status(403).json({
+        error: 'Hesabınız pasif durumda. Lütfen yönetici ile iletişime geçin',
+        code: 'ACCOUNT_INACTIVE'
+      });
+    }
+    
+    // Update session with fresh data and attach to request
+    req.session.user = {
+      id: currentUser.id,
+      email: currentUser.email,
+      username: currentUser.username,
+      role: currentUser.role,
+      isActive: currentUser.isActive
+    };
+    req.user = req.session.user as any;
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    return res.status(500).json({
+      error: 'Kimlik doğrulama hatası',
+      code: 'AUTH_ERROR'
+    });
+  }
 };
 
 // Role-based authorization middleware

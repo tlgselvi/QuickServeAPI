@@ -45,7 +45,8 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified"),
   resetToken: text("reset_token"),
   resetTokenExpires: timestamp("reset_token_expires"),
-  role: varchar("role", { length: 20 }).default("user").notNull(),
+  role: varchar("role", { length: 20 }).default("personal_user").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
   lastLogin: timestamp("last_login"),
 });
@@ -89,6 +90,18 @@ export type LoginRequest = z.infer<typeof loginSchema>;
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
+
+// Admin route validation schemas
+export const updateUserRoleSchema = z.object({
+  role: z.enum(["admin", "company_user", "personal_user"]),
+});
+
+export const updateUserStatusSchema = z.object({
+  isActive: z.boolean(),
+});
+
+export type UpdateUserRoleRequest = z.infer<typeof updateUserRoleSchema>;
+export type UpdateUserStatusRequest = z.infer<typeof updateUserStatusSchema>;
 
 // Predefined transaction categories
 export const transactionCategories = {

@@ -21,6 +21,7 @@ import FixedExpenses from "@/pages/fixed-expenses";
 import CreditCards from "@/pages/credit-cards";
 import Reports from "@/pages/reports";
 import Settings from "@/pages/settings";
+import Admin from "@/pages/admin";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import NotFound from "@/pages/not-found";
@@ -144,6 +145,11 @@ function Router() {
             <Route path="/settings">
               <RouteGuard route="/settings">
                 <Settings />
+              </RouteGuard>
+            </Route>
+            <Route path="/admin">
+              <RouteGuard route="/admin">
+                <Admin />
               </RouteGuard>
             </Route>
             <Route component={NotFound} />

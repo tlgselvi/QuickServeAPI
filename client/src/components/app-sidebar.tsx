@@ -10,7 +10,23 @@ import {
   Home,
   BarChart3,
   TrendingUp,
+  Shield,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import type { UserRoleType } from "@shared/schema";
+
+interface MenuItem {
+  title: string;
+  path: string;
+  icon: any;
+  requiredRole?: UserRoleType;
+}
+
+interface MenuGroup {
+  title: string;
+  items: MenuItem[];
+  requiredRole?: UserRoleType;
+}
 
 import {
   Sidebar,
@@ -24,7 +40,7 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 
-const menuItems = [
+const menuItems: MenuGroup[] = [
   {
     title: "Genel",
     items: [
@@ -76,6 +92,18 @@ const menuItems = [
     ],
   },
   {
+    title: "Yönetim",
+    items: [
+      {
+        title: "Kullanıcı Yönetimi",
+        path: "/admin",
+        icon: Shield,
+        requiredRole: "admin",
+      },
+    ],
+    requiredRole: "admin",
+  },
+  {
     title: "Sistem",
     items: [
       {
@@ -94,6 +122,7 @@ const menuItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   return (
     <Sidebar>
@@ -105,30 +134,42 @@ export function AppSidebar() {
       </SidebarHeader>
       
       <SidebarContent>
-        {menuItems.map((group) => (
-          <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location === item.path;
-                  
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={isActive}>
-                        <Link href={item.path} data-testid={`sidebar-${item.path.replace("/", "") || "home"}`}>
-                          <Icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {menuItems.map((group) => {
+          // Hide admin sections for non-admin users
+          if (group.requiredRole && user?.role !== group.requiredRole) {
+            return null;
+          }
+
+          return (
+            <SidebarGroup key={group.title}>
+              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => {
+                    // Hide admin items for non-admin users
+                    if (item.requiredRole && user?.role !== item.requiredRole) {
+                      return null;
+                    }
+
+                    const Icon = item.icon;
+                    const isActive = location === item.path;
+                    
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild isActive={isActive}>
+                          <Link href={item.path} data-testid={`sidebar-${item.path.replace("/", "") || "home"}`}>
+                            <Icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
     </Sidebar>
   );

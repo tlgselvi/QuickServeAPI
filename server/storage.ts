@@ -1,5 +1,6 @@
 import { type Account, type InsertAccount, type Transaction, type InsertTransaction, type User, type InsertUser, type Team, type InsertTeam, type TeamMember, type InsertTeamMember, type Invite, type InsertInvite, accounts, transactions, users, teams, teamMembers, invites } from "@shared/schema";
 import { randomUUID } from "crypto";
+import type { UserRoleType } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
 
@@ -14,6 +15,11 @@ export interface IStorage {
   setResetToken(email: string, token: string, expires: Date): Promise<User | undefined>;
   verifyEmail(id: string): Promise<User | undefined>;
   updateLastLogin(id: string): Promise<User | undefined>;
+
+  // Admin user management methods
+  getAllUsers(): Promise<User[]>;
+  updateUserRole(id: string, role: UserRoleType): Promise<User | undefined>;
+  updateUserStatus(id: string, isActive: boolean): Promise<User | undefined>;
   
   // Account methods
   getAccounts(): Promise<Account[]>;
@@ -85,6 +91,32 @@ export class MemStorage implements IStorage {
   }
 
   private initializeDemoData() {
+    // Seed admin user in development only (if no users exist)
+    if (process.env.NODE_ENV === 'development' && this.users.size === 0) {
+      const bcrypt = require('bcryptjs');
+      const adminId = randomUUID();
+      const now = new Date();
+      // Generate secure random password for development
+      const devPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
+      const hashedPassword = bcrypt.hashSync(devPassword, 12);
+      console.log(`[DEV] Admin user created - Email: admin@finbot.com, Password: ${devPassword}`);
+      
+      const adminUser: User = {
+        id: adminId,
+        username: "admin",
+        email: "admin@finbot.com", 
+        password: hashedPassword,
+        role: "admin",
+        emailVerified: now,
+        resetToken: null,
+        resetTokenExpires: null,
+        isActive: true,
+        createdAt: now,
+        lastLogin: null
+      };
+      this.users.set(adminId, adminUser);
+    }
+
     const account1: Account = {
       id: '1',
       type: 'company',
@@ -126,7 +158,8 @@ export class MemStorage implements IStorage {
       emailVerified: null,
       resetToken: null,
       resetTokenExpires: null,
-      role: "user",
+      role: "personal_user",
+      isActive: true,
       createdAt: now,
       lastLogin: null
     };
@@ -168,6 +201,19 @@ export class MemStorage implements IStorage {
 
   async updateLastLogin(id: string): Promise<User | undefined> {
     return this.updateUser(id, { lastLogin: new Date() });
+  }
+
+  // Admin user management methods
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async updateUserRole(id: string, role: UserRoleType): Promise<User | undefined> {
+    return this.updateUser(id, { role });
+  }
+
+  async updateUserStatus(id: string, isActive: boolean): Promise<User | undefined> {
+    return this.updateUser(id, { isActive });
   }
 
   async getAccounts(): Promise<Account[]> {
@@ -504,6 +550,27 @@ export class PostgresStorage implements IStorage {
   async updateLastLogin(id: string): Promise<User | undefined> {
     const result = await db.update(users)
       .set({ lastLogin: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  // Admin user management methods
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async updateUserRole(id: string, role: UserRoleType): Promise<User | undefined> {
+    const result = await db.update(users)
+      .set({ role })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async updateUserStatus(id: string, isActive: boolean): Promise<User | undefined> {
+    const result = await db.update(users)
+      .set({ isActive })
       .where(eq(users.id, id))
       .returning();
     return result[0];

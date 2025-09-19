@@ -5,6 +5,7 @@ import { insertAccountSchema, insertTransactionSchema, loginSchema, registerSche
 import bcrypt from "bcryptjs";
 import { randomBytes, randomUUID } from "crypto";
 import { requireAuth, requirePermission, requireAccountTypeAccess, optionalAuth, logAccess, AuthenticatedRequest } from "./middleware/auth";
+import { updateUserRoleSchema, updateUserStatusSchema } from "@shared/schema";
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -15,6 +16,7 @@ declare module 'express-session' {
       email: string;
       username: string;
       role: string;
+      isActive: boolean;
     };
   }
 }
@@ -298,6 +300,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Geçersiz email veya şifre" });
       }
       
+      // Check if user account is active
+      if (!user.isActive) {
+        return res.status(403).json({
+          error: "Hesabınız pasif durumda. Lütfen yönetici ile iletişime geçin",
+          code: "ACCOUNT_INACTIVE"
+        });
+      }
+      
       // Update last login
       await storage.updateLastLogin(user.id);
       
@@ -307,7 +317,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         email: user.email,
         username: user.username,
-        role: user.role
+        role: user.role,
+        isActive: user.isActive
       };
       
       console.log("✅ Session created for user:", user.id);
@@ -404,6 +415,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("❌ Get user error:", error);
         res.status(500).json({ error: "Kullanıcı bilgileri alınırken hata oluştu" });
+      }
+    }
+  );
+
+  // Admin User Management Routes
+  app.get("/api/admin/users",
+    requireAuth,
+    requirePermission(Permission.MANAGE_USERS, Permission.VIEW_USERS),
+    logAccess("VIEW_ALL_USERS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const users = await storage.getAllUsers();
+        
+        // Remove password from all users for security
+        const safeUsers = users.map(({ password, ...user }) => user);
+        
+        res.json(safeUsers);
+      } catch (error) {
+        console.error("Get all users error:", error);
+        res.status(500).json({ error: "Kullanıcılar yüklenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.put("/api/admin/users/:userId/role",
+    requireAuth,
+    requirePermission(Permission.MANAGE_USERS),
+    logAccess("CHANGE_USER_ROLE"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { userId } = req.params;
+        try {
+          var validatedData = updateUserRoleSchema.parse(req.body);
+        } catch (error) {
+          return res.status(400).json({ error: "Geçersiz veri formatı" });
+        }
+        const { role } = validatedData;
+
+        // Prevent self role change to avoid lockout
+        if (userId === req.user!.id) {
+          return res.status(403).json({ error: "Kendi rolünüzü değiştiremezsiniz" });
+        }
+
+        const updatedUser = await storage.updateUserRole(userId, role);
+        if (!updatedUser) {
+          return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+        }
+
+        // Remove password for security
+        const { password, ...safeUser } = updatedUser;
+        
+        res.json({ 
+          message: "Kullanıcı rolü başarıyla değiştirildi",
+          user: safeUser 
+        });
+      } catch (error) {
+        console.error("Update user role error:", error);
+        res.status(500).json({ error: "Rol değiştirilirken hata oluştu" });
+      }
+    }
+  );
+
+  app.put("/api/admin/users/:userId/status",
+    requireAuth,
+    requirePermission(Permission.MANAGE_USERS),
+    logAccess("CHANGE_USER_STATUS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { userId } = req.params;
+        try {
+          var validatedData = updateUserStatusSchema.parse(req.body);
+        } catch (error) {
+          return res.status(400).json({ error: "Geçersiz veri formatı" });
+        }
+        const { isActive } = validatedData;
+
+        // Prevent self deactivation to avoid lockout
+        if (userId === req.user!.id && !isActive) {
+          return res.status(403).json({ error: "Kendi hesabınızı pasif hale getiremezsiniz" });
+        }
+
+        const updatedUser = await storage.updateUserStatus(userId, isActive);
+        if (!updatedUser) {
+          return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+        }
+
+        // Remove password for security
+        const { password, ...safeUser } = updatedUser;
+        
+        res.json({ 
+          message: `Kullanıcı ${isActive ? 'aktif' : 'pasif'} hale getirildi`,
+          user: safeUser 
+        });
+      } catch (error) {
+        console.error("Update user status error:", error);
+        res.status(500).json({ error: "Kullanıcı durumu değiştirilirken hata oluştu" });
       }
     }
   );

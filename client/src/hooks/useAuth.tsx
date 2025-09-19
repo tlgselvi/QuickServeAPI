@@ -76,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       '/credit-cards': ['admin', 'company_user', 'personal_user'],
       '/reports': ['admin', 'company_user', 'personal_user'],
       '/settings': ['admin', 'company_user', 'personal_user'],
+      '/admin': ['admin'], // Admin-only route
     };
 
     const allowedRoles = routePermissions[route];
