@@ -103,6 +103,58 @@ export default function TransferForm({ accounts, onTransfer, isLoading }: Transf
               />
               <span className="absolute right-3 top-2 text-sm text-muted-foreground">TRY</span>
             </div>
+            <div className="flex gap-2 mt-2 flex-wrap">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAmount('50')}
+                className="text-xs px-3 py-1 h-7"
+                data-testid="button-quick-amount-50"
+              >
+                ₺50
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAmount('100')}
+                className="text-xs px-3 py-1 h-7"
+                data-testid="button-quick-amount-100"
+              >
+                ₺100
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAmount('250')}
+                className="text-xs px-3 py-1 h-7"
+                data-testid="button-quick-amount-250"
+              >
+                ₺250
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAmount('500')}
+                className="text-xs px-3 py-1 h-7"
+                data-testid="button-quick-amount-500"
+              >
+                ₺500
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAmount('1000')}
+                className="text-xs px-3 py-1 h-7"
+                data-testid="button-quick-amount-1000"
+              >
+                ₺1000
+              </Button>
+            </div>
           </div>
           
           <div>

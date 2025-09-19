@@ -22,6 +22,16 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   performTransaction(transactionData: InsertTransaction, balanceAdjustment: number): Promise<Transaction>;
   performTransfer(fromAccountId: string, toAccountId: string, amount: number, description: string, virmanPairId: string): Promise<{ outTransaction: Transaction; inTransaction: Transaction }>;
+  
+  // Dashboard methods
+  getDashboardStats(): Promise<{
+    totalBalance: number;
+    companyBalance: number;
+    personalBalance: number;
+    totalTransactions: number;
+    recentTransactions: Transaction[];
+    accounts: Account[];
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -177,6 +187,25 @@ export class MemStorage implements IStorage {
 
     return { outTransaction, inTransaction };
   }
+
+  async getDashboardStats() {
+    const accounts = await this.getAccounts();
+    const transactions = await this.getTransactions();
+    
+    const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    const companyBalance = accounts.filter(a => a.type === 'company').reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    const personalBalance = accounts.filter(a => a.type === 'personal').reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    const recentTransactions = transactions.slice(0, 10);
+    
+    return {
+      totalBalance,
+      companyBalance,
+      personalBalance,
+      totalTransactions: transactions.length,
+      recentTransactions,
+      accounts
+    };
+  }
 }
 
 export class PostgresStorage implements IStorage {
@@ -293,6 +322,25 @@ export class PostgresStorage implements IStorage {
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
     const result = await db.insert(transactions).values(insertTransaction).returning();
     return result[0];
+  }
+
+  async getDashboardStats() {
+    const accounts = await this.getAccounts();
+    const transactions = await this.getTransactions();
+    
+    const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    const companyBalance = accounts.filter(a => a.type === 'company').reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    const personalBalance = accounts.filter(a => a.type === 'personal').reduce((sum, acc) => sum + parseFloat(acc.balance), 0);
+    const recentTransactions = transactions.slice(0, 10);
+    
+    return {
+      totalBalance,
+      companyBalance,
+      personalBalance,
+      totalTransactions: transactions.length,
+      recentTransactions,
+      accounts
+    };
   }
 }
 

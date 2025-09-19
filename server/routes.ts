@@ -105,6 +105,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dashboard route
+  app.get("/api/dashboard", async (req, res) => {
+    try {
+      const dashboardData = await storage.getDashboardStats();
+      res.json(dashboardData);
+    } catch (error) {
+      res.status(500).json({ error: "Dashboard verisi yüklenirken hata oluştu" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

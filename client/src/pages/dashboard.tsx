@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -20,13 +20,30 @@ export default function Dashboard() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("all");
   const { toast } = useToast();
 
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery<Account[]>({
-    queryKey: ["/api/accounts"],
+  // Single dashboard query for better performance
+  const { data: dashboardData, isLoading: dashboardLoading } = useQuery<{
+    accounts: Account[];
+    recentTransactions: Transaction[];
+    totalBalance: number;
+    companyBalance: number;
+    personalBalance: number;
+    totalTransactions: number;
+  }>({
+    queryKey: ["/api/dashboard"],
   });
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
-    queryKey: ["/api/transactions"],
-  });
+  const accounts = dashboardData?.accounts || [];
+  const transactions = dashboardData?.recentTransactions || [];
+  const isLoading = dashboardLoading;
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const addAccountMutation = useMutation({
     mutationFn: async (accountData: { type: string; bankName: string; accountName: string; balance: string; currency: string }) => {
@@ -34,7 +51,7 @@ export default function Dashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       setShowAddAccountDialog(false);
       toast({
         title: "Başarılı",
@@ -56,8 +73,7 @@ export default function Dashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({
         title: "Başarılı",
         description: "İşlem başarıyla eklendi",
@@ -78,8 +94,7 @@ export default function Dashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({
         title: "Başarılı",
         description: "Virman işlemi başarıyla tamamlandı",
@@ -144,7 +159,7 @@ export default function Dashboard() {
 
         {/* Account Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {accountsLoading ? (
+          {isLoading ? (
             <div className="col-span-full text-center py-8" data-testid="accounts-loading">
               Hesaplar yükleniyor...
             </div>
@@ -217,7 +232,7 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {transactionsLoading ? (
+                {isLoading ? (
                   <div className="text-center py-8" data-testid="transactions-loading">
                     İşlemler yükleniyor...
                   </div>
