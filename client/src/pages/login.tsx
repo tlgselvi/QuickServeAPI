@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { loginSchema, type LoginRequest } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,10 +34,15 @@ export default function Login() {
     },
     onSuccess: (data) => {
       console.log("✅ Login successful:", data);
+      
+      // Invalidate auth queries to refresh user state
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      
       toast({
         title: "Giriş Başarılı",
         description: "Hoş geldiniz! Dashboard'a yönlendiriliyorsunuz...",
       });
+      
       // Redirect to dashboard after successful login
       setTimeout(() => setLocation("/"), 1000);
     },
