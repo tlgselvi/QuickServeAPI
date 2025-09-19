@@ -23,6 +23,23 @@ export const transactions = pgTable("transactions", {
   date: timestamp("date").default(sql`NOW()`).notNull(),
 });
 
+// System alerts table for important dates and notifications
+export const systemAlerts = pgTable("system_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: varchar("type", { length: 50 }).notNull(), // 'low_balance', 'recurring_payment', 'budget_exceeded', 'payment_due'
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  severity: varchar("severity", { length: 20 }).default("medium").notNull(), // 'low', 'medium', 'high', 'critical'
+  triggerDate: timestamp("trigger_date"),
+  isActive: boolean("is_active").default(true).notNull(),
+  isDismissed: boolean("is_dismissed").default(false).notNull(),
+  accountId: varchar("account_id"), // Optional - for account-specific alerts
+  transactionId: varchar("transaction_id"), // Optional - for transaction-specific alerts
+  metadata: text("metadata"), // JSON string for additional data
+  createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
+  dismissedAt: timestamp("dismissed_at"),
+});
+
 export const insertAccountSchema = createInsertSchema(accounts).omit({
   id: true,
 });
@@ -32,10 +49,18 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   date: true,
 });
 
+export const insertSystemAlertSchema = createInsertSchema(systemAlerts).omit({
+  id: true,
+  createdAt: true,
+  dismissedAt: true,
+});
+
 export type InsertAccount = z.infer<typeof insertAccountSchema>;
 export type Account = typeof accounts.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
+export type InsertSystemAlert = z.infer<typeof insertSystemAlertSchema>;
+export type SystemAlert = typeof systemAlerts.$inferSelect;
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

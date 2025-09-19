@@ -1,11 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAccountSchema, insertTransactionSchema, loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, insertTeamSchema, updateTeamSchema, insertTeamMemberSchema, inviteUserSchema, acceptInviteSchema, Permission, UserRole, TeamPermission, hasTeamPermission, TeamRole } from "@shared/schema";
+import { insertAccountSchema, insertTransactionSchema, loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, insertTeamSchema, updateTeamSchema, insertTeamMemberSchema, inviteUserSchema, acceptInviteSchema, insertSystemAlertSchema, Permission, UserRole, TeamPermission, hasTeamPermission, TeamRole } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { randomBytes, randomUUID } from "crypto";
 import { requireAuth, requirePermission, requireAccountTypeAccess, optionalAuth, logAccess, AuthenticatedRequest } from "./middleware/auth";
 import { updateUserRoleSchema, updateUserStatusSchema } from "@shared/schema";
+import { alertService } from "./alert-service";
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -1240,12 +1241,227 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requirePermission(Permission.VIEW_PERSONAL_TRANSACTIONS, Permission.VIEW_COMPANY_TRANSACTIONS, Permission.VIEW_ALL_TRANSACTIONS),
     logAccess("EXPORT_GOOGLE_SHEETS"),
     async (req: AuthenticatedRequest, res) => {
-      // Google Sheets export not yet implemented
-      res.status(501).json({ 
-        error: "Google Sheets export henüz implementaston edilmedi",
-        message: "Bu özellik gelecekte eklenecek",
-        status: "not_implemented"
-      });
+      try {
+        const { google } = require('googleapis');
+        const { JWT } = require('google-auth-library');
+
+        // Initialize Google Sheets API with service account
+        const auth = new JWT({
+          email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+          key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+          scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        });
+
+        const sheets = google.sheets({ version: 'v4', auth });
+        const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+
+        if (!spreadsheetId || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+          return res.status(500).json({ 
+            error: "Google Sheets konfigürasyonu eksik",
+            message: "Gerekli environment değişkenleri ayarlanmamış"
+          });
+        }
+
+        // Get data similar to CSV export
+        const accounts = await storage.getAccounts();
+        const transactions = await storage.getTransactions();
+        
+        // Filter data based on user role
+        const allowedAccountIds = accounts
+          .filter(account => {
+            if (req.user!.role === UserRole.ADMIN) return true;
+            if (req.user!.role === UserRole.COMPANY_USER) return true;
+            if (req.user!.role === UserRole.PERSONAL_USER) return account.type === 'personal';
+            return false;
+          })
+          .map(account => account.id);
+        
+        const filteredAccounts = accounts.filter(account => 
+          allowedAccountIds.includes(account.id)
+        );
+        
+        const filteredTransactions = transactions.filter(transaction => 
+          allowedAccountIds.includes(transaction.accountId)
+        );
+
+        // Prepare data for Google Sheets
+        const headers = ['Tarih', 'Hesap', 'Tip', 'Miktar', 'Açıklama', 'Kategori'];
+        const sheetData = [headers];
+
+        filteredTransactions.forEach(transaction => {
+          const account = filteredAccounts.find(acc => acc.id === transaction.accountId);
+          const tipLabel = transaction.type === 'income' ? 'Gelir' : 
+                          transaction.type === 'expense' ? 'Gider' : 
+                          transaction.type === 'transfer_in' ? 'Gelen Virman' : 
+                          'Giden Virman';
+          
+          sheetData.push([
+            new Date(transaction.date).toLocaleDateString('tr-TR'),
+            account ? account.bankName : 'Bilinmeyen',
+            tipLabel,
+            transaction.amount,
+            transaction.description,
+            transaction.category || ''
+          ]);
+        });
+
+        // Create a new worksheet with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const worksheetTitle = `FinBot-${timestamp}`;
+
+        // First, create the spreadsheet or add a new sheet
+        try {
+          // Try to add a new sheet to the existing spreadsheet
+          await sheets.spreadsheets.batchUpdate({
+            spreadsheetId: spreadsheetId,
+            resource: {
+              requests: [{
+                addSheet: {
+                  properties: {
+                    title: worksheetTitle,
+                    gridProperties: {
+                      rowCount: sheetData.length + 10,
+                      columnCount: headers.length
+                    }
+                  }
+                }
+              }]
+            }
+          });
+        } catch (error) {
+          console.error('Error creating new sheet:', error);
+          // If we can't create a new sheet, we'll use the first sheet
+        }
+
+        // Write data to the sheet
+        const range = `${worksheetTitle}!A1:${String.fromCharCode(65 + headers.length - 1)}${sheetData.length}`;
+        
+        try {
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: spreadsheetId,
+            range: range,
+            valueInputOption: 'RAW',
+            resource: {
+              values: sheetData
+            }
+          });
+        } catch (error) {
+          // Fallback to Sheet1 if the named sheet doesn't work
+          const fallbackRange = `Sheet1!A1:${String.fromCharCode(65 + headers.length - 1)}${sheetData.length}`;
+          await sheets.spreadsheets.values.clear({
+            spreadsheetId: spreadsheetId,
+            range: 'Sheet1!A:Z'
+          });
+          
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: spreadsheetId,
+            range: fallbackRange,
+            valueInputOption: 'RAW',
+            resource: {
+              values: sheetData
+            }
+          });
+        }
+
+        // Generate the Google Sheets URL
+        const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+
+        res.json({
+          message: "Veriler Google Sheets'e başarıyla aktarıldı",
+          url: sheetUrl,
+          worksheetTitle: worksheetTitle,
+          recordCount: filteredTransactions.length,
+          timestamp: new Date().toISOString()
+        });
+
+      } catch (error) {
+        console.error("Google Sheets export error:", error);
+        res.status(500).json({ 
+          error: "Google Sheets export sırasında hata oluştu",
+          details: error instanceof Error ? error.message : "Bilinmeyen hata"
+        });
+      }
+    }
+  );
+
+  // System Alerts API Routes
+  app.get("/api/alerts",
+    requireAuth,
+    logAccess("VIEW_ALERTS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const alerts = await storage.getActiveSystemAlerts();
+        res.json(alerts);
+      } catch (error) {
+        console.error("Get alerts error:", error);
+        res.status(500).json({ error: "Uyarılar yüklenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.get("/api/alerts/all",
+    requireAuth,
+    requirePermission(Permission.MANAGE_SETTINGS), // Only admins can see all alerts
+    logAccess("VIEW_ALL_ALERTS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const alerts = await storage.getSystemAlerts();
+        res.json(alerts);
+      } catch (error) {
+        console.error("Get all alerts error:", error);
+        res.status(500).json({ error: "Tüm uyarılar yüklenirken hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/alerts/:alertId/dismiss",
+    requireAuth,
+    logAccess("DISMISS_ALERT"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { alertId } = req.params;
+        const alert = await storage.dismissSystemAlert(alertId);
+        
+        if (!alert) {
+          return res.status(404).json({ error: "Uyarı bulunamadı" });
+        }
+        
+        res.json({ message: "Uyarı başarıyla kapatıldı", alert });
+      } catch (error) {
+        console.error("Dismiss alert error:", error);
+        res.status(500).json({ error: "Uyarı kapatılırken hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/alerts/run-checks",
+    requireAuth,
+    requirePermission(Permission.MANAGE_SETTINGS), // Only admins can trigger checks
+    logAccess("RUN_ALERT_CHECKS"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        await alertService.runAllChecks();
+        res.json({ message: "Uyarı kontrolleri başarıyla çalıştırıldı" });
+      } catch (error) {
+        console.error("Run alert checks error:", error);
+        res.status(500).json({ error: "Uyarı kontrolleri çalıştırılırken hata oluştu" });
+      }
+    }
+  );
+
+  app.post("/api/alerts",
+    requireAuth,
+    requirePermission(Permission.MANAGE_SETTINGS),
+    logAccess("CREATE_ALERT"),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const alertData = insertSystemAlertSchema.parse(req.body);
+        const alert = await storage.createSystemAlert(alertData);
+        res.status(201).json(alert);
+      } catch (error) {
+        console.error("Create alert error:", error);
+        res.status(400).json({ error: "Uyarı oluşturulurken hata oluştu" });
+      }
     }
   );
 

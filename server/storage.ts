@@ -1,4 +1,4 @@
-import { type Account, type InsertAccount, type Transaction, type InsertTransaction, type User, type InsertUser, type Team, type InsertTeam, type TeamMember, type InsertTeamMember, type Invite, type InsertInvite, accounts, transactions, users, teams, teamMembers, invites } from "@shared/schema";
+import { type Account, type InsertAccount, type Transaction, type InsertTransaction, type User, type InsertUser, type Team, type InsertTeam, type TeamMember, type InsertTeamMember, type Invite, type InsertInvite, type SystemAlert, type InsertSystemAlert, accounts, transactions, users, teams, teamMembers, invites, systemAlerts } from "@shared/schema";
 import { randomUUID } from "crypto";
 import type { UserRoleType } from "@shared/schema";
 import { db } from "./db";
@@ -70,6 +70,16 @@ export interface IStorage {
   getPendingInvitesByEmail(email: string): Promise<Invite[]>;
   updateInviteStatus(id: string, status: 'pending' | 'accepted' | 'declined' | 'expired', userId?: string): Promise<Invite | undefined>;
   deleteInvite(id: string): Promise<boolean>;
+  
+  // System Alert methods
+  createSystemAlert(alert: InsertSystemAlert): Promise<SystemAlert>;
+  getSystemAlerts(): Promise<SystemAlert[]>;
+  getActiveSystemAlerts(): Promise<SystemAlert[]>;
+  getSystemAlertsByType(type: string): Promise<SystemAlert[]>;
+  getSystemAlert(id: string): Promise<SystemAlert | undefined>;
+  dismissSystemAlert(id: string): Promise<SystemAlert | undefined>;
+  updateSystemAlert(id: string, updates: Partial<SystemAlert>): Promise<SystemAlert | undefined>;
+  deleteSystemAlert(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -505,6 +515,77 @@ export class MemStorage implements IStorage {
   async deleteInvite(id: string): Promise<boolean> {
     return this.invites.delete(id);
   }
+
+  // System Alert methods implementation for MemStorage
+  private systemAlerts: Map<string, SystemAlert> = new Map();
+
+  async createSystemAlert(alertData: InsertSystemAlert): Promise<SystemAlert> {
+    const alert: SystemAlert = {
+      id: randomUUID(),
+      type: alertData.type,
+      title: alertData.title,
+      description: alertData.description,
+      severity: alertData.severity || 'medium',
+      triggerDate: alertData.triggerDate || null,
+      isActive: alertData.isActive !== undefined ? alertData.isActive : true,
+      isDismissed: alertData.isDismissed !== undefined ? alertData.isDismissed : false,
+      accountId: alertData.accountId || null,
+      transactionId: alertData.transactionId || null,
+      metadata: alertData.metadata || null,
+      createdAt: new Date(),
+      dismissedAt: null,
+    };
+    this.systemAlerts.set(alert.id, alert);
+    return alert;
+  }
+
+  async getSystemAlerts(): Promise<SystemAlert[]> {
+    return Array.from(this.systemAlerts.values());
+  }
+
+  async getActiveSystemAlerts(): Promise<SystemAlert[]> {
+    return Array.from(this.systemAlerts.values()).filter(
+      alert => alert.isActive && !alert.isDismissed
+    );
+  }
+
+  async getSystemAlertsByType(type: string): Promise<SystemAlert[]> {
+    return Array.from(this.systemAlerts.values()).filter(
+      alert => alert.type === type
+    );
+  }
+
+  async getSystemAlert(id: string): Promise<SystemAlert | undefined> {
+    return this.systemAlerts.get(id);
+  }
+
+  async dismissSystemAlert(id: string): Promise<SystemAlert | undefined> {
+    const alert = this.systemAlerts.get(id);
+    if (alert) {
+      const updatedAlert = { 
+        ...alert, 
+        isDismissed: true, 
+        dismissedAt: new Date()
+      };
+      this.systemAlerts.set(id, updatedAlert);
+      return updatedAlert;
+    }
+    return undefined;
+  }
+
+  async updateSystemAlert(id: string, updates: Partial<SystemAlert>): Promise<SystemAlert | undefined> {
+    const alert = this.systemAlerts.get(id);
+    if (alert) {
+      const updatedAlert = { ...alert, ...updates };
+      this.systemAlerts.set(id, updatedAlert);
+      return updatedAlert;
+    }
+    return undefined;
+  }
+
+  async deleteSystemAlert(id: string): Promise<boolean> {
+    return this.systemAlerts.delete(id);
+  }
 }
 
 export class PostgresStorage implements IStorage {
@@ -844,6 +925,57 @@ export class PostgresStorage implements IStorage {
 
   async deleteInvite(id: string): Promise<boolean> {
     const result = await db.delete(invites).where(eq(invites.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // System Alert methods implementation for PostgresStorage
+  async createSystemAlert(alertData: InsertSystemAlert): Promise<SystemAlert> {
+    const result = await db.insert(systemAlerts).values(alertData).returning();
+    return result[0];
+  }
+
+  async getSystemAlerts(): Promise<SystemAlert[]> {
+    return await db.select().from(systemAlerts).orderBy(desc(systemAlerts.createdAt));
+  }
+
+  async getActiveSystemAlerts(): Promise<SystemAlert[]> {
+    return await db.select().from(systemAlerts)
+      .where(sql`${systemAlerts.isActive} = true AND ${systemAlerts.isDismissed} = false`)
+      .orderBy(desc(systemAlerts.createdAt));
+  }
+
+  async getSystemAlertsByType(type: string): Promise<SystemAlert[]> {
+    return await db.select().from(systemAlerts)
+      .where(eq(systemAlerts.type, type))
+      .orderBy(desc(systemAlerts.createdAt));
+  }
+
+  async getSystemAlert(id: string): Promise<SystemAlert | undefined> {
+    const result = await db.select().from(systemAlerts).where(eq(systemAlerts.id, id));
+    return result[0];
+  }
+
+  async dismissSystemAlert(id: string): Promise<SystemAlert | undefined> {
+    const result = await db.update(systemAlerts)
+      .set({ 
+        isDismissed: true, 
+        dismissedAt: new Date()
+      })
+      .where(eq(systemAlerts.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async updateSystemAlert(id: string, updates: Partial<SystemAlert>): Promise<SystemAlert | undefined> {
+    const result = await db.update(systemAlerts)
+      .set(updates)
+      .where(eq(systemAlerts.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteSystemAlert(id: string): Promise<boolean> {
+    const result = await db.delete(systemAlerts).where(eq(systemAlerts.id, id)).returning();
     return result.length > 0;
   }
 }

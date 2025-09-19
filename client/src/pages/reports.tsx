@@ -66,11 +66,45 @@ export default function Reports() {
     downloadFile('/api/export/pdf', `finbot-rapor-${timestamp}.pdf`, 'pdf');
   };
 
-  const exportGoogleSheets = () => {
-    toast({
-      title: "Yakında Gelecek",
-      description: "Google Sheets export özelliği henüz hazır değil",
-    });
+  const exportGoogleSheets = async () => {
+    try {
+      setExportLoading(prev => ({ ...prev, sheets: true }));
+      
+      const response = await fetch('/api/export/google-sheets', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Bilinmeyen hata' }));
+        throw new Error(error.error || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      toast({
+        title: "Başarılı",
+        description: `${result.recordCount} kayıt Google Sheets'e aktarıldı`,
+      });
+
+      // Open Google Sheets in a new tab
+      if (result.url) {
+        window.open(result.url, '_blank');
+      }
+
+    } catch (error) {
+      console.error('Google Sheets export error:', error);
+      toast({
+        title: "Hata",
+        description: error instanceof Error ? error.message : "Google Sheets export başarısız",
+        variant: "destructive",
+      });
+    } finally {
+      setExportLoading(prev => ({ ...prev, sheets: false }));
+    }
   };
 
   return (
@@ -159,7 +193,7 @@ export default function Reports() {
             </Card>
 
             {/* Google Sheets Export */}
-            <Card className="border-dashed opacity-75">
+            <Card className="border-dashed">
               <CardContent className="pt-6">
                 <div className="text-center space-y-3">
                   <FileSpreadsheet className="h-12 w-12 text-blue-600 mx-auto" />
@@ -169,13 +203,21 @@ export default function Reports() {
                   </div>
                   <Button 
                     onClick={exportGoogleSheets}
-                    disabled={false}
-                    variant="outline"
+                    disabled={exportLoading.sheets}
                     className="w-full"
                     data-testid="button-export-sheets"
                   >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Yakında Gelecek
+                    {exportLoading.sheets ? (
+                      <>
+                        <Download className="h-4 w-4 animate-spin mr-2" />
+                        Gönderiliyor...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Sheets'e Gönder
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -214,7 +256,7 @@ export default function Reports() {
               <p className="text-sm text-muted-foreground">Kapsamlı rapor</p>
             </div>
             <div className="space-y-2">
-              <p className="text-2xl font-bold text-muted-foreground">Soon</p>
+              <p className="text-2xl font-bold text-blue-600">Sheets</p>
               <p className="text-sm text-muted-foreground">Google Sheets</p>
             </div>
             <div className="space-y-2">
