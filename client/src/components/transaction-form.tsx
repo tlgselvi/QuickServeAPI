@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { transactionCategories } from "@shared/schema";
-import type { Account } from "@/lib/types";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { transactionCategories } from '@shared/schema';
+import type { Account } from '@/lib/types';
 
 interface TransactionFormProps {
   accounts: Account[];
@@ -13,7 +13,7 @@ interface TransactionFormProps {
   isLoading: boolean;
 }
 
-export default function TransactionForm({ accounts, onAddTransaction, isLoading }: TransactionFormProps) {
+export default function TransactionForm ({ accounts, onAddTransaction, isLoading }: TransactionFormProps) {
   const [accountId, setAccountId] = useState('');
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
   const [amount, setAmount] = useState('');
@@ -22,7 +22,7 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!accountId || !amount || !description) {
       return;
     }
@@ -32,7 +32,7 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
       type: transactionType,
       amount: parseFloat(amount).toFixed(4),
       description,
-      category: category || null
+      category: category || null,
     });
 
     // Reset form
@@ -67,7 +67,7 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
               </SelectContent>
             </Select>
           </div>
-          
+
           <div>
             <Label className="block text-sm font-medium text-foreground mb-2">İşlem Türü</Label>
             <div className="grid grid-cols-2 gap-2">
@@ -91,7 +91,7 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
               </Button>
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="transactionAmount" className="block text-sm font-medium text-foreground mb-2">
               Miktar
@@ -164,7 +164,7 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
               </Button>
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="transactionCategory" className="block text-sm font-medium text-foreground mb-2">
               Kategori
@@ -182,7 +182,7 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
               </SelectContent>
             </Select>
           </div>
-          
+
           <div>
             <Label htmlFor="transactionDescription" className="block text-sm font-medium text-foreground mb-2">
               Açıklama
@@ -196,7 +196,7 @@ export default function TransactionForm({ accounts, onAddTransaction, isLoading 
               data-testid="input-transaction-description"
             />
           </div>
-          
+
           <Button
             type="submit"
             className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"

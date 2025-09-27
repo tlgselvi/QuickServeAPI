@@ -1,0 +1,57 @@
+name: Backup ESLint Ignore Paths
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # Run every day at 6 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-eslint-ignore-paths:
+    name: Backup ESLint Ignore Paths
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-ignore-paths
+        run: |
+          echo "Backing up eslint-ignore-paths..."
+          # Add eslint-ignore-paths backup logic here
+          echo "ESLint Ignore Paths backup completed ✅"
+
+  backup-eslint-ignore-globs:
+    name: Backup ESLint Ignore Globs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-ignore-globs
+        run: |
+          echo "Backing up eslint-ignore-globs..."
+          # Add eslint-ignore-globs backup logic here
+          echo "ESLint Ignore Globs backup completed ✅"

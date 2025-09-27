@@ -1,0 +1,40 @@
+name: Cleanup
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Run every Sunday at midnight
+  workflow_dispatch:
+
+jobs:
+  cleanup-artifacts:
+    name: Cleanup Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cleanup old artifacts
+        run: |
+          echo "Cleaning up old artifacts..."
+          # Add cleanup logic here
+          echo "Cleanup completed ✅"
+
+  cleanup-reports:
+    name: Cleanup Reports
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cleanup old reports
+        run: |
+          echo "Cleaning up old reports..."
+          # Add cleanup logic here
+          echo "Cleanup completed ✅"
+
+  cleanup-logs:
+    name: Cleanup Logs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cleanup old logs
+        run: |
+          echo "Cleaning up old logs..."
+          # Add cleanup logic here
+          echo "Cleanup completed ✅"

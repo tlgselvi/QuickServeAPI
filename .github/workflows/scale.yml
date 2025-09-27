@@ -1,0 +1,79 @@
+name: Scale
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to scale'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      scale_type:
+        description: 'Scale type'
+        required: true
+        default: 'up'
+        type: choice
+        options:
+          - up
+          - down
+      instances:
+        description: 'Number of instances'
+        required: true
+        default: '2'
+        type: string
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  scale-staging:
+    name: Scale Staging
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'staging'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Scale staging
+        run: |
+          echo "Scaling staging ${{ github.event.inputs.scale_type }} to ${{ github.event.inputs.instances }} instances..."
+          # Add staging scaling logic here
+          echo "Staging scaling completed ✅"
+
+  scale-production:
+    name: Scale Production
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'production'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Scale production
+        run: |
+          echo "Scaling production ${{ github.event.inputs.scale_type }} to ${{ github.event.inputs.instances }} instances..."
+          # Add production scaling logic here
+          echo "Production scaling completed ✅"

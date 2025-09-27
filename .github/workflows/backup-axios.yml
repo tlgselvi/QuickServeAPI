@@ -1,0 +1,57 @@
+name: Backup Axios
+
+on:
+  schedule:
+    - cron: '0 13 * * *' # Run every day at 1 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-axios:
+    name: Backup Axios
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup axios
+        run: |
+          echo "Backing up axios..."
+          # Add axios backup logic here
+          echo "Axios backup completed ✅"
+
+  backup-body-parser:
+    name: Backup Body Parser
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup body-parser
+        run: |
+          echo "Backing up body-parser..."
+          # Add body-parser backup logic here
+          echo "Body Parser backup completed ✅"

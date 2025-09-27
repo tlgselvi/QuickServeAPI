@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Account } from "@/lib/types";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { Account } from '@/lib/types';
 
 interface TransferFormProps {
   accounts: Account[];
@@ -12,7 +12,7 @@ interface TransferFormProps {
   isLoading: boolean;
 }
 
-export default function TransferForm({ accounts, onTransfer, isLoading }: TransferFormProps) {
+export default function TransferForm ({ accounts, onTransfer, isLoading }: TransferFormProps) {
   const [fromAccountId, setFromAccountId] = useState('');
   const [toAccountId, setToAccountId] = useState('');
   const [amount, setAmount] = useState('');
@@ -20,7 +20,7 @@ export default function TransferForm({ accounts, onTransfer, isLoading }: Transf
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!fromAccountId || !toAccountId || !amount || fromAccountId === toAccountId) {
       return;
     }
@@ -29,7 +29,7 @@ export default function TransferForm({ accounts, onTransfer, isLoading }: Transf
       fromAccountId,
       toAccountId,
       amount: parseFloat(amount),
-      description
+      description,
     });
 
     // Reset form
@@ -63,7 +63,7 @@ export default function TransferForm({ accounts, onTransfer, isLoading }: Transf
               </SelectContent>
             </Select>
           </div>
-          
+
           <div>
             <Label htmlFor="toAccount" className="block text-sm font-medium text-foreground mb-2">
               Alıcı Hesap
@@ -83,7 +83,7 @@ export default function TransferForm({ accounts, onTransfer, isLoading }: Transf
               </SelectContent>
             </Select>
           </div>
-          
+
           <div>
             <Label htmlFor="transferAmount" className="block text-sm font-medium text-foreground mb-2">
               Miktar
@@ -156,7 +156,7 @@ export default function TransferForm({ accounts, onTransfer, isLoading }: Transf
               </Button>
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="transferDescription" className="block text-sm font-medium text-foreground mb-2">
               Açıklama
@@ -169,7 +169,7 @@ export default function TransferForm({ accounts, onTransfer, isLoading }: Transf
               data-testid="input-transfer-description"
             />
           </div>
-          
+
           <Button
             type="submit"
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90"

@@ -1,25 +1,68 @@
-import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
-import connectPgSimple from "connect-pg-simple";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { pool } from "./db";
+import express, { type Request, Response, NextFunction } from 'express';
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import { registerRoutes } from './routes';
+import { setupVite, serveStatic, log } from './vite';
+import { pool } from './db';
+import MemoryStore from 'memorystore';
+import path from 'path';
+import { requireAuth, requirePermission } from './middleware/auth';
+import { Permission } from '@shared/schema';
+import {
+  errorHandler,
+  notFoundHandler,
+  requestIdMiddleware,
+  setupGlobalErrorHandlers,
+} from './middleware/error-handler';
+import {
+  securityMiddleware,
+  sanitizeInput,
+  sqlInjectionProtection,
+  xssProtection,
+  requestSizeLimit,
+} from './middleware/security';
+import {
+  performanceMonitor,
+  queryOptimizer,
+  memoryMonitor,
+  cacheControl,
+  getPerformanceMetrics,
+} from './middleware/performance';
 
 const app = express();
 
-// Session configuration
-const PgSession = connectPgSimple(session);
+// Setup global error handlers
+setupGlobalErrorHandlers();
+
+// Request ID middleware
+app.use(requestIdMiddleware);
+
+// Security middleware
+app.use(securityMiddleware);
+
+// Input sanitization and protection
+app.use(sanitizeInput);
+app.use(sqlInjectionProtection);
+app.use(xssProtection);
+app.use(requestSizeLimit('10mb'));
+
+// Performance monitoring
+app.use(performanceMonitor);
+app.use(queryOptimizer);
+app.use(memoryMonitor);
+app.use(cacheControl(300)); // 5 minutes cache
+
+// Session configuration - Use memory store for local development
+const MemorySessionStore = MemoryStore(session);
 app.use(session({
-  store: new PgSession({
-    pool: pool, // Use raw Neon pool instead of Drizzle client
-    tableName: 'session', // Table name for sessions
-    createTableIfMissing: true, // Automatically create table
+  store: new MemorySessionStore({
+    checkPeriod: 86400000, // prune expired entries every 24h
   }),
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS in production
+    secure: false, // HTTP for local development
     httpOnly: true, // Prevent XSS
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'lax', // CSRF protection
@@ -31,8 +74,8 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  const { path } = req;
+  let capturedJsonResponse: Record<string, any> | undefined;
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -40,16 +83,16 @@ app.use((req, res, next) => {
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
 
-  res.on("finish", () => {
+  res.on('finish', () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
+    if (path.startsWith('/api')) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
       if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+        logLine = `${logLine.slice(0, 79)  }…`;
       }
 
       log(logLine);
@@ -62,18 +105,21 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  // Performance metrics endpoint (admin only)
+  app.get('/api/admin/performance',
+    requireAuth,
+    requirePermission(Permission.MANAGE_SETTINGS),
+    getPerformanceMetrics,
+  );
 
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Error handling middleware (must be after all routes)
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  if (app.get('env') === 'development') {
     await setupVite(app, server);
   } else {
     serveStatic(app);
@@ -84,11 +130,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  server.listen(port, () => {
     log(`serving on port ${port}`);
   });
 })();

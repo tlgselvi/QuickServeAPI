@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { UserRoleType, hasPermission, PermissionType } from '@shared/schema';
+import type { UserRoleType, PermissionType } from '@shared/schema';
+import { hasPermission } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
 
 interface User {
@@ -23,7 +24,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider ({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
 
   // Query current user
@@ -51,19 +52,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Permission check helper
   const checkPermission = (permission: PermissionType): boolean => {
-    if (!user) return false;
+    if (!user) {
+      return false;
+    }
     return hasPermission(user.role, permission);
   };
 
   // Role check helper
   const checkRole = (role: UserRoleType): boolean => {
-    if (!user) return false;
+    if (!user) {
+      return false;
+    }
     return user.role === role;
   };
 
   // Route access control based on user role
   const canAccessRoute = (route: string): boolean => {
-    if (!user) return false;
+    if (!user) {
+      return false;
+    }
 
     // Route-role mapping
     const routePermissions: Record<string, UserRoleType[]> = {
@@ -80,7 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const allowedRoles = routePermissions[route];
-    if (!allowedRoles) return true; // Default allow if route not specified
+    if (!allowedRoles) {
+      return true;
+    } // Default allow if route not specified
 
     return allowedRoles.includes(user.role);
   };
@@ -102,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
+export function useAuth () {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -111,7 +120,7 @@ export function useAuth() {
 }
 
 // Auth guard component for protecting routes
-export function AuthGuard({ children }: { children: React.ReactNode }) {
+export function AuthGuard ({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -137,11 +146,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 // Role guard component for role-based access
-export function RoleGuard({ 
-  allowedRoles, 
+export function RoleGuard ({
+  allowedRoles,
   children,
-  fallback 
-}: { 
+  fallback,
+}: {
   allowedRoles: UserRoleType[];
   children: React.ReactNode;
   fallback?: React.ReactNode;
@@ -152,7 +161,7 @@ export function RoleGuard({
     if (fallback) {
       return <>{fallback}</>;
     }
-    
+
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -171,10 +180,10 @@ export function RoleGuard({
 }
 
 // Route guard component
-export function RouteGuard({ 
-  route, 
-  children 
-}: { 
+export function RouteGuard ({
+  route,
+  children,
+}: {
   route: string;
   children: React.ReactNode;
 }) {

@@ -1,16 +1,16 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CreditCard, User, MoreHorizontal } from "lucide-react";
-import type { Account } from "@/lib/types";
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { CreditCard, User, MoreHorizontal } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils/formatCurrency';
+import type { Account } from '@/lib/types';
 
 interface AccountCardProps {
   account: Account;
-  formatCurrency: (amount: string) => string;
 }
 
-export default function AccountCard({ account, formatCurrency }: AccountCardProps) {
+export default function AccountCard ({ account }: AccountCardProps) {
   const isCompany = account.type === 'company';
-  
+
   return (
     <Card className="shadow-sm" data-testid={`card-account-${account.id}`}>
       <CardContent className="p-6">
@@ -45,7 +45,7 @@ export default function AccountCard({ account, formatCurrency }: AccountCardProp
             {account.accountName}
           </p>
           <p className="text-2xl font-bold text-foreground" data-testid={`text-balance-${account.id}`}>
-            {formatCurrency(account.balance)}
+            {formatCurrency(parseFloat(account.balance))}
           </p>
         </div>
         <div className="flex justify-between items-center text-xs text-muted-foreground">

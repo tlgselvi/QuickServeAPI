@@ -1,21 +1,22 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { Card, CardContent } from '@/components/ui/card';
+import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+
+import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 
 interface KPIBarProps {
   totalCash: number;
   totalDebt: number;
   totalBalance: number;
-  formatCurrency: (amount: string) => string;
   isLoading?: boolean;
 }
 
-export default function KPIBar({ 
-  totalCash, 
-  totalDebt, 
-  totalBalance, 
-  formatCurrency,
-  isLoading 
+export default function KPIBar ({
+  totalCash,
+  totalDebt,
+  totalBalance,
+  isLoading,
 }: KPIBarProps) {
+  const formatCurrency = useFormatCurrency();
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -34,32 +35,32 @@ export default function KPIBar({
 
   const kpiItems = [
     {
-      title: "Toplam Nakit",
-      value: formatCurrency(totalCash.toString()),
-      description: "Pozitif bakiyeler",
+      title: 'Toplam Nakit',
+      value: formatCurrency(totalCash),
+      description: 'Pozitif bakiyeler',
       icon: TrendingUp,
-      color: "text-green-600 dark:text-green-400",
-      bgColor: "bg-green-50 dark:bg-green-950",
-      testId: "kpi-total-cash"
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-50 dark:bg-green-950',
+      testId: 'kpi-total-cash',
     },
     {
-      title: "Toplam Borç", 
-      value: formatCurrency(totalDebt.toString()),
-      description: "Negatif bakiyeler",
+      title: 'Toplam Borç',
+      value: formatCurrency(totalDebt),
+      description: 'Negatif bakiyeler',
       icon: TrendingDown,
-      color: "text-red-600 dark:text-red-400",
-      bgColor: "bg-red-50 dark:bg-red-950",
-      testId: "kpi-total-debt"
+      color: 'text-red-600 dark:text-red-400',
+      bgColor: 'bg-red-50 dark:bg-red-950',
+      testId: 'kpi-total-debt',
     },
     {
-      title: "Net Bakiye",
-      value: formatCurrency(totalBalance.toString()),
-      description: "Genel durum",
+      title: 'Net Bakiye',
+      value: formatCurrency(totalBalance),
+      description: 'Genel durum',
       icon: DollarSign,
-      color: totalBalance >= 0 ? "text-blue-600 dark:text-blue-400" : "text-orange-600 dark:text-orange-400",
-      bgColor: totalBalance >= 0 ? "bg-blue-50 dark:bg-blue-950" : "bg-orange-50 dark:bg-orange-950",
-      testId: "kpi-net-balance"
-    }
+      color: totalBalance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400',
+      bgColor: totalBalance >= 0 ? 'bg-blue-50 dark:bg-blue-950' : 'bg-orange-50 dark:bg-orange-950',
+      testId: 'kpi-net-balance',
+    },
   ];
 
   return (
@@ -74,8 +75,8 @@ export default function KPIBar({
                   <p className="text-sm font-medium text-muted-foreground" data-testid={`${item.testId}-title`}>
                     {item.title}
                   </p>
-                  <p 
-                    className="text-2xl font-bold tracking-tight" 
+                  <p
+                    className="text-2xl font-bold tracking-tight"
                     data-testid={`${item.testId}-value`}
                   >
                     {item.value}

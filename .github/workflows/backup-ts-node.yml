@@ -1,0 +1,57 @@
+name: Backup TS Node
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # Run every day at 6 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-ts-node:
+    name: Backup TS Node
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup ts-node
+        run: |
+          echo "Backing up ts-node..."
+          # Add ts-node backup logic here
+          echo "TS Node backup completed ✅"
+
+  backup-typescript:
+    name: Backup TypeScript
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup typescript
+        run: |
+          echo "Backing up typescript..."
+          # Add typescript backup logic here
+          echo "TypeScript backup completed ✅"

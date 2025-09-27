@@ -1,22 +1,21 @@
-import { storage } from "./storage";
-import type { InsertSystemAlert, Transaction } from "@shared/schema";
+import { storage } from './storage';
+import type { InsertSystemAlert, Transaction } from '@shared/schema';
 
 export class AlertService {
-  
   /**
    * Check for low balance alerts
    */
-  async checkLowBalanceAlerts(threshold: number = 100): Promise<void> {
+  async checkLowBalanceAlerts (threshold: number = 100): Promise<void> {
     try {
       const accounts = await storage.getAccounts();
       const existingAlerts = await storage.getSystemAlertsByType('low_balance');
-      
+
       for (const account of accounts) {
         const balance = parseFloat(account.balance);
         const hasExistingAlert = existingAlerts.some(
-          alert => alert.accountId === account.id && alert.isActive && !alert.isDismissed
+          alert => alert.accountId === account.id && alert.isActive && !alert.isDismissed,
         );
-        
+
         // Create alert if balance is low and no existing alert
         if (balance < threshold && !hasExistingAlert) {
           const alertData: InsertSystemAlert = {
@@ -27,17 +26,17 @@ export class AlertService {
             isActive: true,
             isDismissed: false,
             accountId: account.id,
-            metadata: JSON.stringify({ threshold, currentBalance: balance })
+            metadata: JSON.stringify({ threshold, currentBalance: balance }),
           };
-          
+
           await storage.createSystemAlert(alertData);
           console.log(`Low balance alert created for account ${account.accountName}`);
         }
-        
+
         // Dismiss alerts if balance is now sufficient
         if (balance >= threshold && hasExistingAlert) {
           const activeAlert = existingAlerts.find(
-            alert => alert.accountId === account.id && alert.isActive && !alert.isDismissed
+            alert => alert.accountId === account.id && alert.isActive && !alert.isDismissed,
           );
           if (activeAlert) {
             await storage.dismissSystemAlert(activeAlert.id);
@@ -53,14 +52,14 @@ export class AlertService {
   /**
    * Check for recurring payment reminders based on transaction patterns
    */
-  async checkRecurringPaymentReminders(): Promise<void> {
+  async checkRecurringPaymentReminders (): Promise<void> {
     try {
       const transactions = await storage.getTransactions();
       const existingAlerts = await storage.getSystemAlertsByType('recurring_payment');
-      
+
       // Group recurring transactions by description and amount
       const recurringPatterns = new Map<string, Transaction[]>();
-      
+
       transactions.filter(t => t.type === 'expense').forEach(transaction => {
         const key = `${transaction.description.toLowerCase()}-${transaction.amount}`;
         if (!recurringPatterns.has(key)) {
@@ -68,36 +67,38 @@ export class AlertService {
         }
         recurringPatterns.get(key)!.push(transaction);
       });
-      
+
       // Find patterns that occur monthly
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      
+
       for (const [key, transactionList] of Array.from(recurringPatterns.entries())) {
-        if (transactionList.length < 2) continue; // Need at least 2 transactions for pattern
-        
+        if (transactionList.length < 2) {
+          continue;
+        } // Need at least 2 transactions for pattern
+
         // Sort by date
         transactionList.sort((a: Transaction, b: Transaction) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        
+
         // Check if it's a monthly pattern
         const recentTransactions = transactionList.filter(
-          (t: Transaction) => new Date(t.date) >= thirtyDaysAgo
+          (t: Transaction) => new Date(t.date) >= thirtyDaysAgo,
         );
-        
+
         if (recentTransactions.length === 0) {
           // No recent transactions for this pattern, might be due
           const lastTransaction = transactionList[transactionList.length - 1];
           const daysSinceLastPayment = Math.floor(
-            (now.getTime() - new Date(lastTransaction.date).getTime()) / (24 * 60 * 60 * 1000)
+            (now.getTime() - new Date(lastTransaction.date).getTime()) / (24 * 60 * 60 * 1000),
           );
-          
+
           // If it's been 25-35 days, create reminder
           if (daysSinceLastPayment >= 25 && daysSinceLastPayment <= 35) {
             const hasExistingAlert = existingAlerts.some(
-              alert => alert.description.includes(lastTransaction.description) && 
-                      alert.isActive && !alert.isDismissed
+              alert => alert.description.includes(lastTransaction.description) &&
+                      alert.isActive && !alert.isDismissed,
             );
-            
+
             if (!hasExistingAlert) {
               const alertData: InsertSystemAlert = {
                 type: 'recurring_payment',
@@ -108,13 +109,13 @@ export class AlertService {
                 isActive: true,
                 isDismissed: false,
                 transactionId: lastTransaction.id,
-                metadata: JSON.stringify({ 
-                  pattern: key, 
+                metadata: JSON.stringify({
+                  pattern: key,
                   daysSinceLastPayment,
-                  amount: lastTransaction.amount
-                })
+                  amount: lastTransaction.amount,
+                }),
               };
-              
+
               await storage.createSystemAlert(alertData);
               console.log(`Recurring payment reminder created for: ${lastTransaction.description}`);
             }
@@ -129,21 +130,21 @@ export class AlertService {
   /**
    * Check for budget exceeded alerts based on category spending
    */
-  async checkBudgetAlerts(): Promise<void> {
+  async checkBudgetAlerts (): Promise<void> {
     try {
       const transactions = await storage.getTransactions();
       const existingAlerts = await storage.getSystemAlertsByType('budget_exceeded');
-      
+
       // Monthly spending by category (simple budget check)
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
+
       const monthlySpending = new Map<string, { amount: number; count: number }>();
-      
-      transactions.filter(t => 
-        t.type === 'expense' && 
+
+      transactions.filter(t =>
+        t.type === 'expense' &&
         new Date(t.date) >= startOfMonth &&
-        t.category
+        t.category,
       ).forEach(transaction => {
         const category = transaction.category!;
         if (!monthlySpending.has(category)) {
@@ -156,25 +157,27 @@ export class AlertService {
 
       // Simple budget thresholds (could be configurable)
       const budgetLimits = {
-        'food': 2000,
-        'transportation': 800,
-        'shopping': 1500,
-        'entertainment': 1000,
-        'utilities': 1200
+        food: 2000,
+        transportation: 800,
+        shopping: 1500,
+        entertainment: 1000,
+        utilities: 1200,
       };
 
       for (const [category, spending] of Array.from(monthlySpending.entries())) {
         const limit = budgetLimits[category as keyof typeof budgetLimits];
-        if (!limit) continue;
-        
+        if (!limit) {
+          continue;
+        }
+
         const percentage = (spending.amount / limit) * 100;
-        
+
         if (percentage >= 90) {
           const hasExistingAlert = existingAlerts.some(
-            alert => alert.metadata?.includes(category) && 
-                    alert.isActive && !alert.isDismissed
+            alert => alert.metadata?.includes(category) &&
+                    alert.isActive && !alert.isDismissed,
           );
-          
+
           if (!hasExistingAlert) {
             const alertData: InsertSystemAlert = {
               type: 'budget_exceeded',
@@ -183,15 +186,15 @@ export class AlertService {
               severity: percentage >= 100 ? 'high' : 'medium',
               isActive: true,
               isDismissed: false,
-              metadata: JSON.stringify({ 
-                category, 
-                spent: spending.amount, 
-                limit, 
+              metadata: JSON.stringify({
+                category,
+                spent: spending.amount,
+                limit,
                 percentage: percentage.toFixed(2),
-                transactionCount: spending.count
-              })
+                transactionCount: spending.count,
+              }),
             };
-            
+
             await storage.createSystemAlert(alertData);
             console.log(`Budget alert created for category: ${category}`);
           }
@@ -205,39 +208,39 @@ export class AlertService {
   /**
    * Generate end-of-month financial summary alert
    */
-  async createMonthlyFinancialSummary(): Promise<void> {
+  async createMonthlyFinancialSummary (): Promise<void> {
     try {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      
+
       // Check if we're in the last 3 days of the month
       const daysUntilEndOfMonth = Math.ceil((endOfMonth.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-      
+
       if (daysUntilEndOfMonth <= 3) {
         const existingAlerts = await storage.getSystemAlertsByType('monthly_summary');
         const hasThisMonthSummary = existingAlerts.some(
           alert => new Date(alert.createdAt).getMonth() === now.getMonth() &&
                    new Date(alert.createdAt).getFullYear() === now.getFullYear() &&
-                   alert.isActive
+                   alert.isActive,
         );
-        
+
         if (!hasThisMonthSummary) {
           const transactions = await storage.getTransactions();
           const monthlyTransactions = transactions.filter(
-            t => new Date(t.date) >= startOfMonth
+            t => new Date(t.date) >= startOfMonth,
           );
-          
+
           const totalIncome = monthlyTransactions
             .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-          
+
           const totalExpenses = monthlyTransactions
             .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-          
+
           const netAmount = totalIncome - totalExpenses;
-          
+
           const alertData: InsertSystemAlert = {
             type: 'monthly_summary',
             title: `${now.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })} Ayı Finansal Özeti`,
@@ -245,16 +248,16 @@ export class AlertService {
             severity: netAmount < 0 ? 'medium' : 'low',
             isActive: true,
             isDismissed: false,
-            metadata: JSON.stringify({ 
+            metadata: JSON.stringify({
               income: totalIncome,
               expenses: totalExpenses,
               net: netAmount,
               transactionCount: monthlyTransactions.length,
               month: now.getMonth(),
-              year: now.getFullYear()
-            })
+              year: now.getFullYear(),
+            }),
           };
-          
+
           await storage.createSystemAlert(alertData);
           console.log('Monthly financial summary alert created');
         }
@@ -267,16 +270,16 @@ export class AlertService {
   /**
    * Run all alert checks
    */
-  async runAllChecks(): Promise<void> {
+  async runAllChecks (): Promise<void> {
     console.log('Running system alert checks...');
-    
+
     await Promise.all([
       this.checkLowBalanceAlerts(),
       this.checkRecurringPaymentReminders(),
       this.checkBudgetAlerts(),
-      this.createMonthlyFinancialSummary()
+      this.createMonthlyFinancialSummary(),
     ]);
-    
+
     console.log('System alert checks completed');
   }
 }

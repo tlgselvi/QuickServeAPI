@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: finbot-v3
+    env: node
+    region: frankfurt
+    plan: free
+    rootDir: .
+    buildCommand: npm ci && npm run build && npx drizzle-kit push
+    startCommand: node dist/index.js
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+

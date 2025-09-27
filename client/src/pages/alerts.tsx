@@ -1,48 +1,48 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { AlertTriangle, Info, CheckCircle, Bell, Trash2, Calendar, User, Settings, Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { SystemAlert } from "@shared/schema";
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { AlertTriangle, Info, CheckCircle, Bell, Trash2, Calendar, User, Settings, Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import type { SystemAlert } from '@shared/schema';
 
 const severityConfig = {
   low: {
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
     icon: Info,
-    bgColor: "border-blue-200 dark:border-blue-800",
-    name: "Düşük"
+    bgColor: 'border-blue-200 dark:border-blue-800',
+    name: 'Düşük',
   },
   medium: {
-    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400", 
+    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
     icon: AlertTriangle,
-    bgColor: "border-yellow-200 dark:border-yellow-800",
-    name: "Orta"
+    bgColor: 'border-yellow-200 dark:border-yellow-800',
+    name: 'Orta',
   },
   high: {
-    color: "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
+    color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
     icon: AlertTriangle,
-    bgColor: "border-red-200 dark:border-red-800",
-    name: "Yüksek"
-  }
+    bgColor: 'border-red-200 dark:border-red-800',
+    name: 'Yüksek',
+  },
 };
 
 const alertTypeLabels = {
-  low_balance: "Düşük Bakiye",
-  recurring_payment: "Tekrarlanan Ödeme",
-  budget_exceeded: "Bütçe Aşımı", 
-  monthly_summary: "Aylık Özet"
+  low_balance: 'Düşük Bakiye',
+  recurring_payment: 'Tekrarlanan Ödeme',
+  budget_exceeded: 'Bütçe Aşımı',
+  monthly_summary: 'Aylık Özet',
 } as const;
 
-export default function AlertsPage() {
+export default function AlertsPage () {
   const [showDismissed, setShowDismissed] = useState(false);
-  const [filterType, setFilterType] = useState<string>("all");
-  const [filterSeverity, setFilterSeverity] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const { toast } = useToast();
 
   const { data: alerts = [], isLoading } = useQuery<SystemAlert[]>({
@@ -58,17 +58,17 @@ export default function AlertsPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/alerts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/alerts/all'] });
       toast({
-        title: "Uyarı kapatıldı",
-        description: "Uyarı başarıyla kapatıldı",
+        title: 'Uyarı kapatıldı',
+        description: 'Uyarı başarıyla kapatıldı',
       });
     },
     onError: () => {
       toast({
-        title: "Hata",
-        description: "Uyarı kapatılırken bir hata oluştu",
-        variant: "destructive",
+        title: 'Hata',
+        description: 'Uyarı kapatılırken bir hata oluştu',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   const runChecksMutation = useMutation({
@@ -80,24 +80,24 @@ export default function AlertsPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/alerts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/alerts/all'] });
       toast({
-        title: "Kontroller tamamlandı",
-        description: "Sistem uyarı kontrolleri başarıyla çalıştırıldı",
+        title: 'Kontroller tamamlandı',
+        description: 'Sistem uyarı kontrolleri başarıyla çalıştırıldı',
       });
     },
     onError: () => {
       toast({
-        title: "Hata", 
-        description: "Uyarı kontrolleri çalıştırılırken bir hata oluştu",
-        variant: "destructive",
+        title: 'Hata',
+        description: 'Uyarı kontrolleri çalıştırılırken bir hata oluştu',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   const filteredAlerts = (alerts as SystemAlert[]).filter(alert => {
-    const typeMatch = filterType === "all" || alert.type === filterType;
-    const severityMatch = filterSeverity === "all" || alert.severity === filterSeverity;
+    const typeMatch = filterType === 'all' || alert.type === filterType;
+    const severityMatch = filterSeverity === 'all' || alert.severity === filterSeverity;
     const dismissedMatch = showDismissed ? true : !alert.isDismissed;
-    
+
     return typeMatch && severityMatch && dismissedMatch;
   });
 
@@ -107,16 +107,18 @@ export default function AlertsPage() {
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString('tr-TR', {
       day: '2-digit',
-      month: '2-digit', 
+      month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   const getAlertMetadata = (alert: SystemAlert) => {
-    if (!alert.metadata) return null;
-    
+    if (!alert.metadata) {
+      return null;
+    }
+
     try {
       return JSON.parse(alert.metadata);
     } catch {
@@ -154,13 +156,13 @@ export default function AlertsPage() {
             Finansal durum uyarılarını yönetin ve takip edin
           </p>
         </div>
-        <Button 
+        <Button
           onClick={handleRunChecks}
           disabled={runChecksMutation.isPending}
           data-testid="button-run-checks"
         >
           <Play className="w-4 h-4 mr-2" />
-          {runChecksMutation.isPending ? "Kontrol Ediliyor..." : "Kontrolleri Çalıştır"}
+          {runChecksMutation.isPending ? 'Kontrol Ediliyor...' : 'Kontrolleri Çalıştır'}
         </Button>
       </div>
 
@@ -178,7 +180,7 @@ export default function AlertsPage() {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card data-testid="card-dismissed-alerts">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Kapatılan Uyarılar</CardTitle>
@@ -191,7 +193,7 @@ export default function AlertsPage() {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card data-testid="card-total-alerts">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Toplam Uyarılar</CardTitle>
@@ -222,7 +224,7 @@ export default function AlertsPage() {
               />
               <Label htmlFor="show-dismissed">Kapatılan uyarıları göster</Label>
             </div>
-            
+
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-48" data-testid="select-filter-type">
                 <SelectValue placeholder="Uyarı türü" />
@@ -234,7 +236,7 @@ export default function AlertsPage() {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Select value={filterSeverity} onValueChange={setFilterSeverity}>
               <SelectTrigger className="w-48" data-testid="select-filter-severity">
                 <SelectValue placeholder="Önem derecesi" />
@@ -258,9 +260,9 @@ export default function AlertsPage() {
               <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
               <h3 className="text-lg font-semibold mb-2">Hiç uyarı yok</h3>
               <p className="text-muted-foreground">
-                {showDismissed 
-                  ? "Seçili filtrelere uygun uyarı bulunamadı"
-                  : "Aktif uyarınız bulunmuyor"
+                {showDismissed
+                  ? 'Seçili filtrelere uygun uyarı bulunamadı'
+                  : 'Aktif uyarınız bulunmuyor'
                 }
               </p>
             </CardContent>
@@ -272,7 +274,7 @@ export default function AlertsPage() {
             const metadata = getAlertMetadata(alert);
 
             return (
-              <Card 
+              <Card
                 key={alert.id}
                 className={`${config.bgColor} ${alert.isDismissed ? 'opacity-60' : ''} transition-all duration-200 hover:shadow-md`}
                 data-testid={`card-alert-${alert.id}`}
@@ -286,21 +288,21 @@ export default function AlertsPage() {
                           {alert.title}
                         </CardTitle>
                         <div className="flex items-center gap-3 mt-2">
-                          <Badge 
-                            variant="secondary" 
+                          <Badge
+                            variant="secondary"
                             className={`${config.color}`}
                             data-testid={`badge-alert-severity-${alert.id}`}
                           >
                             {config.name}
                           </Badge>
-                          <Badge 
+                          <Badge
                             variant="outline"
                             data-testid={`badge-alert-type-${alert.id}`}
                           >
                             {alertTypeLabels[alert.type as keyof typeof alertTypeLabels] || alert.type}
                           </Badge>
                           {alert.isDismissed && (
-                            <Badge 
+                            <Badge
                               variant="secondary"
                               className="bg-gray-100 text-gray-600"
                               data-testid={`badge-alert-dismissed-${alert.id}`}
@@ -342,7 +344,7 @@ export default function AlertsPage() {
                   <CardDescription className="text-base mb-3" data-testid={`text-alert-description-${alert.id}`}>
                     {alert.description}
                   </CardDescription>
-                  
+
                   {metadata && (
                     <div className="bg-muted/50 rounded-lg p-3 text-sm" data-testid={`text-alert-metadata-${alert.id}`}>
                       <h4 className="font-medium mb-2">Detaylar:</h4>

@@ -1,19 +1,19 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { registerSchema, type RegisterRequest } from "@shared/schema";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, UserPlus, LogIn } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { registerSchema, type RegisterRequest } from '@shared/schema';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-export default function Register() {
+export default function Register () {
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -22,34 +22,34 @@ export default function Register() {
   const form = useForm<RegisterRequest>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
     },
   });
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterRequest) => {
-      console.log("📝 Attempting registration for:", data.email);
-      const response = await apiRequest("POST", "/api/auth/register", data);
+      console.log('📝 Attempting registration for:', data.email);
+      const response = await apiRequest('POST', '/api/auth/register', data);
       return response;
     },
     onSuccess: (data) => {
-      console.log("✅ Registration successful:", data);
+      console.log('✅ Registration successful:', data);
       toast({
-        title: "Kayıt Başarılı",
-        description: "Hesabınız oluşturuldu! Giriş sayfasına yönlendiriliyorsunuz...",
+        title: 'Kayıt Başarılı',
+        description: 'Hesabınız oluşturuldu! Giriş sayfasına yönlendiriliyorsunuz...',
       });
       // Redirect to login after successful registration
-      setTimeout(() => setLocation("/login"), 1500);
+      setTimeout(() => setLocation('/login'), 1500);
     },
     onError: (error: any) => {
-      console.error("❌ Registration error:", error);
+      console.error('❌ Registration error:', error);
       toast({
-        variant: "destructive",
-        title: "Kayıt Hatası",
-        description: error.message || "Kayıt sırasında bir hata oluştu",
+        variant: 'destructive',
+        title: 'Kayıt Hatası',
+        description: error.message || 'Kayıt sırasında bir hata oluştu',
       });
     },
   });
@@ -124,7 +124,7 @@ export default function Register() {
                     <FormControl>
                       <div className="relative">
                         <Input
-                          type={showPassword ? "text" : "password"}
+                          type={showPassword ? 'text' : 'password'}
                           placeholder="En az 6 karakter"
                           autoComplete="new-password"
                           data-testid="input-password"
@@ -160,7 +160,7 @@ export default function Register() {
                     <FormControl>
                       <div className="relative">
                         <Input
-                          type={showConfirmPassword ? "text" : "password"}
+                          type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="Şifrenizi tekrar girin"
                           autoComplete="new-password"
                           data-testid="input-confirm-password"
@@ -190,7 +190,7 @@ export default function Register() {
               {registerMutation.error && (
                 <Alert variant="destructive" data-testid="alert-register-error">
                   <AlertDescription>
-                    {(registerMutation.error as any)?.message || "Kayıt sırasında bir hata oluştu"}
+                    {(registerMutation.error as any)?.message || 'Kayıt sırasında bir hata oluştu'}
                   </AlertDescription>
                 </Alert>
               )}
@@ -218,11 +218,11 @@ export default function Register() {
 
           <div className="text-center">
             <div className="text-sm text-muted-foreground">
-              Zaten hesabınız var mı?{" "}
+              Zaten hesabınız var mı?{' '}
               <Button
                 variant="link"
                 className="p-0 h-auto font-medium"
-                onClick={() => setLocation("/login")}
+                onClick={() => setLocation('/login')}
                 data-testid="link-login"
               >
                 <LogIn className="h-4 w-4 mr-1" />

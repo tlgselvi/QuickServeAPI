@@ -1,16 +1,16 @@
-import { ArrowLeft, ArrowRight, ArrowLeftRight, Tag } from "lucide-react";
-import { getCategoryLabel } from "@shared/schema";
-import type { Transaction, Account } from "@/lib/types";
+import { ArrowLeft, ArrowRight, ArrowLeftRight, Tag } from 'lucide-react';
+import { getCategoryLabel } from '@shared/schema';
+import { formatCurrency } from '@/lib/utils/formatCurrency';
+import type { Transaction, Account } from '@/lib/types';
 
 interface TransactionItemProps {
   transaction: Transaction;
   accounts: Account[];
-  formatCurrency: (amount: string) => string;
 }
 
-export default function TransactionItem({ transaction, accounts, formatCurrency }: TransactionItemProps) {
+export default function TransactionItem ({ transaction, accounts }: TransactionItemProps) {
   const account = accounts.find(a => a.id === transaction.accountId);
-  
+
   const getTransactionIcon = () => {
     switch (transaction.type) {
       case 'income':
@@ -55,32 +55,40 @@ export default function TransactionItem({ transaction, accounts, formatCurrency 
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - new Date(date).getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return 'Az önce';
-    if (diffInHours < 24) return `${diffInHours} saat önce`;
-    
+
+    if (diffInHours < 1) {
+      return 'Az önce';
+    }
+    if (diffInHours < 24) {
+      return `${diffInHours} saat önce`;
+    }
+
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays === 1) return '1 gün önce';
-    if (diffInDays < 7) return `${diffInDays} gün önce`;
-    
+    if (diffInDays === 1) {
+      return '1 gün önce';
+    }
+    if (diffInDays < 7) {
+      return `${diffInDays} gün önce`;
+    }
+
     return new Date(date).toLocaleDateString('tr-TR');
   };
 
   const getAmountDisplay = () => {
     const amount = parseFloat(transaction.amount);
     const sign = transaction.type === 'income' || transaction.type === 'transfer_in' ? '+' : '-';
-    return `${sign}${formatCurrency(Math.abs(amount).toString())}`;
+    return `${sign}${formatCurrency(Math.abs(amount))}`;
   };
 
   return (
-    <div 
+    <div
       className="flex items-center justify-between py-3 border-b border-border last:border-b-0"
       data-testid={`transaction-item-${transaction.id}`}
     >
       <div className="flex items-center">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-4 ${
-          transaction.type === 'income' ? 'bg-accent/10' :
-          transaction.type === 'expense' ? 'bg-destructive/10' : 'bg-primary/10'
+          transaction.type === 'income' ? 'bg-accent/10'
+            : transaction.type === 'expense' ? 'bg-destructive/10' : 'bg-primary/10'
         }`}>
           {getTransactionIcon()}
         </div>

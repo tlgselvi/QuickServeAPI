@@ -1,19 +1,19 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { loginSchema, type LoginRequest } from "@shared/schema";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { loginSchema, type LoginRequest } from '@shared/schema';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-export default function Login() {
+export default function Login () {
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
@@ -21,37 +21,37 @@ export default function Login() {
   const form = useForm<LoginRequest>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
   });
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginRequest) => {
-      console.log("🔐 Attempting login with:", data.email);
-      const response = await apiRequest("POST", "/api/auth/login", data);
+      console.log('🔐 Attempting login with:', data.email);
+      const response = await apiRequest('POST', '/api/auth/login', data);
       return response;
     },
     onSuccess: (data) => {
-      console.log("✅ Login successful:", data);
-      
+      console.log('✅ Login successful:', data);
+
       // Invalidate auth queries to refresh user state
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      
+
       toast({
-        title: "Giriş Başarılı",
+        title: 'Giriş Başarılı',
         description: "Hoş geldiniz! Dashboard'a yönlendiriliyorsunuz...",
       });
-      
+
       // Redirect to dashboard after successful login
-      setTimeout(() => setLocation("/"), 1000);
+      setTimeout(() => setLocation('/'), 1000);
     },
     onError: (error: any) => {
-      console.error("❌ Login error:", error);
+      console.error('❌ Login error:', error);
       toast({
-        variant: "destructive",
-        title: "Giriş Hatası",
-        description: error.message || "Giriş sırasında bir hata oluştu",
+        variant: 'destructive',
+        title: 'Giriş Hatası',
+        description: error.message || 'Giriş sırasında bir hata oluştu',
       });
     },
   });
@@ -106,7 +106,7 @@ export default function Login() {
                     <FormControl>
                       <div className="relative">
                         <Input
-                          type={showPassword ? "text" : "password"}
+                          type={showPassword ? 'text' : 'password'}
                           placeholder="Şifrenizi girin"
                           autoComplete="current-password"
                           data-testid="input-password"
@@ -136,7 +136,7 @@ export default function Login() {
               {loginMutation.error && (
                 <Alert variant="destructive" data-testid="alert-login-error">
                   <AlertDescription>
-                    {(loginMutation.error as any)?.message || "Giriş sırasında bir hata oluştu"}
+                    {(loginMutation.error as any)?.message || 'Giriş sırasında bir hata oluştu'}
                   </AlertDescription>
                 </Alert>
               )}
@@ -166,18 +166,18 @@ export default function Login() {
             <Button
               variant="link"
               className="text-sm"
-              onClick={() => setLocation("/forgot-password")}
+              onClick={() => setLocation('/forgot-password')}
               data-testid="link-forgot-password"
             >
               Şifremi unuttum
             </Button>
-            
+
             <div className="text-sm text-muted-foreground">
-              Hesabınız yok mu?{" "}
+              Hesabınız yok mu?{' '}
               <Button
                 variant="link"
                 className="p-0 h-auto font-medium"
-                onClick={() => setLocation("/register")}
+                onClick={() => setLocation('/register')}
                 data-testid="link-register"
               >
                 <UserPlus className="h-4 w-4 mr-1" />

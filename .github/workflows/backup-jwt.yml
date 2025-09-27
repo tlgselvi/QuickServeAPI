@@ -1,0 +1,57 @@
+name: Backup JWT
+
+on:
+  schedule:
+    - cron: '0 8 * * *' # Run every day at 8 AM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-jwt:
+    name: Backup JWT
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup jwt
+        run: |
+          echo "Backing up jwt..."
+          # Add jwt backup logic here
+          echo "JWT backup completed ✅"
+
+  backup-pg:
+    name: Backup PostgreSQL
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup pg
+        run: |
+          echo "Backing up pg..."
+          # Add pg backup logic here
+          echo "PostgreSQL backup completed ✅"

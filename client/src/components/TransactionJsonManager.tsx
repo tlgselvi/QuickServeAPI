@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Download, Upload, FileCheck, Calendar, BarChart3, AlertCircle, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Download, Upload, FileCheck, Calendar, BarChart3, AlertCircle, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 
 interface JsonStatus {
   exists: boolean;
@@ -18,11 +18,11 @@ interface JsonStatus {
   lastExport?: string;
 }
 
-export function TransactionJsonManager() {
+export function TransactionJsonManager () {
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [dateRange, setDateRange] = useState({
     startDate: '',
-    endDate: ''
+    endDate: '',
   });
   const { toast } = useToast();
 
@@ -40,24 +40,24 @@ export function TransactionJsonManager() {
     onSuccess: (data) => {
       refetchStatus();
       toast({
-        title: "Dışa aktarma başarılı",
+        title: 'Dışa aktarma başarılı',
         description: data.message,
       });
     },
     onError: () => {
       toast({
-        title: "Dışa aktarma hatası",
+        title: 'Dışa aktarma hatası',
         description: "İşlemler JSON'a aktarılırken bir hata oluştu",
-        variant: "destructive",
+        variant: 'destructive',
       });
-    }
+    },
   });
 
-  // JSON'dan içe aktarma  
+  // JSON'dan içe aktarma
   const importMutation = useMutation({
     mutationFn: async (overwrite: boolean) => {
       const response = await apiRequest('POST', '/api/transactions/import-json', {
-        overwriteExisting: overwrite
+        overwriteExisting: overwrite,
       });
       return response.json();
     },
@@ -66,17 +66,17 @@ export function TransactionJsonManager() {
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       refetchStatus();
       toast({
-        title: "İçe aktarma başarılı",
+        title: 'İçe aktarma başarılı',
         description: data.message,
       });
     },
     onError: () => {
       toast({
-        title: "İçe aktarma hatası",
+        title: 'İçe aktarma hatası',
         description: "JSON'dan işlemler içe aktarılırken bir hata oluştu",
-        variant: "destructive",
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   // Tarih aralığına göre dışa aktarma
@@ -84,23 +84,23 @@ export function TransactionJsonManager() {
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/transactions/export-json-by-date', {
         startDate: dateRange.startDate,
-        endDate: dateRange.endDate
+        endDate: dateRange.endDate,
       });
       return response.json();
     },
     onSuccess: (data) => {
       toast({
-        title: "Tarihli dışa aktarma başarılı",
+        title: 'Tarihli dışa aktarma başarılı',
         description: data.message,
       });
     },
     onError: () => {
       toast({
-        title: "Dışa aktarma hatası",
-        description: "Tarihli işlemler dışa aktarılırken bir hata oluştu",
-        variant: "destructive",
+        title: 'Dışa aktarma hatası',
+        description: 'Tarihli işlemler dışa aktarılırken bir hata oluştu',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   // Kategori analizi dışa aktarma
@@ -111,17 +111,17 @@ export function TransactionJsonManager() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Kategori analizi başarılı",
+        title: 'Kategori analizi başarılı',
         description: data.message,
       });
     },
     onError: () => {
       toast({
-        title: "Analiz hatası",
-        description: "Kategori analizi dışa aktarılırken bir hata oluştu",
-        variant: "destructive",
+        title: 'Analiz hatası',
+        description: 'Kategori analizi dışa aktarılırken bir hata oluştu',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   const handleExport = () => {
@@ -135,9 +135,9 @@ export function TransactionJsonManager() {
   const handleExportByDate = () => {
     if (!dateRange.startDate || !dateRange.endDate) {
       toast({
-        title: "Tarih aralığı gerekli",
-        description: "Lütfen başlangıç ve bitiş tarihleri seçin",
-        variant: "destructive",
+        title: 'Tarih aralığı gerekli',
+        description: 'Lütfen başlangıç ve bitiş tarihleri seçin',
+        variant: 'destructive',
       });
       return;
     }
@@ -154,7 +154,7 @@ export function TransactionJsonManager() {
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -177,9 +177,9 @@ export function TransactionJsonManager() {
               <FileCheck className="h-5 w-5" />
               JSON Dosya Durumu
             </CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => refetchStatus()}
               data-testid="button-refresh-status"
             >
@@ -209,7 +209,7 @@ export function TransactionJsonManager() {
                 </Badge>
               </div>
             )}
-            
+
             {jsonStatus?.lastExport && (
               <span className="text-sm text-muted-foreground" data-testid="text-last-export">
                 Son Dışa Aktarma: {formatDate(jsonStatus.lastExport)}
@@ -229,23 +229,23 @@ export function TransactionJsonManager() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-3">
-            <Button 
+            <Button
               onClick={handleExport}
               disabled={exportMutation.isPending}
               data-testid="button-export-json"
             >
               <Download className="h-4 w-4 mr-2" />
-              {exportMutation.isPending ? "Dışa Aktarılıyor..." : "JSON'a Dışa Aktar"}
+              {exportMutation.isPending ? 'Dışa Aktarılıyor...' : "JSON'a Dışa Aktar"}
             </Button>
-            
-            <Button 
+
+            <Button
               variant="outline"
               onClick={handleImport}
               disabled={importMutation.isPending || !jsonStatus?.exists}
               data-testid="button-import-json"
             >
               <Upload className="h-4 w-4 mr-2" />
-              {importMutation.isPending ? "İçe Aktarılıyor..." : "JSON'dan İçe Aktar"}
+              {importMutation.isPending ? 'İçe Aktarılıyor...' : "JSON'dan İçe Aktar"}
             </Button>
           </div>
 
@@ -297,14 +297,14 @@ export function TransactionJsonManager() {
               />
             </div>
           </div>
-          
-          <Button 
+
+          <Button
             onClick={handleExportByDate}
             disabled={exportByDateMutation.isPending || !dateRange.startDate || !dateRange.endDate}
             data-testid="button-export-by-date"
           >
             <Calendar className="h-4 w-4 mr-2" />
-            {exportByDateMutation.isPending ? "Dışa Aktarılıyor..." : "Tarihli Dışa Aktarma"}
+            {exportByDateMutation.isPending ? 'Dışa Aktarılıyor...' : 'Tarihli Dışa Aktarma'}
           </Button>
         </CardContent>
       </Card>
@@ -323,14 +323,14 @@ export function TransactionJsonManager() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button 
+          <Button
             onClick={handleExportCategoryAnalysis}
             disabled={exportCategoryAnalysisMutation.isPending}
             variant="secondary"
             data-testid="button-export-category-analysis"
           >
             <BarChart3 className="h-4 w-4 mr-2" />
-            {exportCategoryAnalysisMutation.isPending ? "Analiz Ediliyor..." : "Kategori Analizi Oluştur"}
+            {exportCategoryAnalysisMutation.isPending ? 'Analiz Ediliyor...' : 'Kategori Analizi Oluştur'}
           </Button>
         </CardContent>
       </Card>

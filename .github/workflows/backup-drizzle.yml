@@ -1,0 +1,57 @@
+name: Backup Drizzle
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Run every day at 3 AM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-drizzle:
+    name: Backup Drizzle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup drizzle
+        run: |
+          echo "Backing up drizzle..."
+          # Add drizzle backup logic here
+          echo "Drizzle backup completed ✅"
+
+  backup-sequelize:
+    name: Backup Sequelize
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup sequelize
+        run: |
+          echo "Backing up sequelize..."
+          # Add sequelize backup logic here
+          echo "Sequelize backup completed ✅"

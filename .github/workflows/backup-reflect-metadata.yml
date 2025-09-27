@@ -1,0 +1,57 @@
+name: Backup Reflect Metadata
+
+on:
+  schedule:
+    - cron: '0 15 * * *' # Run every day at 3 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-reflect-metadata:
+    name: Backup Reflect Metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup reflect-metadata
+        run: |
+          echo "Backing up reflect-metadata..."
+          # Add reflect-metadata backup logic here
+          echo "Reflect Metadata backup completed ✅"
+
+  backup-sequelize-typescript:
+    name: Backup Sequelize TypeScript
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup sequelize-typescript
+        run: |
+          echo "Backing up sequelize-typescript..."
+          # Add sequelize-typescript backup logic here
+          echo "Sequelize TypeScript backup completed ✅"

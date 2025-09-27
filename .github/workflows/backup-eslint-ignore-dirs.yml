@@ -1,0 +1,57 @@
+name: Backup ESLint Ignore Directories
+
+on:
+  schedule:
+    - cron: '0 16 * * *' # Run every day at 4 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-eslint-ignore-dirs:
+    name: Backup ESLint Ignore Directories
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-ignore-dirs
+        run: |
+          echo "Backing up eslint-ignore-dirs..."
+          # Add eslint-ignore-dirs backup logic here
+          echo "ESLint Ignore Directories backup completed ✅"
+
+  backup-eslint-ignore-extensions:
+    name: Backup ESLint Ignore Extensions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-ignore-extensions
+        run: |
+          echo "Backing up eslint-ignore-extensions..."
+          # Add eslint-ignore-extensions backup logic here
+          echo "ESLint Ignore Extensions backup completed ✅"

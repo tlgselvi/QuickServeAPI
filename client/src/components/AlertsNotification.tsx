@@ -1,42 +1,42 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Bell, X, AlertTriangle, Info, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { SystemAlert } from "@shared/schema";
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Bell, X, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import type { SystemAlert } from '@shared/schema';
 
 const severityConfig = {
   low: {
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
     icon: Info,
-    bgColor: "border-blue-200 dark:border-blue-800"
+    bgColor: 'border-blue-200 dark:border-blue-800',
   },
   medium: {
-    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400", 
+    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
     icon: AlertTriangle,
-    bgColor: "border-yellow-200 dark:border-yellow-800"
+    bgColor: 'border-yellow-200 dark:border-yellow-800',
   },
   high: {
-    color: "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
+    color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
     icon: AlertTriangle,
-    bgColor: "border-red-200 dark:border-red-800"
-  }
+    bgColor: 'border-red-200 dark:border-red-800',
+  },
 };
 
 const alertTypeLabels = {
-  low_balance: "Düşük Bakiye",
-  recurring_payment: "Tekrarlanan Ödeme",
-  budget_exceeded: "Bütçe Aşımı", 
-  monthly_summary: "Aylık Özet"
+  low_balance: 'Düşük Bakiye',
+  recurring_payment: 'Tekrarlanan Ödeme',
+  budget_exceeded: 'Bütçe Aşımı',
+  monthly_summary: 'Aylık Özet',
 } as const;
 
-export function AlertsNotification() {
+export function AlertsNotification () {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
@@ -53,17 +53,17 @@ export function AlertsNotification() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/alerts'] });
       toast({
-        title: "Uyarı kapatıldı",
-        description: "Uyarı başarıyla kapatıldı",
+        title: 'Uyarı kapatıldı',
+        description: 'Uyarı başarıyla kapatıldı',
       });
     },
     onError: () => {
       toast({
-        title: "Hata",
-        description: "Uyarı kapatılırken bir hata oluştu",
-        variant: "destructive",
+        title: 'Hata',
+        description: 'Uyarı kapatılırken bir hata oluştu',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   const activeAlerts = (alerts as SystemAlert[]).filter(alert => alert.isActive && !alert.isDismissed);
@@ -76,16 +76,18 @@ export function AlertsNotification() {
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString('tr-TR', {
       day: '2-digit',
-      month: '2-digit', 
+      month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   const getAlertMetadata = (alert: SystemAlert) => {
-    if (!alert.metadata) return null;
-    
+    if (!alert.metadata) {
+      return null;
+    }
+
     try {
       return JSON.parse(alert.metadata);
     } catch {
@@ -104,16 +106,16 @@ export function AlertsNotification() {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="relative"
           data-testid="button-alerts"
         >
           <Bell className="h-5 w-5" />
           {alertCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs"
               data-testid="badge-alert-count"
             >
@@ -150,7 +152,7 @@ export function AlertsNotification() {
 
                   return (
                     <div key={alert.id}>
-                      <Card 
+                      <Card
                         className={`${config.bgColor} transition-all duration-200 hover:shadow-md`}
                         data-testid={`card-alert-${alert.id}`}
                       >
@@ -163,8 +165,8 @@ export function AlertsNotification() {
                                   {alert.title}
                                 </CardTitle>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <Badge 
-                                    variant="secondary" 
+                                  <Badge
+                                    variant="secondary"
                                     className={`text-xs ${config.color}`}
                                     data-testid={`badge-alert-type-${alert.id}`}
                                   >
@@ -192,7 +194,7 @@ export function AlertsNotification() {
                           <CardDescription className="text-sm" data-testid={`text-alert-description-${alert.id}`}>
                             {alert.description}
                           </CardDescription>
-                          
+
                           {metadata && (
                             <div className="mt-2 text-xs text-muted-foreground" data-testid={`text-alert-metadata-${alert.id}`}>
                               {alert.type === 'budget_exceeded' && metadata.category && (
@@ -218,7 +220,7 @@ export function AlertsNotification() {
               </div>
             </ScrollArea>
           )}
-          
+
           {alertCount > 0 && (
             <div className="pt-2 border-t">
               <p className="text-xs text-muted-foreground text-center" data-testid="text-alerts-footer">

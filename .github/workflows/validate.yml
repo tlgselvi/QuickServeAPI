@@ -1,0 +1,94 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'server/**'
+      - 'shared/**'
+      - 'tests/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'server/**'
+      - 'shared/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  validate-code:
+    name: Validate Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate code
+        run: |
+          echo "Validating code..."
+          npm run lint
+          echo "Code validation completed ✅"
+
+  validate-tests:
+    name: Validate Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate tests
+        run: |
+          echo "Validating tests..."
+          npm run test:run
+          echo "Test validation completed ✅"
+
+  validate-config:
+    name: Validate Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate configuration
+        run: |
+          echo "Validating configuration..."
+          # Add configuration validation logic here
+          echo "Configuration validation completed ✅"

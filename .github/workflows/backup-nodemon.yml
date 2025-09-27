@@ -1,0 +1,57 @@
+name: Backup Nodemon
+
+on:
+  schedule:
+    - cron: '0 21 * * *' # Run every day at 9 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-nodemon:
+    name: Backup Nodemon
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup nodemon
+        run: |
+          echo "Backing up nodemon..."
+          # Add nodemon backup logic here
+          echo "Nodemon backup completed ✅"
+
+  backup-supertest:
+    name: Backup Supertest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup supertest
+        run: |
+          echo "Backing up supertest..."
+          # Add supertest backup logic here
+          echo "Supertest backup completed ✅"

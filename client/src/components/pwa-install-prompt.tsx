@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { X, Download, Smartphone } from "lucide-react";
-import { pwaInstallManager } from "@/lib/pwa-utils";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { X, Download, Smartphone } from 'lucide-react';
+import { pwaInstallManager } from '@/lib/pwa-utils';
 
-export function PWAInstallPrompt() {
+export function PWAInstallPrompt () {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
 
@@ -12,7 +12,7 @@ export function PWAInstallPrompt() {
     const checkInstallability = () => {
       const canInstall = pwaInstallManager.canInstall();
       const isInstalled = pwaInstallManager.getIsInstalled();
-      
+
       // Show prompt if can install and not already shown
       if (canInstall && !isInstalled && !localStorage.getItem('pwa-prompt-dismissed')) {
         setShowPrompt(true);
@@ -30,7 +30,7 @@ export function PWAInstallPrompt() {
 
   const handleInstall = async () => {
     setIsInstalling(true);
-    
+
     try {
       const installed = await pwaInstallManager.showInstallPrompt();
       if (installed) {
@@ -62,7 +62,7 @@ export function PWAInstallPrompt() {
             Offline erişim, push bildirimleri ve daha hızlı performans.
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             size="sm"
@@ -74,7 +74,7 @@ export function PWAInstallPrompt() {
             <Download className="h-4 w-4 mr-2" />
             {isInstalling ? 'Yükleniyor...' : 'Yükle'}
           </Button>
-          
+
           <Button
             size="sm"
             variant="ghost"

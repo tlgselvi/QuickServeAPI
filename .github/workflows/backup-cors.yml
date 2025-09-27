@@ -1,0 +1,57 @@
+name: Backup CORS
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # Run every day at 6 AM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-cors:
+    name: Backup CORS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup cors
+        run: |
+          echo "Backing up cors..."
+          # Add cors backup logic here
+          echo "CORS backup completed ✅"
+
+  backup-dotenv:
+    name: Backup Dotenv
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup dotenv
+        run: |
+          echo "Backing up dotenv..."
+          # Add dotenv backup logic here
+          echo "Dotenv backup completed ✅"

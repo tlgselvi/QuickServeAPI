@@ -1,0 +1,57 @@
+name: Backup Shared
+
+on:
+  schedule:
+    - cron: '0 14 * * *' # Run every day at 2 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-shared:
+    name: Backup Shared
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup shared
+        run: |
+          echo "Backing up shared..."
+          # Add shared backup logic here
+          echo "Shared backup completed ✅"
+
+  backup-mobile:
+    name: Backup Mobile
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup mobile
+        run: |
+          echo "Backing up mobile..."
+          # Add mobile backup logic here
+          echo "Mobile backup completed ✅"

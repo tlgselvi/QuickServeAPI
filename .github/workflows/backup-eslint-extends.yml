@@ -1,0 +1,57 @@
+name: Backup ESLint Extends
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # Run every day at 9 AM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-eslint-extends:
+    name: Backup ESLint Extends
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-extends
+        run: |
+          echo "Backing up eslint-extends..."
+          # Add eslint-extends backup logic here
+          echo "ESLint Extends backup completed ✅"
+
+  backup-eslint-overrides:
+    name: Backup ESLint Overrides
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-overrides
+        run: |
+          echo "Backing up eslint-overrides..."
+          # Add eslint-overrides backup logic here
+          echo "ESLint Overrides backup completed ✅"

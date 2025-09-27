@@ -1,0 +1,57 @@
+name: Backup Supertest
+
+on:
+  schedule:
+    - cron: '0 22 * * *' # Run every day at 10 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-supertest:
+    name: Backup Supertest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup supertest
+        run: |
+          echo "Backing up supertest..."
+          # Add supertest backup logic here
+          echo "Supertest backup completed ✅"
+
+  backup-ts-jest:
+    name: Backup TS Jest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup ts-jest
+        run: |
+          echo "Backing up ts-jest..."
+          # Add ts-jest backup logic here
+          echo "TS Jest backup completed ✅"

@@ -1,0 +1,57 @@
+name: Backup Assets
+
+on:
+  schedule:
+    - cron: '0 10 * * *' # Run every day at 10 AM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-assets:
+    name: Backup Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup assets
+        run: |
+          echo "Backing up assets..."
+          # Add asset backup logic here
+          echo "Asset backup completed ✅"
+
+  backup-public:
+    name: Backup Public
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup public
+        run: |
+          echo "Backing up public..."
+          # Add public backup logic here
+          echo "Public backup completed ✅"

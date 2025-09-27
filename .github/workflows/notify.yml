@@ -1,0 +1,38 @@
+name: Notify
+
+on:
+  workflow_run:
+    workflows: ["CI", "Nightly Tests", "Performance Tests", "Security Tests", "Integration Tests", "Release"]
+    types: [completed]
+
+jobs:
+  notify-results:
+    name: Notify Test Results
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check workflow results
+        run: |
+          echo "Checking workflow results..."
+          echo "Workflow: ${{ github.event.workflow_run.name }}"
+          echo "Status: ${{ github.event.workflow_run.conclusion }}"
+          echo "URL: ${{ github.event.workflow_run.html_url }}"
+
+      - name: Notify on success
+        if: github.event.workflow_run.conclusion == 'success'
+        run: |
+          echo "Workflow ${{ github.event.workflow_run.name }} passed! ✅"
+          # Add success notification logic here
+
+      - name: Notify on failure
+        if: github.event.workflow_run.conclusion == 'failure'
+        run: |
+          echo "Workflow ${{ github.event.workflow_run.name }} failed! ❌"
+          # Add failure notification logic here
+
+      - name: Notify on cancellation
+        if: github.event.workflow_run.conclusion == 'cancelled'
+        run: |
+          echo "Workflow ${{ github.event.workflow_run.name }} was cancelled! ⏹️"
+          # Add cancellation notification logic here

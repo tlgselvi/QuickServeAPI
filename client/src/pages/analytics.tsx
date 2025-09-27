@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, LineChart, Line } from "recharts";
-import { TrendingUp, TrendingDown, PieChart as PieChartIcon, BarChart3, Calendar } from "lucide-react";
-import { getCategoryLabel } from "@shared/schema";
-import type { Account, Transaction } from "@/lib/types";
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, LineChart, Line } from 'recharts';
+import { TrendingUp, TrendingDown, PieChart as PieChartIcon, BarChart3, Calendar } from 'lucide-react';
+import { getCategoryLabel } from '@shared/schema';
+import type { Account, Transaction } from '@/lib/types';
 
 interface ChartData {
   name: string;
@@ -23,106 +23,121 @@ interface MonthlyData {
 
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
 
-export default function Analytics() {
-  const [selectedTimeRange, setSelectedTimeRange] = useState<string>("3months");
+export default function Analytics () {
+  const [selectedTimeRange, setSelectedTimeRange] = useState<string>('3months');
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery<Account[]>({
-    queryKey: ["/api/accounts"],
+    queryKey: ['/api/accounts'],
+    staleTime: 300000, // 5 minutes cache
   });
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
-    queryKey: ["/api/transactions"],
+  const { data: transactionsData = { transactions: [] }, isLoading: transactionsLoading } = useQuery<{
+    transactions: Transaction[];
+    total: number;
+    totalPages: number;
+  }>({
+    queryKey: ['/api/transactions'],
+    staleTime: 300000, // 5 minutes cache
   });
 
-  // Calculate time range for filtering
-  const getDateCutoff = (range: string) => {
+  const { transactions } = transactionsData;
+
+  // Memoized date cutoff calculation
+  const dateCutoff = useMemo(() => {
     const now = new Date();
-    switch (range) {
-      case "1month":
+    switch (selectedTimeRange) {
+      case '1month':
         return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      case "3months":
+      case '3months':
         return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-      case "6months":
+      case '6months':
         return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-      case "1year":
+      case '1year':
         return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       default:
         return new Date(0); // All time
     }
-  };
+  }, [selectedTimeRange]);
 
-  const filteredTransactions = transactions.filter(transaction => {
-    if (selectedTimeRange === "all") return true;
-    const cutoffDate = getDateCutoff(selectedTimeRange);
-    return new Date(transaction.date) >= cutoffDate;
-  });
-
-  // Calculate expense breakdown by category
-  const expensesByCategory = filteredTransactions
-    .filter(t => t.type === 'expense' && t.category)
-    .reduce((acc, transaction) => {
-      const category = transaction.category!;
-      const categoryLabel = getCategoryLabel(category);
-      acc[category] = (acc[category] || 0) + parseFloat(transaction.amount);
-      return acc;
-    }, {} as Record<string, number>);
-
-  const expenseCategoryData: ChartData[] = Object.entries(expensesByCategory).map(([category, amount]) => ({
-    name: category,
-    value: amount,
-    label: getCategoryLabel(category)
-  }));
-
-  // Calculate income breakdown by category  
-  const incomesByCategory = filteredTransactions
-    .filter(t => t.type === 'income' && t.category)
-    .reduce((acc, transaction) => {
-      const category = transaction.category!;
-      acc[category] = (acc[category] || 0) + parseFloat(transaction.amount);
-      return acc;
-    }, {} as Record<string, number>);
-
-  const incomeCategoryData: ChartData[] = Object.entries(incomesByCategory).map(([category, amount]) => ({
-    name: category,
-    value: amount,
-    label: getCategoryLabel(category)
-  }));
-
-  // Calculate monthly income vs expense trends
-  const monthlyData = filteredTransactions.reduce((acc, transaction) => {
-    const date = new Date(transaction.date);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const monthLabel = date.toLocaleDateString('tr-TR', { year: 'numeric', month: 'short' });
-    
-    if (!acc[monthKey]) {
-      acc[monthKey] = { month: monthLabel, monthKey, income: 0, expense: 0, net: 0 };
+  // Memoized filtered transactions for better performance
+  const filteredTransactions = useMemo(() => {
+    if (selectedTimeRange === 'all') {
+      return transactions;
     }
-    
-    const amount = parseFloat(transaction.amount);
-    if (transaction.type === 'income') {
-      acc[monthKey].income += amount;
-    } else if (transaction.type === 'expense') {
-      acc[monthKey].expense += amount;
-    }
-    
-    return acc;
-  }, {} as Record<string, MonthlyData & { monthKey: string }>);
+    return transactions.filter(transaction => new Date(transaction.date) >= dateCutoff);
+  }, [transactions, selectedTimeRange, dateCutoff]);
 
-  // Sort by actual chronological order and calculate cumulative balance
-  const sortedMonthlyData = Object.values(monthlyData)
-    .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
-  
-  let runningBalance = 0;
-  const monthlyTrends: MonthlyData[] = sortedMonthlyData.map(month => {
-    const monthlyNet = month.income - month.expense;
-    runningBalance += monthlyNet;
-    return {
-      month: month.month,
-      income: month.income,
-      expense: month.expense,
-      net: runningBalance // Now shows cumulative net balance
-    };
-  });
+  // Memoized expense breakdown by category
+  const expenseCategoryData = useMemo(() => {
+    const expensesByCategory = filteredTransactions
+      .filter(t => t.type === 'expense' && t.category)
+      .reduce((acc, transaction) => {
+        const category = transaction.category!;
+        acc[category] = (acc[category] || 0) + parseFloat(transaction.amount);
+        return acc;
+      }, {} as Record<string, number>);
+
+    return Object.entries(expensesByCategory).map(([category, amount]) => ({
+      name: category,
+      value: amount,
+      label: getCategoryLabel(category),
+    }));
+  }, [filteredTransactions]);
+
+  // Memoized income breakdown by category
+  const incomeCategoryData = useMemo(() => {
+    const incomesByCategory = filteredTransactions
+      .filter(t => t.type === 'income' && t.category)
+      .reduce((acc, transaction) => {
+        const category = transaction.category!;
+        acc[category] = (acc[category] || 0) + parseFloat(transaction.amount);
+        return acc;
+      }, {} as Record<string, number>);
+
+    return Object.entries(incomesByCategory).map(([category, amount]) => ({
+      name: category,
+      value: amount,
+      label: getCategoryLabel(category),
+    }));
+  }, [filteredTransactions]);
+
+  // Memoized monthly income vs expense trends
+  const monthlyTrends = useMemo(() => {
+    const monthlyData = filteredTransactions.reduce((acc, transaction) => {
+      const date = new Date(transaction.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthLabel = date.toLocaleDateString('tr-TR', { year: 'numeric', month: 'short' });
+
+      if (!acc[monthKey]) {
+        acc[monthKey] = { month: monthLabel, monthKey, income: 0, expense: 0, net: 0 };
+      }
+
+      const amount = parseFloat(transaction.amount);
+      if (transaction.type === 'income') {
+        acc[monthKey].income += amount;
+      } else if (transaction.type === 'expense') {
+        acc[monthKey].expense += amount;
+      }
+
+      return acc;
+    }, {} as Record<string, MonthlyData & { monthKey: string }>);
+
+    // Sort by actual chronological order and calculate cumulative balance
+    const sortedMonthlyData = Object.values(monthlyData)
+      .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+
+    let runningBalance = 0;
+    return sortedMonthlyData.map(month => {
+      const monthlyNet = month.income - month.expense;
+      runningBalance += monthlyNet;
+      return {
+        month: month.month,
+        income: month.income,
+        expense: month.expense,
+        net: runningBalance, // Now shows cumulative net balance
+      };
+    });
+  }, [filteredTransactions]);
 
   // Calculate total metrics
   const totalIncome = filteredTransactions
@@ -134,7 +149,7 @@ export default function Analytics() {
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
   const netBalance = totalIncome - totalExpenses;
-  
+
   // Show loading state while data is being fetched
   const isLoading = accountsLoading || transactionsLoading;
 
@@ -149,18 +164,43 @@ export default function Analytics() {
 
   const chartConfig = {
     income: {
-      label: "Gelir",
-      color: "#10b981",
+      label: 'Gelir',
+      color: '#10b981',
     },
     expense: {
-      label: "Gider", 
-      color: "#ef4444",
+      label: 'Gider',
+      color: '#ef4444',
     },
     net: {
-      label: "Net",
-      color: "#3b82f6",
-    }
+      label: 'Net',
+      color: '#3b82f6',
+    },
   };
+
+  // Show empty state if no transactions
+  if (!isLoading && transactions.length === 0) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold" data-testid="analytics-title">Finansal Analiz</h1>
+          <div className="w-40 h-10 bg-muted animate-pulse rounded-md" />
+        </div>
+
+        <div className="text-center py-16">
+          <BarChart3 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-xl font-semibold mb-2">Henüz İşlem Bulunmuyor</h3>
+          <p className="text-muted-foreground mb-6">
+            Finansal analizlerinizi görmek için önce bazı işlemler eklemeniz gerekiyor.
+          </p>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>• Şirket veya Şahsi sayfalarından hesap ekleyebilirsiniz</p>
+            <p>• İşlem ekleyerek gelir ve giderlerinizi takip edebilirsiniz</p>
+            <p>• Analiz grafikleri otomatik olarak oluşturulacaktır</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -169,7 +209,7 @@ export default function Analytics() {
           <h1 className="text-3xl font-bold" data-testid="analytics-title">Finansal Analiz</h1>
           <div className="w-40 h-10 bg-muted animate-pulse rounded-md" />
         </div>
-        
+
         {/* Loading skeletons for summary cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -181,7 +221,7 @@ export default function Analytics() {
             </Card>
           ))}
         </div>
-        
+
         {/* Loading skeletons for charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {[1, 2, 3, 4].map((i) => (

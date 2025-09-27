@@ -1,33 +1,39 @@
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
-import { ThemeProvider } from "@/lib/theme-context";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { AuthProvider, AuthGuard, RouteGuard, useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { LogOut, User } from "lucide-react";
+import { Switch, Route } from 'wouter';
+import { queryClient } from './lib/queryClient';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
+import { Separator } from '@/components/ui/separator';
+import { ThemeProvider } from '@/lib/theme-context';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { CurrencyProvider } from '@/contexts/CurrencyContext';
+import { AuthProvider, AuthGuard, RouteGuard, useAuth } from '@/hooks/useAuth';
+import { JWTAuthProvider, useJWTAuth } from '@/hooks/useJWTAuth';
+import { Button } from '@/components/ui/button';
+import { LogOut, User } from 'lucide-react';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { LoadingProvider, GlobalLoadingIndicator } from '@/components/loading-states';
 
-import Dashboard from "@/pages/dashboard";
-import Analytics from "@/pages/analytics";
-import Company from "@/pages/company";
-import Personal from "@/pages/personal";
-import Transfers from "@/pages/transfers";
-import FixedExpenses from "@/pages/fixed-expenses";
-import CreditCards from "@/pages/credit-cards";
-import Reports from "@/pages/reports";
-import Alerts from "@/pages/alerts";
-import Settings from "@/pages/settings";
-import Admin from "@/pages/admin";
-import Login from "@/pages/login";
-import Register from "@/pages/register";
-import NotFound from "@/pages/not-found";
+import Dashboard from '@/pages/dashboard';
+import Analytics from '@/pages/analytics';
+import Company from '@/pages/company';
+import Personal from '@/pages/personal';
+import Transfers from '@/pages/transfers';
+import FixedExpenses from '@/pages/fixed-expenses';
+import CreditCards from '@/pages/credit-cards';
+import Portfolio from '@/pages/portfolio';
+import Simulation from '@/pages/simulation';
+import Reports from '@/pages/reports';
+import Alerts from '@/pages/alerts';
+import Settings from '@/pages/settings';
+import Login from '@/pages/login';
+import Register from '@/pages/register';
+import JWTLogin from '@/pages/jwt-login';
+import NotFound from '@/pages/not-found';
 
-function AuthLayout({ children }: { children: React.ReactNode }) {
+function AuthLayout ({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full">
       <div className="absolute top-4 right-4">
@@ -38,9 +44,9 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function UserMenu() {
+function UserMenu () {
   const { user, logout } = useAuth();
-  
+
   return (
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-2 text-sm">
@@ -61,7 +67,7 @@ function UserMenu() {
   );
 }
 
-function AppLayout({ children }: { children: React.ReactNode }) {
+function AppLayout ({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <SidebarProvider>
@@ -84,7 +90,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Router() {
+function Router () {
   return (
     <Switch>
       {/* Auth routes - no sidebar */}
@@ -98,7 +104,12 @@ function Router() {
           <Register />
         </AuthLayout>
       </Route>
-      
+      <Route path="/jwt-login">
+        <AuthLayout>
+          <JWTLogin />
+        </AuthLayout>
+      </Route>
+
       {/* App routes - with sidebar and role-based protection */}
       <Route path="/" nest>
         <AppLayout>
@@ -138,6 +149,16 @@ function Router() {
                 <CreditCards />
               </RouteGuard>
             </Route>
+            <Route path="/portfolio">
+              <RouteGuard route="/portfolio">
+                <Portfolio />
+              </RouteGuard>
+            </Route>
+            <Route path="/simulation">
+              <RouteGuard route="/simulation">
+                <Simulation />
+              </RouteGuard>
+            </Route>
             <Route path="/reports">
               <RouteGuard route="/reports">
                 <Reports />
@@ -153,11 +174,6 @@ function Router() {
                 <Settings />
               </RouteGuard>
             </Route>
-            <Route path="/admin">
-              <RouteGuard route="/admin">
-                <Admin />
-              </RouteGuard>
-            </Route>
             <Route component={NotFound} />
           </Switch>
         </AppLayout>
@@ -166,18 +182,27 @@ function Router() {
   );
 }
 
-function App() {
+function App () {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="finbot-ui-theme">
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="system" storageKey="finbot-ui-theme">
+        <QueryClientProvider client={queryClient}>
+          <LoadingProvider>
+            <CurrencyProvider>
+              <AuthProvider>
+                <JWTAuthProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <GlobalLoadingIndicator />
+                    <Router />
+                  </TooltipProvider>
+                </JWTAuthProvider>
+              </AuthProvider>
+            </CurrencyProvider>
+          </LoadingProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

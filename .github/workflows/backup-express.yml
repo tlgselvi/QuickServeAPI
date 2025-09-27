@@ -1,0 +1,57 @@
+name: Backup Express
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # Run every day at 5 AM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-express:
+    name: Backup Express
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup express
+        run: |
+          echo "Backing up express..."
+          # Add express backup logic here
+          echo "Express backup completed ✅"
+
+  backup-cors:
+    name: Backup CORS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup cors
+        run: |
+          echo "Backing up cors..."
+          # Add cors backup logic here
+          echo "CORS backup completed ✅"

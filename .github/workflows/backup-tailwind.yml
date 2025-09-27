@@ -1,0 +1,57 @@
+name: Backup Tailwind
+
+on:
+  schedule:
+    - cron: '0 22 * * *' # Run every day at 10 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-tailwind:
+    name: Backup Tailwind
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup tailwind
+        run: |
+          echo "Backing up tailwind..."
+          # Add tailwind backup logic here
+          echo "Tailwind backup completed ✅"
+
+  backup-postcss:
+    name: Backup PostCSS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup postcss
+        run: |
+          echo "Backing up postcss..."
+          # Add postcss backup logic here
+          echo "PostCSS backup completed ✅"

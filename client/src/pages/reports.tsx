@@ -1,25 +1,25 @@
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { TransactionJsonManager } from "@/components/TransactionJsonManager";
-import { Download, FileText, FileSpreadsheet, Calendar, AlertTriangle } from "lucide-react";
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { TransactionJsonManager } from '@/components/TransactionJsonManager';
+import { Download, FileText, FileSpreadsheet, Calendar, AlertTriangle } from 'lucide-react';
 
-export default function Reports() {
+export default function Reports () {
   const [exportLoading, setExportLoading] = useState<{ csv: boolean; pdf: boolean; sheets: boolean }>({
     csv: false,
     pdf: false,
-    sheets: false
+    sheets: false,
   });
-  
+
   const { toast } = useToast();
 
   // Function to handle file download
   const downloadFile = async (url: string, filename: string, type: 'csv' | 'pdf' | 'sheets') => {
     try {
       setExportLoading(prev => ({ ...prev, [type]: true }));
-      
+
       const response = await fetch(url, {
         method: 'GET',
         credentials: 'include', // Include session cookies
@@ -42,15 +42,15 @@ export default function Reports() {
       window.URL.revokeObjectURL(downloadUrl);
 
       toast({
-        title: "Başarılı",
+        title: 'Başarılı',
         description: `${type.toUpperCase()} raporu başarıyla indirildi`,
       });
     } catch (error) {
       console.error(`${type} export error:`, error);
       toast({
-        title: "Hata",
+        title: 'Hata',
         description: error instanceof Error ? error.message : `${type.toUpperCase()} raporu indirilemedi`,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setExportLoading(prev => ({ ...prev, [type]: false }));
@@ -70,13 +70,13 @@ export default function Reports() {
   const exportGoogleSheets = async () => {
     try {
       setExportLoading(prev => ({ ...prev, sheets: true }));
-      
+
       const response = await fetch('/api/export/google-sheets', {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
       });
 
       if (!response.ok) {
@@ -87,7 +87,7 @@ export default function Reports() {
       const result = await response.json();
 
       toast({
-        title: "Başarılı",
+        title: 'Başarılı',
         description: `${result.recordCount} kayıt Google Sheets'e aktarıldı`,
       });
 
@@ -95,13 +95,12 @@ export default function Reports() {
       if (result.url) {
         window.open(result.url, '_blank');
       }
-
     } catch (error) {
       console.error('Google Sheets export error:', error);
       toast({
-        title: "Hata",
-        description: error instanceof Error ? error.message : "Google Sheets export başarısız",
-        variant: "destructive",
+        title: 'Hata',
+        description: error instanceof Error ? error.message : 'Google Sheets export başarısız',
+        variant: 'destructive',
       });
     } finally {
       setExportLoading(prev => ({ ...prev, sheets: false }));
@@ -117,7 +116,7 @@ export default function Reports() {
           Son güncelleme: {new Date().toLocaleDateString('tr-TR')}
         </div>
       </div>
-      
+
       {/* Data Export Section */}
       <Card>
         <CardHeader>
@@ -140,7 +139,7 @@ export default function Reports() {
                     <h3 className="font-semibold">CSV Formatında</h3>
                     <p className="text-sm text-muted-foreground">Excel uyumlu veri dosyası</p>
                   </div>
-                  <Button 
+                  <Button
                     onClick={exportCsv}
                     disabled={exportLoading.csv}
                     className="w-full"
@@ -171,7 +170,7 @@ export default function Reports() {
                     <h3 className="font-semibold">PDF Raporu</h3>
                     <p className="text-sm text-muted-foreground">Detaylı finansal rapor</p>
                   </div>
-                  <Button 
+                  <Button
                     onClick={exportPdf}
                     disabled={exportLoading.pdf}
                     className="w-full"
@@ -202,7 +201,7 @@ export default function Reports() {
                     <h3 className="font-semibold">Google Sheets</h3>
                     <p className="text-sm text-muted-foreground">Bulut tabanlı çalışma sayfası</p>
                   </div>
-                  <Button 
+                  <Button
                     onClick={exportGoogleSheets}
                     disabled={exportLoading.sheets}
                     className="w-full"
@@ -224,9 +223,9 @@ export default function Reports() {
               </CardContent>
             </Card>
           </div>
-          
+
           <Separator />
-          
+
           <div className="text-sm text-muted-foreground space-y-2">
             <p><strong>Not:</strong> Dışa aktarılan veriler, kullanıcı rolünüze göre filtrelenir.</p>
             <ul className="list-disc list-inside space-y-1 ml-4">

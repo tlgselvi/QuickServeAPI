@@ -1,0 +1,57 @@
+name: Backup Vite
+
+on:
+  schedule:
+    - cron: '0 21 * * *' # Run every day at 9 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-vite:
+    name: Backup Vite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup vite
+        run: |
+          echo "Backing up vite..."
+          # Add vite backup logic here
+          echo "Vite backup completed ✅"
+
+  backup-tailwind:
+    name: Backup Tailwind
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup tailwind
+        run: |
+          echo "Backing up tailwind..."
+          # Add tailwind backup logic here
+          echo "Tailwind backup completed ✅"

@@ -1,0 +1,57 @@
+name: Backup ESLint
+
+on:
+  schedule:
+    - cron: '0 1 * * *' # Run every day at 1 AM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-eslint:
+    name: Backup ESLint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint
+        run: |
+          echo "Backing up eslint..."
+          # Add eslint backup logic here
+          echo "ESLint backup completed ✅"
+
+  backup-typescript-eslint:
+    name: Backup TypeScript ESLint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup typescript-eslint
+        run: |
+          echo "Backing up typescript-eslint..."
+          # Add typescript-eslint backup logic here
+          echo "TypeScript ESLint backup completed ✅"

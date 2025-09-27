@@ -1,22 +1,22 @@
-import { Moon, Sun, Monitor } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Moon, Sun, Monitor } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useTheme } from "@/lib/theme-context";
+} from '@/components/ui/dropdown-menu';
+import { useTheme } from '@/lib/theme-context';
 
-export function ThemeToggle() {
+export function ThemeToggle () {
   const { setTheme, theme } = useTheme();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="h-9 w-9 px-0"
           data-testid="button-theme-toggle"
         >
@@ -26,25 +26,25 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" data-testid="dropdown-theme-menu">
-        <DropdownMenuItem 
-          onClick={() => setTheme("light")}
-          className={theme === "light" ? "bg-accent" : ""}
+        <DropdownMenuItem
+          onClick={() => setTheme('light')}
+          className={theme === 'light' ? 'bg-accent' : ''}
           data-testid="theme-light"
         >
           <Sun className="mr-2 h-4 w-4" />
           <span>Açık</span>
         </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => setTheme("dark")}
-          className={theme === "dark" ? "bg-accent" : ""}
+        <DropdownMenuItem
+          onClick={() => setTheme('dark')}
+          className={theme === 'dark' ? 'bg-accent' : ''}
           data-testid="theme-dark"
         >
           <Moon className="mr-2 h-4 w-4" />
           <span>Koyu</span>
         </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => setTheme("system")}
-          className={theme === "system" ? "bg-accent" : ""}
+        <DropdownMenuItem
+          onClick={() => setTheme('system')}
+          className={theme === 'system' ? 'bg-accent' : ''}
           data-testid="theme-system"
         >
           <Monitor className="mr-2 h-4 w-4" />

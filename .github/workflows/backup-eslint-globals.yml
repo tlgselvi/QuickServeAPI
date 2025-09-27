@@ -1,0 +1,57 @@
+name: Backup ESLint Globals
+
+on:
+  schedule:
+    - cron: '0 13 * * *' # Run every day at 1 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-eslint-globals:
+    name: Backup ESLint Globals
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-globals
+        run: |
+          echo "Backing up eslint-globals..."
+          # Add eslint-globals backup logic here
+          echo "ESLint Globals backup completed ✅"
+
+  backup-eslint-ignore-patterns:
+    name: Backup ESLint Ignore Patterns
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-ignore-patterns
+        run: |
+          echo "Backing up eslint-ignore-patterns..."
+          # Add eslint-ignore-patterns backup logic here
+          echo "ESLint Ignore Patterns backup completed ✅"

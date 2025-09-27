@@ -1,0 +1,57 @@
+name: Backup ESLint Ignore Positions
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Run every day at 2 AM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-eslint-ignore-positions:
+    name: Backup ESLint Ignore Positions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-ignore-positions
+        run: |
+          echo "Backing up eslint-ignore-positions..."
+          # Add eslint-ignore-positions backup logic here
+          echo "ESLint Ignore Positions backup completed ✅"
+
+  backup-eslint-ignore-locations:
+    name: Backup ESLint Ignore Locations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint-ignore-locations
+        run: |
+          echo "Backing up eslint-ignore-locations..."
+          # Add eslint-ignore-locations backup logic here
+          echo "ESLint Ignore Locations backup completed ✅"

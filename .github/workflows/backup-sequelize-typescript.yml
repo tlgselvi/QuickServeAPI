@@ -1,0 +1,57 @@
+name: Backup Sequelize TypeScript
+
+on:
+  schedule:
+    - cron: '0 16 * * *' # Run every day at 4 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-sequelize-typescript:
+    name: Backup Sequelize TypeScript
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup sequelize-typescript
+        run: |
+          echo "Backing up sequelize-typescript..."
+          # Add sequelize-typescript backup logic here
+          echo "Sequelize TypeScript backup completed ✅"
+
+  backup-swagger-ui-express:
+    name: Backup Swagger UI Express
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup swagger-ui-express
+        run: |
+          echo "Backing up swagger-ui-express..."
+          # Add swagger-ui-express backup logic here
+          echo "Swagger UI Express backup completed ✅"

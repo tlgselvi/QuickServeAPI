@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -19,7 +19,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,9 +30,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, UserCheck, UserX, Shield, Users } from "lucide-react";
+} from '@/components/ui/alert-dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User, UserCheck, UserX, Shield, Users } from 'lucide-react';
 
 type User = {
   id: string;
@@ -44,32 +44,32 @@ type User = {
   lastLogin: string | null;
 };
 
-export default function Admin() {
+export function UserManagement () {
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Fetch all users
   const { data: users = [], isLoading } = useQuery<User[]>({
-    queryKey: ["/api/admin/users"],
+    queryKey: ['/api/admin/users'],
   });
 
   // Role change mutation
   const roleChangeMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      return await apiRequest("PUT", `/api/admin/users/${userId}/role`, { role });
+      return apiRequest('PUT', `/api/admin/users/${userId}/role`, { role });
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       toast({
-        title: "Başarılı",
-        description: "Kullanıcı rolü başarıyla değiştirildi",
+        title: 'Başarılı',
+        description: 'Kullanıcı rolü başarıyla değiştirildi',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Hata",
-        description: error.message || "Rol değiştirilemedi",
-        variant: "destructive",
+        title: 'Hata',
+        description: error.message || 'Rol değiştirilemedi',
+        variant: 'destructive',
       });
     },
   });
@@ -77,35 +77,35 @@ export default function Admin() {
   // Status change mutation
   const statusChangeMutation = useMutation({
     mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
-      return await apiRequest("PUT", `/api/admin/users/${userId}/status`, { isActive });
+      return apiRequest('PUT', `/api/admin/users/${userId}/status`, { isActive });
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       toast({
-        title: "Başarılı",
-        description: "Kullanıcı durumu başarıyla değiştirildi",
+        title: 'Başarılı',
+        description: 'Kullanıcı durumu başarıyla değiştirildi',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Hata",
-        description: error.message || "Durum değiştirilemedi",
-        variant: "destructive",
+        title: 'Hata',
+        description: error.message || 'Durum değiştirilemedi',
+        variant: 'destructive',
       });
     },
   });
 
   const getRoleBadge = (role: string) => {
     const variants = {
-      admin: "destructive",
-      company_user: "secondary",
-      personal_user: "outline",
+      admin: 'destructive',
+      company_user: 'secondary',
+      personal_user: 'outline',
     } as const;
 
     const labels = {
-      admin: "Admin",
-      company_user: "Şirket Kullanıcısı",
-      personal_user: "Kişisel Kullanıcı",
+      admin: 'Admin',
+      company_user: 'Şirket Kullanıcısı',
+      personal_user: 'Kişisel Kullanıcı',
     };
 
     return (
@@ -139,15 +139,6 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kullanıcı Yönetimi</h1>
-          <p className="text-muted-foreground">
-            Sistem kullanıcılarını yönetin, roller atayın ve hesap durumlarını kontrol edin
-          </p>
-        </div>
-      </div>
-
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -159,7 +150,7 @@ export default function Admin() {
             <div className="text-2xl font-bold" data-testid="text-total-users">{users.length}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Aktif Kullanıcı</CardTitle>

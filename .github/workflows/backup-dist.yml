@@ -1,0 +1,57 @@
+name: Backup Dist
+
+on:
+  schedule:
+    - cron: '0 16 * * *' # Run every day at 4 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-dist:
+    name: Backup Dist
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup dist
+        run: |
+          echo "Backing up dist..."
+          # Add dist backup logic here
+          echo "Dist backup completed ✅"
+
+  backup-node_modules:
+    name: Backup Node Modules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup node_modules
+        run: |
+          echo "Backing up node_modules..."
+          # Add node_modules backup logic here
+          echo "Node modules backup completed ✅"

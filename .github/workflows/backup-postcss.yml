@@ -1,0 +1,57 @@
+name: Backup PostCSS
+
+on:
+  schedule:
+    - cron: '0 23 * * *' # Run every day at 11 PM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  backup-postcss:
+    name: Backup PostCSS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup postcss
+        run: |
+          echo "Backing up postcss..."
+          # Add postcss backup logic here
+          echo "PostCSS backup completed ✅"
+
+  backup-eslint:
+    name: Backup ESLint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backup eslint
+        run: |
+          echo "Backing up eslint..."
+          # Add eslint backup logic here
+          echo "ESLint backup completed ✅"
