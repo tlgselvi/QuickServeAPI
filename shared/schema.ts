@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm';
 import { pgTable, text, varchar, decimal, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { randomUUID } from 'crypto';
 
 // Sub-account types
 export const subAccountTypes = z.enum(['checking', 'creditCard', 'loan', 'kmh', 'deposit']);
@@ -827,7 +826,7 @@ export type InsertTenant = typeof tenants.$inferInsert;
 // =====================
 
 export const simulationRuns = pgTable('simulation_runs', {
-  id: varchar('id', { length: 255 }).primaryKey().default(randomUUID()),
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar('user_id', { length: 255 }).notNull(),
   parameters: jsonb('parameters').$type<{
     fxDelta: number;
