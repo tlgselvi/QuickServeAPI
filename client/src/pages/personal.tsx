@@ -10,11 +10,12 @@ import BankAccountDialog from '@/components/bank-account-dialog';
 import BankAccountCard from '@/components/bank-account-card';
 import AccountTransactionForm from '@/components/account-transaction-form';
 import { apiRequest } from '@/lib/queryClient';
-import { formatCurrency } from '@/lib/utils';
+import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 import type { Account, Transaction } from '@shared/schema';
 import { Plus } from 'lucide-react';
 
 export default function Personal () {
+  const formatCurrency = useFormatCurrency();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccount, setSelectedAccount] = useState<string>('all');
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
@@ -94,7 +95,7 @@ export default function Personal () {
         <h1 className="text-3xl font-bold" data-testid="page-title">Şahsi Hesaplar</h1>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-sm">
-            Toplam: {formatCurrency(totalPersonalBalance, 'TRY')}
+            Toplam: {formatCurrency(totalPersonalBalance)}
           </Badge>
           <Button
             onClick={() => setShowAddAccountDialog(true)}
@@ -228,7 +229,7 @@ export default function Personal () {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatCurrency(parseFloat(transaction.amount), accounts.find((a: Account) => a.id === transaction.accountId)?.currency || 'TRY')}
+                        {formatCurrency(parseFloat(transaction.amount))}
                       </TableCell>
                       <TableCell>{transaction.category}</TableCell>
                     </TableRow>

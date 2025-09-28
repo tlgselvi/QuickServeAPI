@@ -20,7 +20,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
-import { formatCurrency } from '@/lib/utils';
+import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 
 interface Investment {
   id: string;
@@ -55,6 +55,7 @@ interface PortfolioSummary {
 }
 
 export default function Portfolio () {
+  const formatCurrency = useFormatCurrency();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedRisk, setSelectedRisk] = useState<string>('all');
