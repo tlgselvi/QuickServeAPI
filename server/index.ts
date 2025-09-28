@@ -3,7 +3,6 @@ import session from 'express-session';
 import { registerRoutes } from './routes';
 import { setupVite, serveStatic, log } from './vite';
 import { pool } from './db';
-import MemoryStore from 'memorystore';
 import path from 'path';
 import { requireAuth, requirePermission } from './middleware/auth';
 import { Permission } from '@shared/schema';
@@ -51,20 +50,16 @@ app.use(queryOptimizer);
 app.use(memoryMonitor);
 app.use(cacheControl(300)); // 5 minutes cache
 
-// Session configuration - Use memory store for local development
-const MemorySessionStore = MemoryStore(session);
+// Session configuration - use default MemoryStore (ok for prototype on free tier)
 app.use(session({
-  store: new MemorySessionStore({
-    checkPeriod: 86400000, // prune expired entries every 24h
-  }),
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // HTTP for local development
-    httpOnly: true, // Prevent XSS
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax', // CSRF protection
+    secure: false,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax',
   },
 }));
 
