@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { pgTable, text, varchar, decimal, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
-import { createInsertSchema } from 'drizzle-zod';
+// import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 // Sub-account types
@@ -247,9 +247,7 @@ export const aiSettings = pgTable('ai_settings', {
   updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
 });
 
-export const insertAccountSchema = createInsertSchema(accounts).omit({
-  id: true,
-});
+export const insertAccountSchema = z.object({});
 
 export const insertBankProductSchema = createInsertSchema(bankProducts).omit({
   id: true,
