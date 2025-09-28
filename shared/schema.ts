@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { pgTable, text, varchar, decimal, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
-// import { createInsertSchema } from 'drizzle-zod';
+import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 // Sub-account types
