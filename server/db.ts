@@ -1,9 +1,17 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from 'ws';
 import * as schema from '@shared/schema';
 
-neonConfig.webSocketConstructor = ws;
+// Only use WebSocket in development - production uses HTTP
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const ws = require('ws');
+    neonConfig.webSocketConstructor = ws;
+  } catch (error) {
+    console.warn('WebSocket support not available:', error);
+  }
+}
 
 // Temporarily disable database requirement for local setup
 // if (!process.env.DATABASE_URL) {
