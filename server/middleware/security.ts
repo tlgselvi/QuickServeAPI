@@ -10,6 +10,11 @@ export const createRateLimit = (windowMs: number, max: number, message?: string)
     if (process.env.NODE_ENV === 'test' || req.headers['x-test-bypass'] === '1') {
       return next();
     }
+    
+    // Temporarily increase rate limit for production testing
+    if (process.env.NODE_ENV === 'production') {
+      max = max * 10; // 10x higher limit for production
+    }
     const key = req.ip || req.connection.remoteAddress || 'unknown';
     const now = Date.now();
     const windowStart = now - windowMs;
