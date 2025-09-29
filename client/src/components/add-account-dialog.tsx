@@ -26,6 +26,19 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
   const [minimumPayment, setMinimumPayment] = useState('');
   const [interestRate, setInterestRate] = useState('');
 
+  const resetForm = () => {
+    setBankName('');
+    setAccountName('');
+    setBalance('');
+    setAccountType('personal');
+    setAccountCategory('checking');
+    setPaymentDueDate('');
+    setCutOffDate('');
+    setGracePeriod('');
+    setMinimumPayment('');
+    setInterestRate('');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -45,6 +58,7 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
       return;
     }
 
+    // Call parent handler - don't reset form here, let parent handle success/failure
     onAddAccount({
       name: accountName, // Backend schema'sında 'name' field'ı required
       type: accountType,
@@ -59,22 +73,16 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
       minimumPayment: minimumPayment || null,
       interestRate: interestRate || null,
     });
-
-    // Reset form
-    setBankName('');
-    setAccountName('');
-    setBalance('');
-    setAccountType('personal');
-    setAccountCategory('checking');
-    setPaymentDueDate('');
-    setCutOffDate('');
-    setGracePeriod('');
-    setMinimumPayment('');
-    setInterestRate('');
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      onOpenChange(isOpen);
+      if (!isOpen) {
+        // Form kapatıldığında reset et
+        resetForm();
+      }
+    }}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden" data-testid="dialog-add-account">
         <DialogHeader>
           <DialogTitle data-testid="dialog-title">Yeni Hesap Ekle</DialogTitle>

@@ -18,25 +18,44 @@ export default function TransferForm ({ accounts, onTransfer, isLoading }: Trans
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
 
+  const resetForm = () => {
+    setFromAccountId('');
+    setToAccountId('');
+    setAmount('');
+    setDescription('');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fromAccountId || !toAccountId || !amount || fromAccountId === toAccountId) {
+    // Validation
+    if (!fromAccountId) {
+      alert('❌ Kaynak hesap seçiniz!');
       return;
     }
 
+    if (!toAccountId) {
+      alert('❌ Hedef hesap seçiniz!');
+      return;
+    }
+
+    if (fromAccountId === toAccountId) {
+      alert('❌ Kaynak ve hedef hesap aynı olamaz!');
+      return;
+    }
+
+    if (!amount || parseFloat(amount) <= 0) {
+      alert('❌ Geçerli bir tutar giriniz!');
+      return;
+    }
+
+    // Call parent handler - don't reset form here
     onTransfer({
       fromAccountId,
       toAccountId,
       amount: parseFloat(amount),
       description,
     });
-
-    // Reset form
-    setFromAccountId('');
-    setToAccountId('');
-    setAmount('');
-    setDescription('');
   };
 
   return (
@@ -54,7 +73,7 @@ export default function TransferForm ({ accounts, onTransfer, isLoading }: Trans
               <SelectTrigger data-testid="select-from-account">
                 <SelectValue placeholder="Hesap seçin" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[200px] overflow-y-auto">
                 {accounts.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.bankName} - {account.accountName}
@@ -72,7 +91,7 @@ export default function TransferForm ({ accounts, onTransfer, isLoading }: Trans
               <SelectTrigger data-testid="select-to-account">
                 <SelectValue placeholder="Hesap seçin" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[200px] overflow-y-auto">
                 {accounts
                   .filter(account => account.id !== fromAccountId)
                   .map((account) => (
