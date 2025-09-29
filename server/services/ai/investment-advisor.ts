@@ -74,7 +74,11 @@ export class InvestmentAdvisorService {
         max_tokens: 500,
       });
 
-      const riskAssessment = JSON.parse(response);
+      if (!response.success) {
+        throw new Error(response.error || 'Risk assessment failed');
+      }
+
+      const riskAssessment = JSON.parse(response.response);
 
       return {
         riskScore: Math.max(1, Math.min(10, riskAssessment.riskScore || 5)),
@@ -140,7 +144,11 @@ export class InvestmentAdvisorService {
         max_tokens: 400,
       });
 
-      const recommendation = JSON.parse(response);
+      if (!response.success) {
+        throw new Error(response.error || 'Recommendation generation failed');
+      }
+
+      const recommendation = JSON.parse(response.response);
 
       return {
         strategy,
@@ -205,7 +213,11 @@ export class InvestmentAdvisorService {
         max_tokens: 600,
       });
 
-      return JSON.parse(response);
+      if (!response.success) {
+        throw new Error(response.error || 'Suggestion generation failed');
+      }
+
+      return JSON.parse(response.response);
     } catch (error) {
       console.error('Investment suggestions error:', error);
 

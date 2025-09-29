@@ -73,13 +73,18 @@ class OpenAIService {
   /**
    * Generate AI response
    */
-  async generateResponse (prompt: string, context?: any): Promise<string> {
+  async generateResponse (prompt: string, context?: any): Promise<{ success: boolean; response: string; model: string; cached?: boolean; error?: string }> {
     // Check cache first
     const cacheKey = this.getCacheKey(prompt, context);
     const cached = this.responseCache.get(cacheKey);
 
     if (cached && Date.now() - cached.timestamp < this.settings.cacheDuration * 60 * 1000) {
-      return cached.response;
+      return { 
+        success: true, 
+        response: cached.response, 
+        model: this.settings.defaultModel,
+        cached: true 
+      };
     }
 
     let response: string;
@@ -101,7 +106,12 @@ class OpenAIService {
       timestamp: Date.now(),
     });
 
-    return response;
+    return { 
+      success: true, 
+      response, 
+      model: this.settings.defaultModel,
+      cached: false 
+    };
   }
 
   /**

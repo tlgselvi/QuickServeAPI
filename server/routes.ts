@@ -2700,8 +2700,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           return res.status(400).json({ error: 'Sorgu metni gereklidir' });
         }
 
-        const rawResponse = await openaiService.generateResponse(query, persona || 'default');
-        const response = typeof rawResponse === 'string' ? JSON.parse(rawResponse) : rawResponse;
+        const response = await openaiService.generateResponse(query, persona || 'default');
 
         if (!response.success) {
           return res.status(500).json({ error: response.error || 'AI yanıtı oluşturulamadı' });

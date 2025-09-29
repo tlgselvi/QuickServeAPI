@@ -381,7 +381,11 @@ export class SimulationAgentService {
         max_tokens: 400,
       });
 
-      return JSON.parse(response);
+      if (!response.success) {
+        throw new Error(response.error || 'Scenario analysis failed');
+      }
+
+      return JSON.parse(response.response);
     } catch (error) {
       console.error('Scenario analysis error:', error);
 
