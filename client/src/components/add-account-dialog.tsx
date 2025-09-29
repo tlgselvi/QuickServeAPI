@@ -201,16 +201,16 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
 
           {/* Payment dates - only show for credit cards and loans */}
           {(accountCategory === 'credit_card' || accountCategory === 'loan') && (
-            <Card className="bg-blue-50/50 border-blue-200">
+            <Card className="bg-blue-50/50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
               <CardContent className="pt-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-700">Ödeme Günleri</span>
+                  <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Ödeme Günleri</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="cutOffDate" className="text-xs text-blue-600">Kesim Tarihi (Ayın Kaçı)</Label>
+                    <Label htmlFor="cutOffDate" className="text-xs text-blue-600 dark:text-blue-400">Kesim Tarihi (Ayın Kaçı)</Label>
                     <Select value={cutOffDate} onValueChange={setCutOffDate}>
                       <SelectTrigger className="h-8">
                         <SelectValue placeholder="Gün" />
@@ -226,7 +226,7 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
                   </div>
 
                   <div>
-                    <Label htmlFor="paymentDueDate" className="text-xs text-blue-600">Son Ödeme (Ayın Kaçı)</Label>
+                    <Label htmlFor="paymentDueDate" className="text-xs text-blue-600 dark:text-blue-400">Son Ödeme (Ayın Kaçı)</Label>
                     <Select value={paymentDueDate} onValueChange={setPaymentDueDate}>
                       <SelectTrigger className="h-8">
                         <SelectValue placeholder="Gün" />
@@ -244,7 +244,7 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
 
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   <div>
-                    <Label htmlFor="gracePeriod" className="text-xs text-blue-600">Ödeme Erteleme (Gün)</Label>
+                    <Label htmlFor="gracePeriod" className="text-xs text-blue-600 dark:text-blue-400">Ödeme Erteleme (Gün)</Label>
                     <Input
                       id="gracePeriod"
                       type="number"
@@ -257,7 +257,7 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
 
                   {accountCategory === 'credit_card' && (
                     <div>
-                      <Label htmlFor="minimumPayment" className="text-xs text-blue-600">Asgari Ödeme (TL)</Label>
+                      <Label htmlFor="minimumPayment" className="text-xs text-blue-600 dark:text-blue-400">Asgari Ödeme (TL)</Label>
                       <Input
                         id="minimumPayment"
                         type="number"
@@ -272,7 +272,7 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
                 </div>
 
                 <div className="mt-3">
-                  <Label htmlFor="interestRate" className="text-xs text-blue-600">Faiz Oranı (% Yıllık)</Label>
+                  <Label htmlFor="interestRate" className="text-xs text-blue-600 dark:text-blue-400">Faiz Oranı (% Yıllık)</Label>
                   <Input
                     id="interestRate"
                     type="number"

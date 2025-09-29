@@ -169,14 +169,14 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
 
           {/* Hesap Türü Bilgisi - allowTypeChange false ise göster */}
           {!allowTypeChange && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <div className="flex items-center gap-2">
                 {accountType === 'company' ? (
-                  <Building className="w-4 h-4 text-blue-600" />
+                  <Building className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 ) : (
-                  <User className="w-4 h-4 text-blue-600" />
+                  <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 )}
-                <span className="text-sm font-medium text-blue-700">
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
                   {accountType === 'company' ? 'Şirket Hesabı' : 'Kişisel Hesap'} ekleniyor
                 </span>
               </div>
@@ -214,11 +214,11 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
           </div>
 
           {/* Bank Products Selection */}
-          <Card className="bg-blue-50/50 border-blue-200">
+          <Card className="bg-blue-50/50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
             <CardContent className="pt-4">
               <div className="flex items-center gap-2 mb-4">
-                <Building className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-700">Banka Ürünleri</span>
+                <Building className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Banka Ürünleri</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -287,16 +287,16 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
 
           {/* Credit Card Details */}
           {hasCreditCard && (
-            <Card className="bg-green-50/50 border-green-200">
+            <Card className="bg-green-50/50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
               <CardContent className="pt-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <CreditCard className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-700">Kredi Kartı Detayları</span>
+                  <CreditCard className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <span className="text-sm font-medium text-green-700 dark:text-green-300">Kredi Kartı Detayları</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="ccCutOffDate" className="text-xs text-green-600">Kesim Tarihi (Ayın Kaçı)</Label>
+                    <Label htmlFor="ccCutOffDate" className="text-xs text-green-600 dark:text-green-400">Kesim Tarihi (Ayın Kaçı)</Label>
                     <Select value={creditCardCutOffDate} onValueChange={setCreditCardCutOffDate}>
                       <SelectTrigger className="h-8">
                         <SelectValue placeholder="Gün" />
@@ -312,7 +312,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
                   </div>
 
                   <div>
-                    <Label htmlFor="ccDueDate" className="text-xs text-green-600">Son Ödeme (Ayın Kaçı)</Label>
+                    <Label htmlFor="ccDueDate" className="text-xs text-green-600 dark:text-green-400">Son Ödeme (Ayın Kaçı)</Label>
                     <Select value={creditCardDueDate} onValueChange={setCreditCardDueDate}>
                       <SelectTrigger className="h-8">
                         <SelectValue placeholder="Gün" />
@@ -330,7 +330,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
 
                 <div className="grid grid-cols-3 gap-3 mt-3">
                   <div>
-                    <Label htmlFor="ccGracePeriod" className="text-xs text-green-600">Erteleme (Gün)</Label>
+                    <Label htmlFor="ccGracePeriod" className="text-xs text-green-600 dark:text-green-400">Erteleme (Gün)</Label>
                     <Input
                       id="ccGracePeriod"
                       type="number"
@@ -342,7 +342,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
                   </div>
 
                   <div>
-                    <Label htmlFor="ccMinPayment" className="text-xs text-green-600">Asgari Ödeme (TL)</Label>
+                    <Label htmlFor="ccMinPayment" className="text-xs text-green-600 dark:text-green-400">Asgari Ödeme (TL)</Label>
                     <Input
                       id="ccMinPayment"
                       type="number"
@@ -355,7 +355,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
                   </div>
 
                   <div>
-                    <Label htmlFor="ccInterestRate" className="text-xs text-green-600">Faiz Oranı (%)</Label>
+                    <Label htmlFor="ccInterestRate" className="text-xs text-green-600 dark:text-green-400">Faiz Oranı (%)</Label>
                     <Input
                       id="ccInterestRate"
                       type="number"
@@ -373,16 +373,16 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
 
           {/* Loan Details */}
           {hasLoan && (
-            <Card className="bg-orange-50/50 border-orange-200">
+            <Card className="bg-orange-50/50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800">
               <CardContent className="pt-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm font-medium text-orange-700">Kredi Detayları</span>
+                  <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  <span className="text-sm font-medium text-orange-700 dark:text-orange-300">Kredi Detayları</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="loanDueDate" className="text-xs text-orange-600">Ödeme Tarihi (Ayın Kaçı)</Label>
+                    <Label htmlFor="loanDueDate" className="text-xs text-orange-600 dark:text-orange-400">Ödeme Tarihi (Ayın Kaçı)</Label>
                     <Select value={loanDueDate} onValueChange={setLoanDueDate}>
                       <SelectTrigger className="h-8">
                         <SelectValue placeholder="Gün" />
@@ -398,7 +398,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
                   </div>
 
                   <div>
-                    <Label htmlFor="loanGracePeriod" className="text-xs text-orange-600">Erteleme (Gün)</Label>
+                    <Label htmlFor="loanGracePeriod" className="text-xs text-orange-600 dark:text-orange-400">Erteleme (Gün)</Label>
                     <Input
                       id="loanGracePeriod"
                       type="number"
@@ -412,7 +412,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
 
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   <div>
-                    <Label htmlFor="loanMinPayment" className="text-xs text-orange-600">Aylık Taksit (TL)</Label>
+                    <Label htmlFor="loanMinPayment" className="text-xs text-orange-600 dark:text-orange-400">Aylık Taksit (TL)</Label>
                     <Input
                       id="loanMinPayment"
                       type="number"
@@ -425,7 +425,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
                   </div>
 
                   <div>
-                    <Label htmlFor="loanInterestRate" className="text-xs text-orange-600">Faiz Oranı (%)</Label>
+                    <Label htmlFor="loanInterestRate" className="text-xs text-orange-600 dark:text-orange-400">Faiz Oranı (%)</Label>
                     <Input
                       id="loanInterestRate"
                       type="number"
@@ -443,16 +443,16 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
 
           {/* Overdraft Details */}
           {hasOverdraft && (
-            <Card className="bg-red-50/50 border-red-200">
+            <Card className="bg-red-50/50 dark:bg-red-950/30 border-red-200 dark:border-red-800">
               <CardContent className="pt-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle className="w-4 h-4 text-red-600" />
-                  <span className="text-sm font-medium text-red-700">KMH Detayları</span>
+                  <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <span className="text-sm font-medium text-red-700 dark:text-red-300">KMH Detayları</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="overdraftLimit" className="text-xs text-red-600">KMH Limiti (TL)</Label>
+                    <Label htmlFor="overdraftLimit" className="text-xs text-red-600 dark:text-red-400">KMH Limiti (TL)</Label>
                     <Input
                       id="overdraftLimit"
                       type="number"
@@ -465,7 +465,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
                   </div>
 
                   <div>
-                    <Label htmlFor="overdraftInterestRate" className="text-xs text-red-600">Faiz Oranı (%)</Label>
+                    <Label htmlFor="overdraftInterestRate" className="text-xs text-red-600 dark:text-red-400">Faiz Oranı (%)</Label>
                     <Input
                       id="overdraftInterestRate"
                       type="number"
