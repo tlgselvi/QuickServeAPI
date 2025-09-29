@@ -17,14 +17,22 @@ jobs:
 
       - name: Dump database
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL || secrets.DATABASE_URL }}
         run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "❌ DATABASE_URL not found in secrets"
+            exit 1
+          fi
+          
+          echo "🔄 Starting database backup..."
           export PGPASSWORD=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.password)")
           export PGUSER=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.username)")
           export PGHOST=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.hostname)")
           export PGPORT=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.port||5432)")
           export PGDATABASE=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.pathname.slice(1))")
+          
           pg_dump -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -F c -Z 9 -f backup.dump
+          echo "✅ Database backup completed"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
