@@ -369,6 +369,51 @@ export const loans = pgTable('loans', {
   paymentType: varchar('payment_type', { length: 20 }).notNull(), // 'annuity' | 'bullet'
 });
 
+// =====================
+// AGING TABLE (Sprint 2)
+// =====================
+
+export const agingTable = pgTable('aging_table', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  type: varchar('type', { length: 20 }).notNull(), // 'receivable' or 'payable'
+  customerSupplier: varchar('customer_supplier', { length: 255 }).notNull(),
+  invoiceNumber: varchar('invoice_number', { length: 100 }),
+  invoiceDate: timestamp('invoice_date').notNull(),
+  dueDate: timestamp('due_date').notNull(),
+  originalAmount: decimal('original_amount', { precision: 19, scale: 4 }).notNull(),
+  currentAmount: decimal('current_amount', { precision: 19, scale: 4 }).notNull(),
+  currency: varchar('currency', { length: 3 }).default('TRY').notNull(),
+  status: varchar('status', { length: 20 }).default('outstanding').notNull(), // 'outstanding', 'paid', 'overdue'
+  daysOutstanding: integer('days_outstanding'),
+  agingBucket: varchar('aging_bucket', { length: 20 }), // '0-30', '31-60', '61-90', '90+'
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+});
+
+// =====================
+// PROGRESS PAYMENT (Sprint 2)
+// =====================
+
+export const progressPayments = pgTable('progress_payments', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  projectName: varchar('project_name', { length: 255 }).notNull(),
+  projectType: varchar('project_type', { length: 50 }).notNull(), // 'construction', 'consulting', 'other'
+  contractValue: decimal('contract_value', { precision: 19, scale: 4 }).notNull(),
+  progressPercentage: decimal('progress_percentage', { precision: 5, scale: 2 }).default('0').notNull(),
+  billedAmount: decimal('billed_amount', { precision: 19, scale: 4 }).default('0').notNull(),
+  paidAmount: decimal('paid_amount', { precision: 19, scale: 4 }).default('0').notNull(),
+  pendingAmount: decimal('pending_amount', { precision: 19, scale: 4 }).default('0').notNull(),
+  currency: varchar('currency', { length: 3 }).default('TRY').notNull(),
+  status: varchar('status', { length: 20 }).default('active').notNull(), // 'active', 'completed', 'cancelled'
+  startDate: timestamp('start_date'),
+  expectedCompletionDate: timestamp('expected_completion_date'),
+  actualCompletionDate: timestamp('actual_completion_date'),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+});
+
 export const insertBudgetLineSchema = z.object({
   category: z.string(),
   plannedAmount: z.number(),

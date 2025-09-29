@@ -23,6 +23,8 @@ import riskRouter from './routes/risk';
 import simulationRouter from './routes/simulation';
 import advisorRouter from './routes/advisor';
 import financeRouter from './routes/finance';
+import emailVerificationRouter from './routes/email-verification';
+import budgetLinesRouter from './routes/budget-lines';
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -2777,6 +2779,16 @@ export async function registerRoutes (app: Express): Promise<Server> {
   // ADVISOR ROUTES
   // ===================================
   app.use('/api/advisor', requireAuth, advisorRouter(Router()));
+
+  // ===================================
+  // EMAIL VERIFICATION ROUTES
+  // ===================================
+  app.use('/api/email-verification', emailVerificationRouter);
+
+  // ===================================
+  // BUDGET LINES ROUTES
+  // ===================================
+  app.use('/api/budget-lines', budgetLinesRouter);
 
   const httpServer = createServer(app);
   return httpServer;

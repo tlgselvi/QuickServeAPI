@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { UserRoleType, PermissionType } from '@shared/schema';
 import { hasPermission, hasAnyPermission } from '@shared/schema';
+import jwt from 'jsonwebtoken';
 
 // Extend Request type to include user info
 export interface AuthenticatedRequest extends Request {
@@ -11,6 +12,50 @@ export interface AuthenticatedRequest extends Request {
     role: UserRoleType;
   };
 }
+
+// JWT Refresh Token middleware
+export const requireJWTAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.substring(7)
+    : null;
+
+  if (!token) {
+    return res.status(401).json({
+      error: 'JWT token gerekli',
+      code: 'JWT_REQUIRED',
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    
+    // Load fresh user data
+    const { storage } = await import('../storage');
+    const currentUser = await storage.getUser(decoded.userId);
+
+    if (!currentUser || !currentUser.isActive) {
+      return res.status(401).json({
+        error: 'Geçersiz token veya kullanıcı bulunamadı',
+        code: 'INVALID_TOKEN',
+      });
+    }
+
+    // Attach user to request
+    req.user = {
+      id: currentUser.id,
+      email: currentUser.email,
+      username: currentUser.username,
+      role: currentUser.role,
+    };
+
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      error: 'Geçersiz token',
+      code: 'INVALID_TOKEN',
+    });
+  }
+};
 
 // Authentication middleware - ensures user is logged in and active (authoritative check)
 export const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
