@@ -247,55 +247,88 @@ export const aiSettings = pgTable('ai_settings', {
   updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
 });
 
-export const insertAccountSchema = createInsertSchema(accounts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertAccountSchema = z.object({
+  name: z.string(),
+  type: z.enum(['personal', 'company']),
+  balance: z.number(),
+  currency: z.string().default('TRY'),
+  description: z.string().optional(),
+  accountNumber: z.string().optional(),
+  bankName: z.string().optional(),
+  iban: z.string().optional(),
+  isActive: z.boolean().default(true),
+  metadata: z.string().optional(),
 });
 
-export const insertBankProductSchema = createInsertSchema(bankProducts).omit({
-  id: true,
+export const insertBankProductSchema = z.object({
+  name: z.string(),
+  type: z.string(),
+  description: z.string().optional(),
+  isActive: z.boolean().default(true),
 });
 
-export const insertTransactionSchema = createInsertSchema(transactions).omit({
-  id: true,
-  date: true,
+export const insertTransactionSchema = z.object({
+  type: z.enum(['income', 'expense', 'transfer']),
+  accountId: z.string(),
+  amount: z.number(),
+  description: z.string(),
+  category: z.string().optional(),
+  virmanPairId: z.string().optional(),
 });
 
-export const insertSystemAlertSchema = createInsertSchema(systemAlerts).omit({
-  id: true,
-  createdAt: true,
-  dismissedAt: true,
+export const insertSystemAlertSchema = z.object({
+  type: z.string(),
+  accountId: z.string().optional(),
+  description: z.string(),
+  title: z.string(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  isActive: z.boolean().default(true),
+  metadata: z.string().optional(),
 });
 
-export const insertFixedExpenseSchema = createInsertSchema(fixedExpenses).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastProcessed: true,
-  nextDueDate: true,
+export const insertFixedExpenseSchema = z.object({
+  type: z.string(),
+  currency: z.string().optional(),
+  accountId: z.string().optional(),
+  amount: z.number(),
+  description: z.string(),
+  category: z.string().optional(),
+  frequency: z.enum(['monthly', 'yearly', 'weekly', 'daily']),
+  startDate: z.date(),
+  endDate: z.date().optional(),
 });
 
-export const insertCreditSchema = createInsertSchema(credits).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastPaymentDate: true,
-  lastPaymentAmount: true,
+export const insertCreditSchema = z.object({
+  type: z.string(),
+  status: z.string().optional(),
+  minimumPayment: z.number().optional(),
+  creditLimit: z.number(),
+  currentBalance: z.number(),
+  interestRate: z.number(),
+  dueDate: z.date(),
+  gracePeriod: z.number().optional(),
+  accountNumber: z.string().optional(),
 });
 
-export const insertForecastSchema = createInsertSchema(forecasts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  accuracy: true,
+export const insertForecastSchema = z.object({
+  type: z.string(),
+  currency: z.string().optional(),
+  accountId: z.string().optional(),
+  horizonMonths: z.number(),
+  confidence: z.number(),
+  parameters: z.string().optional(),
 });
 
-export const insertInvestmentSchema = createInsertSchema(investments).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastUpdated: true,
+export const insertInvestmentSchema = z.object({
+  symbol: z.string().optional(),
+  type: z.string(),
+  userId: z.string(),
+  currency: z.string().optional(),
+  quantity: z.number(),
+  purchasePrice: z.number(),
+  currentPrice: z.number().optional(),
+  purchaseDate: z.date(),
+  riskLevel: z.string().optional(),
 });
 
 export type InsertAccount = z.infer<typeof insertAccountSchema>;
@@ -336,14 +369,19 @@ export const loans = pgTable('loans', {
   paymentType: varchar('payment_type', { length: 20 }).notNull(), // 'annuity' | 'bullet'
 });
 
-export const insertBudgetLineSchema = createInsertSchema(budgetLines).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertBudgetLineSchema = z.object({
+  category: z.string(),
+  plannedAmount: z.number(),
+  actualAmount: z.number().optional(),
+  month: z.date(),
 });
 
-export const insertLoanSchema = createInsertSchema(loans).omit({
-  id: true,
+export const insertLoanSchema = z.object({
+  interestRate: z.number(),
+  startDate: z.date(),
+  principal: z.number(),
+  termMonths: z.number(),
+  paymentType: z.string(),
 });
 
 export type BudgetLine = typeof budgetLines.$inferSelect;
@@ -365,10 +403,10 @@ export const users = pgTable('users', {
   lastLogin: timestamp('last_login'),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  email: true,
-  password: true,
+export const insertUserSchema = z.object({
+  username: z.string(),
+  email: z.string().email(),
+  password: z.string(),
 });
 
 export const loginSchema = z.object({
@@ -695,10 +733,11 @@ export const teamRolePermissions: Record<TeamRoleType, TeamPermissionType[]> = {
 };
 
 // Schema Types and Validation
-export const insertTeamSchema = createInsertSchema(teams).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertTeamSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  isActive: z.boolean().default(true),
+  ownerId: z.string(),
 });
 
 export const updateTeamSchema = insertTeamSchema.pick({
@@ -706,15 +745,23 @@ export const updateTeamSchema = insertTeamSchema.pick({
   description: true,
 }).partial();
 
-export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
-  id: true,
-  joinedAt: true,
+export const insertTeamMemberSchema = z.object({
+  userId: z.string(),
+  isActive: z.boolean().default(true),
+  teamId: z.string(),
+  teamRole: z.string().optional(),
+  permissions: z.array(z.string()).optional(),
 });
 
-export const insertInviteSchema = createInsertSchema(invites).omit({
-  id: true,
-  createdAt: true,
-  acceptedAt: true,
+export const insertInviteSchema = z.object({
+  status: z.string().optional(),
+  teamId: z.string(),
+  teamRole: z.string().optional(),
+  inviterUserId: z.string(),
+  invitedEmail: z.string(),
+  invitedUserId: z.string().optional(),
+  inviteToken: z.string(),
+  expiresAt: z.date(),
 });
 
 export const inviteUserSchema = z.object({
@@ -812,12 +859,22 @@ export type TransactionJsonFile = z.infer<typeof transactionJsonFileSchema>;
 // AI SETTINGS SCHEMAS
 // =====================
 
-export const insertAISettingsSchema = createInsertSchema(aiSettings).omit({
-  id: true,
+export const insertAISettingsSchema = z.object({
+  fxDelta: z.number(),
+  rateDelta: z.number(),
+  inflationDelta: z.number(),
+  horizonMonths: z.number(),
 });
 
-export const insertTenantSchema = createInsertSchema(tenants).omit({
-  id: true,
+export const insertTenantSchema = z.object({
+  projections: z.array(z.object({
+    month: z.number(),
+    cash: z.number(),
+    debt: z.number(),
+    netWorth: z.number(),
+  })),
+  summary: z.string(),
+  cashDeficitMonth: z.number().optional(),
 });
 
 export type AISettings = typeof aiSettings.$inferSelect;
@@ -851,7 +908,7 @@ export const simulationRuns = pgTable('simulation_runs', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const insertSimulationRunSchema = createInsertSchema(simulationRuns, {
+export const insertSimulationRunSchema = z.object({
   userId: z.string(),
   parameters: z.object({
     fxDelta: z.number(),
@@ -869,9 +926,6 @@ export const insertSimulationRunSchema = createInsertSchema(simulationRuns, {
     summary: z.string(),
     cashDeficitMonth: z.number().optional(),
   }),
-}).omit({
-  id: true,
-  createdAt: true,
 });
 
 export type SimulationRun = typeof simulationRuns.$inferSelect;
