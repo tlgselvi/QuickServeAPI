@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Plus } from 'lucide-react';
 
 export default function Company () {
   const formatCurrency = useFormatCurrency();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccount, setSelectedAccount] = useState<string>('all');
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
@@ -64,8 +65,9 @@ export default function Company () {
     try {
       const response = await apiRequest('POST', '/api/transactions', transactionData);
       if (response.ok) {
-        // Refresh accounts and transactions data
-        window.location.reload();
+        // Invalidate and refetch data instead of reloading page
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       }
     } catch (error) {
       console.error('Error adding transaction:', error);
@@ -87,12 +89,16 @@ export default function Company () {
       console.log('Account response:', response);
       
       if (response.ok) {
+        console.log('✅ Company: Account added successfully');
         setShowAddAccountDialog(false);
-        // Refresh accounts data
-        window.location.reload();
+        // Invalidate and refetch accounts data instead of reloading page
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+        console.log('🔄 Company: Cache invalidated, data will refresh');
       } else {
         const errorData = await response.json();
-        alert(`Hata: ${errorData.message || 'Hesap eklenemedi'}`);
+        console.error('❌ Company: API error:', errorData);
+        alert(`❌ Hesap eklenirken hata: ${errorData.error || errorData.message || 'Bilinmeyen hata'}`);
       }
     } catch (error) {
       console.error('Error adding account:', error);

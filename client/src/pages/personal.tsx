@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Plus } from 'lucide-react';
 
 export default function Personal () {
   const formatCurrency = useFormatCurrency();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccount, setSelectedAccount] = useState<string>('all');
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
@@ -64,8 +65,9 @@ export default function Personal () {
     try {
       const response = await apiRequest('POST', '/api/transactions', transactionData);
       if (response.ok) {
-        // Refresh accounts and transactions data
-        window.location.reload();
+        // Invalidate and refetch data instead of reloading page
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       }
     } catch (error) {
       console.error('Error adding transaction:', error);
@@ -76,14 +78,23 @@ export default function Personal () {
   const handleAddAccount = async (accountData: any) => {
     setIsAddingAccount(true);
     try {
+      console.log('🔍 Personal: Sending account data to API:', accountData);
       const response = await apiRequest('POST', '/api/accounts', accountData);
       if (response.ok) {
+        console.log('✅ Personal: Account added successfully');
         setShowAddAccountDialog(false);
-        // Refresh accounts data
-        window.location.reload();
+        // Invalidate and refetch accounts data instead of reloading page
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+        console.log('🔄 Personal: Cache invalidated, data will refresh');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Personal: API error:', errorData);
+        alert(`❌ Hesap eklenirken hata: ${errorData.error || 'Bilinmeyen hata'}`);
       }
     } catch (error) {
-      console.error('Error adding account:', error);
+      console.error('❌ Personal: Error adding account:', error);
+      alert('❌ Hesap eklenirken hata oluştu!');
     } finally {
       setIsAddingAccount(false);
     }
