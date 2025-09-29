@@ -29,7 +29,19 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!bankName || !accountName) {
+    // Validation: Required fields
+    if (!bankName.trim()) {
+      alert('❌ Banka adı zorunludur!');
+      return;
+    }
+
+    if (!accountName.trim()) {
+      alert('❌ Hesap adı zorunludur!');
+      return;
+    }
+
+    if (!balance || parseFloat(balance) < 0) {
+      alert('❌ Geçerli bir bakiye giriniz!');
       return;
     }
 
@@ -63,7 +75,7 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" data-testid="dialog-add-account">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden" data-testid="dialog-add-account">
         <DialogHeader>
           <DialogTitle data-testid="dialog-title">Yeni Hesap Ekle</DialogTitle>
         </DialogHeader>
@@ -137,6 +149,7 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
                 className="pr-12"
                 step="0.01"
                 min="0"
+                required
                 data-testid="input-balance"
               />
               <span className="absolute right-3 top-2 text-sm text-muted-foreground">TRY</span>
