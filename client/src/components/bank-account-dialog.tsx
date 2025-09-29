@@ -23,7 +23,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
   const [accountName, setAccountName] = useState('');
 
   // Product selections
-  const [hasCheckingAccount, setHasCheckingAccount] = useState(false);
+  const [hasCheckingAccount, setHasCheckingAccount] = useState(true); // Default: Vadesiz Hesap seçili
   const [hasCreditCard, setHasCreditCard] = useState(false);
   const [hasLoan, setHasLoan] = useState(false);
   const [hasOverdraft, setHasOverdraft] = useState(false);
@@ -112,7 +112,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
     setBankName('');
     setAccountName('');
     setAccountType('personal');
-    setHasCheckingAccount(false);
+    setHasCheckingAccount(true); // Reset'te de Vadesiz Hesap seçili kalsın
     setHasCreditCard(false);
     setHasLoan(false);
     setHasOverdraft(false);

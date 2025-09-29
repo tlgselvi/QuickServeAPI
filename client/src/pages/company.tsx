@@ -81,7 +81,7 @@ export default function Company () {
   // Add account function
   const handleAddAccount = async (accountData: any) => {
     // Validate required fields
-    if (!accountData.name || !accountData.type || !accountData.balance) {
+    if (!accountData.name || !accountData.type || accountData.balance === undefined) {
       alert('Lütfen tüm alanları doldurun!');
       return;
     }
