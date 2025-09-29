@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,7 @@ interface SimulationResult {
 }
 
 export default function SimulationPanel() {
+  const formatCurrency = useFormatCurrency();
   const [parameters, setParameters] = useState<SimulationParameters>({
     fxDelta: 0,
     rateDelta: 0,

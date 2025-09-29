@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -72,7 +73,8 @@ const getSubAccountCategories = (subAccount?: SubAccount) => {
   }
 };
 
-export default function AccountTransactionForm ({ account, subAccount, onAddTransaction, onClose }: AccountTransactionFormProps) {
+export default function AccountTransactionForm ({
+  formatCurrency = useFormatCurrency(), account, subAccount, onAddTransaction, onClose }: AccountTransactionFormProps) {
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');

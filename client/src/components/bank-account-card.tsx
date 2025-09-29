@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,7 +51,8 @@ interface BankAccountCardProps {
   onViewHistory: (bankId: string) => void;
 }
 
-export default function BankAccountCard ({ bank, onAddTransaction, onViewHistory }: BankAccountCardProps) {
+export default function BankAccountCard ({
+  formatCurrency = useFormatCurrency(), bank, onAddTransaction, onViewHistory }: BankAccountCardProps) {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
   const getProductIcon = (productType: string) => {
