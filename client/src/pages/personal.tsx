@@ -25,11 +25,14 @@ export default function Personal () {
 
   // Fetch personal accounts
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: ['/api/accounts'],
+    queryKey: ['/api/accounts', 'personal'], // Unique queryKey for personal accounts
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/accounts');
       const data = await response.json();
-      return data.filter((account: Account) => account.type === 'personal');
+      console.log('👤 Personal: Fetched all accounts:', data);
+      const personalAccounts = data.filter((account: Account) => account.type === 'personal');
+      console.log('👤 Personal: Filtered personal accounts:', personalAccounts);
+      return personalAccounts;
     },
     staleTime: 30000,
   });
@@ -66,7 +69,8 @@ export default function Personal () {
       const response = await apiRequest('POST', '/api/transactions', transactionData);
       if (response.ok) {
         // Invalidate and refetch data instead of reloading page
-        await queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       }
     } catch (error) {
@@ -84,7 +88,8 @@ export default function Personal () {
         console.log('✅ Personal: Account added successfully');
         setShowAddAccountDialog(false);
         // Invalidate and refetch accounts data instead of reloading page
-        await queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
         console.log('🔄 Personal: Cache invalidated, data will refresh');
       } else {

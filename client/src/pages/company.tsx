@@ -25,11 +25,14 @@ export default function Company () {
 
   // Fetch company accounts
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: ['/api/accounts'],
+    queryKey: ['/api/accounts', 'company'], // Unique queryKey for company accounts
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/accounts');
       const data = await response.json();
-      return data.filter((account: Account) => account.type === 'company');
+      console.log('🏢 Company: Fetched all accounts:', data);
+      const companyAccounts = data.filter((account: Account) => account.type === 'company');
+      console.log('🏢 Company: Filtered company accounts:', companyAccounts);
+      return companyAccounts;
     },
     staleTime: 30000,
   });
@@ -66,7 +69,8 @@ export default function Company () {
       const response = await apiRequest('POST', '/api/transactions', transactionData);
       if (response.ok) {
         // Invalidate and refetch data instead of reloading page
-        await queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       }
     } catch (error) {
@@ -92,7 +96,8 @@ export default function Company () {
         console.log('✅ Company: Account added successfully');
         setShowAddAccountDialog(false);
         // Invalidate and refetch accounts data instead of reloading page
-        await queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
         console.log('🔄 Company: Cache invalidated, data will refresh');
       } else {

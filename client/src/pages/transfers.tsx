@@ -26,10 +26,12 @@ export default function Transfers () {
 
   // Fetch accounts
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: ['/api/accounts'],
+    queryKey: ['/api/accounts', 'all'], // Unique queryKey for transfers page
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/accounts');
-      return response.json();
+      const data = await response.json();
+      console.log('💸 Transfers: Fetched all accounts:', data);
+      return data;
     },
     staleTime: 30000,
   });
@@ -39,7 +41,9 @@ export default function Transfers () {
     queryKey: ['/api/transactions', 'transfers'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/transactions?type=transfer&limit=20');
-      return response.json();
+      const data = await response.json();
+      console.log('💸 Transfers: Fetched transfer transactions:', data);
+      return data;
     },
     staleTime: 30000,
   });
@@ -72,8 +76,10 @@ export default function Transfers () {
       setDescription('');
 
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'all'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions', 'transfers'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
     },
     onError: (error: Error) => {
