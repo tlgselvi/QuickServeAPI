@@ -79,12 +79,12 @@ export default function BankAccountCard ({
 
   const getProductColor = (productType: string) => {
     switch (productType) {
-      case 'checking': return 'bg-blue-100 text-blue-800';
-      case 'creditCard': return 'bg-green-100 text-green-800';
-      case 'loan': return 'bg-orange-100 text-orange-800';
-      case 'overdraft': return 'bg-red-100 text-red-800';
-      case 'savings': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'checking': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
+      case 'creditCard': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
+      case 'loan': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300';
+      case 'overdraft': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
+      case 'savings': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300';
+      default: return 'bg-gray-100 dark:bg-gray-800/30 text-gray-800 dark:text-gray-300';
     }
   };
 
@@ -136,7 +136,7 @@ export default function BankAccountCard ({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Building className="w-5 h-5 text-blue-600" />
+            <Building className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             <div>
               <CardTitle className="text-lg">{bank.bankName}</CardTitle>
               <p className="text-sm text-muted-foreground">{bank.accountName}</p>
@@ -262,12 +262,12 @@ export default function BankAccountCard ({
 
           {/* Payment Alerts */}
           {(bank.hasCreditCard || bank.hasLoan) && (
-            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-              <div className="flex items-center gap-1 text-yellow-700">
+            <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded text-xs">
+              <div className="flex items-center gap-1 text-yellow-700 dark:text-yellow-300">
                 <AlertTriangle className="w-3 h-3" />
                 <span className="font-medium">Ödeme Hatırlatmaları:</span>
               </div>
-              <div className="mt-1 space-y-1">
+              <div className="mt-1 space-y-1 text-yellow-700 dark:text-yellow-300">
                 {bank.hasCreditCard && bank.creditCardDueDate && (
                   <div>Kredi Kartı: Ayın {bank.creditCardDueDate}'i</div>
                 )}
