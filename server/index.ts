@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from './vite';
 import { pool } from './db';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { initializeProduction } from './seed-production';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -127,6 +128,16 @@ app.use((req, res, next) => {
   // Error handling middleware (must be after static serving)
   app.use(notFoundHandler);
   app.use(errorHandler);
+
+  // Initialize production data if needed
+  if (process.env.NODE_ENV === 'production') {
+    try {
+      await initializeProduction();
+    } catch (error) {
+      console.error('❌ Production initialization failed:', error);
+      // Continue startup even if seed fails
+    }
+  }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
