@@ -63,7 +63,7 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" data-testid="dialog-add-account">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" data-testid="dialog-add-account">
         <DialogHeader>
           <DialogTitle data-testid="dialog-title">Yeni Hesap Ekle</DialogTitle>
         </DialogHeader>
