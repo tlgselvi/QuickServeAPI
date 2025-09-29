@@ -82,7 +82,9 @@ export async function registerRoutes (app: Express): Promise<Server> {
     logAccess('CREATE_ACCOUNT'),
     async (req: AuthenticatedRequest, res) => {
       try {
+        console.log('🔍 Received account data:', JSON.stringify(req.body, null, 2));
         const validatedData = insertAccountSchema.parse(req.body);
+        console.log('✅ Validation passed:', JSON.stringify(validatedData, null, 2));
 
         // Check if user can create this account type
         const accountType = validatedData.type as 'personal' | 'company';
@@ -91,9 +93,11 @@ export async function registerRoutes (app: Express): Promise<Server> {
         }
 
         const account = await storage.createAccount(validatedData);
+        console.log('🎉 Account created:', account);
         res.json(account);
       } catch (error) {
-        res.status(400).json({ error: 'Geçersiz hesap verisi' });
+        console.error('❌ Account validation error:', error);
+        res.status(400).json({ error: 'Geçersiz hesap verisi', details: error.message });
       }
     },
   );
