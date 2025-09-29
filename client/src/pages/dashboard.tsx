@@ -36,6 +36,59 @@ export default function Dashboard () {
   const [selectedAccountTypeFilter, setSelectedAccountTypeFilter] = useState<string>('all');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
 
+  // Calculate total assets and debts
+  const calculateFinancialSummary = (accounts: Account[]) => {
+    let totalAssets = 0;
+    let totalDebts = 0;
+    let totalCreditCardDebt = 0;
+    let totalCreditCardMinPayment = 0;
+    let totalLoanDebt = 0;
+    let totalLoanMinPayment = 0;
+    let totalOverdraftDebt = 0;
+
+    accounts.forEach(account => {
+      const balance = parseFloat(account.balance || '0');
+      
+      if (balance >= 0) {
+        totalAssets += balance;
+      } else {
+        totalDebts += Math.abs(balance);
+      }
+
+      // Credit card debt
+      if (account.subAccounts?.creditCard) {
+        const creditCard = account.subAccounts.creditCard;
+        totalCreditCardDebt += creditCard.used || 0;
+        totalCreditCardMinPayment += creditCard.minimumPayment || 0;
+      }
+
+      // Loan debt
+      if (account.subAccounts?.loan) {
+        const loan = account.subAccounts.loan;
+        totalLoanDebt += loan.principalRemaining || 0;
+        totalLoanMinPayment += loan.monthlyPayment || 0;
+      }
+
+      // Overdraft debt
+      if (account.subAccounts?.kmh) {
+        const overdraft = account.subAccounts.kmh;
+        totalOverdraftDebt += overdraft.used || 0;
+      }
+    });
+
+    return {
+      totalAssets,
+      totalDebts,
+      totalCreditCardDebt,
+      totalCreditCardMinPayment,
+      totalLoanDebt,
+      totalLoanMinPayment,
+      totalOverdraftDebt,
+      netWorth: totalAssets - totalDebts - totalCreditCardDebt - totalLoanDebt - totalOverdraftDebt,
+      totalMonthlyPayments: totalCreditCardMinPayment + totalLoanMinPayment
+    };
+  };
+
   // Loading states
   const { isLoading: isRefreshing, startLoading: startRefresh, stopLoading: stopRefresh } = useLoadingState();
 
@@ -214,6 +267,68 @@ export default function Dashboard () {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
+          {/* Financial Summary */}
+          {dashboardData?.accounts && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {(() => {
+                const summary = calculateFinancialSummary(dashboardData.accounts);
+                return (
+                  <>
+                    <Card className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-green-700 dark:text-green-300">Toplam Varlık</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-green-800 dark:text-green-200">
+                          {formatCurrency(summary.totalAssets)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-red-700 dark:text-red-300">Toplam Borç</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-red-800 dark:text-red-200">
+                          {formatCurrency(summary.totalCreditCardDebt + summary.totalLoanDebt + summary.totalOverdraftDebt)}
+                        </div>
+                        <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                          Min. Ödeme: {formatCurrency(summary.totalMonthlyPayments)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-blue-700 dark:text-blue-300">Net Değer</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className={`text-2xl font-bold ${summary.netWorth >= 0 ? 'text-blue-800 dark:text-blue-200' : 'text-red-800 dark:text-red-200'}`}>
+                          {formatCurrency(summary.netWorth)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-yellow-700 dark:text-yellow-300">Aylık Ödeme</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-yellow-800 dark:text-yellow-200">
+                          {formatCurrency(summary.totalMonthlyPayments)}
+                        </div>
+                        <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                          Kredi + Kredi Kartı
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <DSCRCard dscr={Number.isFinite(dscrData?.dscr || 0) ? (dscrData?.dscr || 0) : Infinity} status={dscrData?.status || 'warning'} />

@@ -202,6 +202,14 @@ export default function Personal () {
                   }
                 }, 100);
               }}
+              onEditAccount={(bank) => {
+                // TODO: Implement edit account functionality
+                console.log('Edit account:', bank);
+              }}
+              onDeleteAccount={(accountId) => {
+                // TODO: Implement delete account functionality
+                console.log('Delete account:', accountId);
+              }}
             />
           );
         })}

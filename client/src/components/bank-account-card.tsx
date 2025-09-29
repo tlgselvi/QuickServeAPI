@@ -15,6 +15,8 @@ import {
   DollarSign,
   TrendingUp,
   TrendingDown,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import AccountTransactionForm from './account-transaction-form';
 
@@ -49,10 +51,12 @@ interface BankAccountCardProps {
   bank: BankProduct;
   onAddTransaction: (data: any) => void;
   onViewHistory: (bankId: string) => void;
+  onEditAccount?: (bank: BankProduct) => void;
+  onDeleteAccount?: (accountId: string) => void;
 }
 
 export default function BankAccountCard ({
-  formatCurrency = useFormatCurrency(), bank, onAddTransaction, onViewHistory }: BankAccountCardProps) {
+  formatCurrency = useFormatCurrency(), bank, onAddTransaction, onViewHistory, onEditAccount, onDeleteAccount }: BankAccountCardProps) {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
   const getProductIcon = (productType: string) => {
@@ -177,11 +181,27 @@ export default function BankAccountCard ({
                   >
                     <History className="w-3 h-3" />
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onEditAccount?.(bank)}
+                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onDeleteAccount?.(bank.id)}
+                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
                 </div>
               </div>
 
               {/* Product Details */}
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
                 {getPaymentInfo(product.type) && (
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
@@ -256,7 +276,7 @@ export default function BankAccountCard ({
         {/* Bank Summary */}
         <div className="pt-3 border-t">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Toplam Ürün:</span>
+            <span className="text-gray-600 dark:text-gray-300">Toplam Ürün:</span>
             <span className="font-medium">{products.length} aktif ürün</span>
           </div>
 
@@ -267,7 +287,7 @@ export default function BankAccountCard ({
                 <AlertTriangle className="w-3 h-3" />
                 <span className="font-medium">Ödeme Hatırlatmaları:</span>
               </div>
-              <div className="mt-1 space-y-1 text-yellow-700 dark:text-yellow-300">
+              <div className="mt-1 space-y-1 text-yellow-800 dark:text-yellow-200">
                 {bank.hasCreditCard && bank.creditCardDueDate && (
                   <div>Kredi Kartı: Ayın {bank.creditCardDueDate}'i</div>
                 )}
