@@ -49,9 +49,36 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!bankName || !accountName) {
+    // Validation: Required fields
+    if (!bankName.trim()) {
+      alert('❌ Banka adı zorunludur!');
       return;
     }
+
+    if (!accountName.trim()) {
+      alert('❌ Hesap adı zorunludur!');
+      return;
+    }
+
+    // Validation: At least one product must be selected
+    if (!hasCheckingAccount && !hasCreditCard && !hasLoan && !hasOverdraft && !hasSavings) {
+      alert('❌ En az bir banka ürünü seçmelisiniz!');
+      return;
+    }
+
+    console.log('🔍 BankAccountDialog: Sending account data:', {
+      name: accountName,
+      type: accountType,
+      bankName,
+      accountName,
+      balance: 0,
+      currency: 'TRY',
+      hasCheckingAccount,
+      hasCreditCard,
+      hasLoan,
+      hasOverdraft,
+      hasSavings,
+    });
 
     onAddBankAccount({
       name: accountName, // Backend schema'sında 'name' field'ı required
