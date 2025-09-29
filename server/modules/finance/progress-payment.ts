@@ -301,3 +301,4 @@ export async function calculateCashFlowImpact(userId: string, months: number = 1
     netCashFlow,
   };
 }
+

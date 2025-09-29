@@ -189,3 +189,4 @@ export function getPDFExportOptions(locale: string, companyName?: string): PDFEx
     companyName,
   };
 }
+

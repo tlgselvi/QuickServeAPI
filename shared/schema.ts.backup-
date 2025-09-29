@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, varchar, decimal, timestamp, boolean, jsonb, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, decimal, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
@@ -414,30 +414,6 @@ export const progressPayments = pgTable('progress_payments', {
   updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
 });
 
-// =====================
-// RECURRING TRANSACTIONS (Sprint 1.1)
-// =====================
-
-export const recurringTransactions = pgTable('recurring_transactions', {
-  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar('user_id', { length: 255 }).notNull(),
-  accountId: varchar('account_id', { length: 255 }).notNull(),
-  amount: decimal('amount', { precision: 19, scale: 4 }).notNull(),
-  description: varchar('description', { length: 500 }),
-  category: varchar('category', { length: 100 }),
-  interval: varchar('interval', { length: 20 }).notNull(), // 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
-  intervalCount: integer('interval_count').default(1).notNull(), // Every N intervals
-  startDate: timestamp('start_date').notNull(),
-  endDate: timestamp('end_date'), // Optional end date
-  isActive: boolean('is_active').default(true).notNull(),
-  lastProcessed: timestamp('last_processed'),
-  nextDueDate: timestamp('next_due_date').notNull(),
-  currency: varchar('currency', { length: 3 }).default('TRY').notNull(),
-  metadata: jsonb('metadata'), // Additional configuration
-  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
-  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
-});
-
 export const insertBudgetLineSchema = z.object({
   category: z.string(),
   plannedAmount: z.number(),
@@ -453,25 +429,10 @@ export const insertLoanSchema = z.object({
   paymentType: z.string(),
 });
 
-export const insertRecurringTransactionSchema = z.object({
-  accountId: z.string(),
-  amount: z.number(),
-  description: z.string().optional(),
-  category: z.string().optional(),
-  interval: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']),
-  intervalCount: z.number().default(1),
-  startDate: z.date(),
-  endDate: z.date().optional(),
-  currency: z.string().default('TRY'),
-  metadata: z.record(z.any()).optional(),
-});
-
 export type BudgetLine = typeof budgetLines.$inferSelect;
 export type InsertBudgetLine = z.infer<typeof insertBudgetLineSchema>;
 export type Loan = typeof loans.$inferSelect;
 export type InsertLoan = z.infer<typeof insertLoanSchema>;
-export type RecurringTransaction = typeof recurringTransactions.$inferSelect;
-export type InsertRecurringTransaction = z.infer<typeof insertRecurringTransactionSchema>;
 
 export const users = pgTable('users', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),

@@ -78,3 +78,4 @@ router.get('/status', requireAuth, async (req: AuthenticatedRequest, res) => {
 });
 
 export default router;
+

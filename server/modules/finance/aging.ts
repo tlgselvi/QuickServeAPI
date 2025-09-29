@@ -250,3 +250,4 @@ export async function updateAgingData(userId: string): Promise<void> {
       .where(eq(agingTable.id, item.id));
   }
 }
+

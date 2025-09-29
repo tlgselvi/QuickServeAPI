@@ -26,6 +26,9 @@ import financeRouter from './routes/finance';
 import emailVerificationRouter from './routes/email-verification';
 import budgetLinesRouter from './routes/budget-lines';
 import exportRouter from './routes/export';
+import recurringRouter from './routes/recurring';
+import budgetCompareRouter from './routes/budget-compare';
+import scenarioRouter from './routes/scenario';
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -2795,6 +2798,21 @@ export async function registerRoutes (app: Express): Promise<Server> {
   // EXPORT ROUTES
   // ===================================
   app.use('/api/export', exportRouter);
+
+  // ===================================
+  // RECURRING TRANSACTIONS ROUTES
+  // ===================================
+  app.use('/api/recurring', recurringRouter);
+
+  // ===================================
+  // BUDGET COMPARE ROUTES
+  // ===================================
+  app.use('/api/budget', budgetCompareRouter);
+
+  // ===================================
+  // SCENARIO ANALYSIS ROUTES
+  // ===================================
+  app.use('/api/scenario', scenarioRouter);
 
   const httpServer = createServer(app);
   return httpServer;
