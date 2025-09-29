@@ -287,7 +287,7 @@ export default function FixedExpenses () {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(totalMonthlyExpenses, 'TRY')}
+              {formatCurrency(totalMonthlyExpenses)}
             </div>
           </CardContent>
         </Card>
@@ -299,7 +299,7 @@ export default function FixedExpenses () {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(totalMonthlyIncome, 'TRY')}
+              {formatCurrency(totalMonthlyIncome)}
             </div>
           </CardContent>
         </Card>
@@ -336,7 +336,7 @@ export default function FixedExpenses () {
                     <TableCell>{expense.description || '-'}</TableCell>
                     <TableCell>{getTypeBadge(expense.type)}</TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(parseFloat(expense.amount), expense.currency)}
+                      {formatCurrency(parseFloat(expense.amount))}
                     </TableCell>
                     <TableCell>{getRecurrenceBadge(expense.recurrence)}</TableCell>
                     <TableCell>{expense.category || '-'}</TableCell>

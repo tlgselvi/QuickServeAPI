@@ -179,7 +179,7 @@ export default function Portfolio () {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(portfolioSummary?.totalValue || 0, 'TRY')}
+              {formatCurrency(portfolioSummary?.totalValue || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               Toplam yatırım değeri
@@ -194,7 +194,7 @@ export default function Portfolio () {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${(portfolioSummary?.totalGain || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(portfolioSummary?.totalGain || 0, 'TRY')}
+              {formatCurrency(portfolioSummary?.totalGain || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               {portfolioSummary?.totalGainPercentage?.toFixed(2)}% getiri
@@ -209,7 +209,7 @@ export default function Portfolio () {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(portfolioSummary?.totalInvested || 0, 'TRY')}
+              {formatCurrency(portfolioSummary?.totalInvested || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               Yatırılan toplam miktar
@@ -316,17 +316,17 @@ export default function Portfolio () {
                         <Badge variant="outline">{getTypeLabel(investment.type)}</Badge>
                       </TableCell>
                       <TableCell>{investment.quantity}</TableCell>
-                      <TableCell>{formatCurrency(investment.purchasePrice, investment.currency)}</TableCell>
+                      <TableCell>{formatCurrency(investment.purchasePrice)}</TableCell>
                       <TableCell>
                         {investment.currentPrice
-                          ? formatCurrency(investment.currentPrice, investment.currency)
+                          ? formatCurrency(investment.currentPrice)
                           : 'Güncel değil'
                         }
                       </TableCell>
-                      <TableCell>{formatCurrency(currentValue, investment.currency)}</TableCell>
+                      <TableCell>{formatCurrency(currentValue)}</TableCell>
                       <TableCell>
                         <div className={`font-medium ${gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {formatCurrency(gain, investment.currency)}
+                          {formatCurrency(gain)}
                         </div>
                         <div className={`text-sm ${gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {percentage >= 0 ? '+' : ''}{percentage.toFixed(2)}%

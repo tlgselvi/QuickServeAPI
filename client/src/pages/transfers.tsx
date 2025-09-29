@@ -160,7 +160,7 @@ export default function Transfers () {
                   <SelectContent>
                     {accounts.map((account: Account) => (
                       <SelectItem key={account.id} value={account.id}>
-                        {account.accountName} ({account.bankName}) - {formatCurrency(parseFloat(account.balance), account.currency)}
+                        {account.accountName} ({account.bankName}) - {formatCurrency(parseFloat(account.balance))}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -178,7 +178,7 @@ export default function Transfers () {
                       .filter((account: Account) => account.id !== fromAccountId)
                       .map((account: Account) => (
                         <SelectItem key={account.id} value={account.id}>
-                          {account.accountName} ({account.bankName}) - {formatCurrency(parseFloat(account.balance), account.currency)}
+                          {account.accountName} ({account.bankName}) - {formatCurrency(parseFloat(account.balance))}
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -231,7 +231,7 @@ export default function Transfers () {
                   <AlertDescription>
                     <strong>Transfer Özeti:</strong><br />
                     {getAccountName(fromAccountId)} → {getAccountName(toAccountId)}<br />
-                    Tutar: {formatCurrency(parseFloat(amount), 'TRY')}<br />
+                    Tutar: {formatCurrency(parseFloat(amount))}<br />
                     {!canTransfer && (
                       <span className="text-red-600">
                         ⚠️ Gönderen hesapta yeterli bakiye bulunmuyor.
@@ -285,7 +285,7 @@ export default function Transfers () {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatCurrency(parseFloat(transaction.amount), accounts.find((a: Account) => a.id === transaction.accountId)?.currency || 'TRY')}
+                        {formatCurrency(parseFloat(transaction.amount))}
                       </TableCell>
                       <TableCell>
                         {transaction.category}

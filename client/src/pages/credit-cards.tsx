@@ -297,7 +297,7 @@ export default function CreditCards () {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(totalDebt, 'TRY')}
+              {formatCurrency(totalDebt)}
             </div>
           </CardContent>
         </Card>
@@ -309,7 +309,7 @@ export default function CreditCards () {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(totalMinimumPayments, 'TRY')}
+              {formatCurrency(totalMinimumPayments)}
             </div>
           </CardContent>
         </Card>
@@ -359,7 +359,7 @@ export default function CreditCards () {
                       <TableCell className="font-medium">{credit.title}</TableCell>
                       <TableCell>{getTypeBadge(credit.type)}</TableCell>
                       <TableCell className="text-right">
-                        {formatCurrency(parseFloat(credit.amount || '0'), credit.currency)}
+                        {formatCurrency(parseFloat(credit.amount || '0'))}
                       </TableCell>
                       <TableCell className="text-right">
                         {credit.interestRate ? `${parseFloat(credit.interestRate)}%` : '-'}
@@ -371,7 +371,7 @@ export default function CreditCards () {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        {credit.minimumPayment ? formatCurrency(parseFloat(credit.minimumPayment), credit.currency) : '-'}
+                        {credit.minimumPayment ? formatCurrency(parseFloat(credit.minimumPayment)) : '-'}
                       </TableCell>
                       <TableCell>
                         {isOverdue ? (

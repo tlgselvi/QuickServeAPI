@@ -325,11 +325,11 @@ export default function Simulation () {
               <CardContent>
                 <div className="space-y-2">
                   <div className="text-2xl font-bold text-green-600">
-                    {formatCurrency(simulationResult.bestCase.results.portfolioValue, 'TRY')}
+                    {formatCurrency(simulationResult.bestCase.results.portfolioValue)}
                   </div>
                   <div className={`text-lg font-medium ${getGainColor(simulationResult.bestCase.results.totalGain)}`}>
                     {simulationResult.bestCase.results.totalGain >= 0 ? '+' : ''}
-                    {formatCurrency(simulationResult.bestCase.results.totalGain, 'TRY')}
+                    {formatCurrency(simulationResult.bestCase.results.totalGain)}
                   </div>
                   <div className={`text-sm ${getGainColor(simulationResult.bestCase.results.gainPercentage)}`}>
                     {simulationResult.bestCase.results.gainPercentage >= 0 ? '+' : ''}
@@ -353,11 +353,11 @@ export default function Simulation () {
               <CardContent>
                 <div className="space-y-2">
                   <div className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(simulationResult.baseCase.results.portfolioValue, 'TRY')}
+                    {formatCurrency(simulationResult.baseCase.results.portfolioValue)}
                   </div>
                   <div className={`text-lg font-medium ${getGainColor(simulationResult.baseCase.results.totalGain)}`}>
                     {simulationResult.baseCase.results.totalGain >= 0 ? '+' : ''}
-                    {formatCurrency(simulationResult.baseCase.results.totalGain, 'TRY')}
+                    {formatCurrency(simulationResult.baseCase.results.totalGain)}
                   </div>
                   <div className={`text-sm ${getGainColor(simulationResult.baseCase.results.gainPercentage)}`}>
                     {simulationResult.baseCase.results.gainPercentage >= 0 ? '+' : ''}
@@ -381,11 +381,11 @@ export default function Simulation () {
               <CardContent>
                 <div className="space-y-2">
                   <div className="text-2xl font-bold text-red-600">
-                    {formatCurrency(simulationResult.worstCase.results.portfolioValue, 'TRY')}
+                    {formatCurrency(simulationResult.worstCase.results.portfolioValue)}
                   </div>
                   <div className={`text-lg font-medium ${getGainColor(simulationResult.worstCase.results.totalGain)}`}>
                     {simulationResult.worstCase.results.totalGain >= 0 ? '+' : ''}
-                    {formatCurrency(simulationResult.worstCase.results.totalGain, 'TRY')}
+                    {formatCurrency(simulationResult.worstCase.results.totalGain)}
                   </div>
                   <div className={`text-sm ${getGainColor(simulationResult.worstCase.results.gainPercentage)}`}>
                     {simulationResult.worstCase.results.gainPercentage >= 0 ? '+' : ''}
