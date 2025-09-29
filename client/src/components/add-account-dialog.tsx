@@ -34,10 +34,11 @@ export default function AddAccountDialog ({ open, onOpenChange, onAddAccount, is
     }
 
     onAddAccount({
+      name: accountName, // Backend schema'sında 'name' field'ı required
       type: accountType,
       bankName,
       accountName,
-      balance: balance || '0',
+      balance: parseFloat(balance || '0'), // String yerine number gönder
       currency: 'TRY',
       accountCategory,
       paymentDueDate: paymentDueDate || null,
