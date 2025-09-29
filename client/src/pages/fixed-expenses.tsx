@@ -11,11 +11,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { formatCurrency } from '@/lib/utils';
+import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 import { Plus, Calendar, DollarSign, AlertCircle } from 'lucide-react';
 import type { FixedExpense } from '@shared/schema';
 
 export default function FixedExpenses () {
+  const formatCurrency = useFormatCurrency();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newExpense, setNewExpense] = useState({
     title: '',

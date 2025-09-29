@@ -20,7 +20,7 @@ import {
   Info,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
-import { formatCurrency } from '@/lib/utils';
+import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 import { toast } from '@/hooks/use-toast';
 
 interface SimulationParameter {
@@ -58,6 +58,7 @@ interface SimulationResult {
 }
 
 export default function Simulation () {
+  const formatCurrency = useFormatCurrency();
   const [selectedParam1, setSelectedParam1] = useState<string>('exchange_rate');
   const [selectedParam2, setSelectedParam2] = useState<string>('interest_rate');
   const [param1Value, setParam1Value] = useState<number>(30.5);

@@ -11,11 +11,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { formatCurrency } from '@/lib/utils';
+import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 import { Plus, CreditCard, Calendar, DollarSign, AlertTriangle } from 'lucide-react';
 import type { Credit } from '@shared/schema';
 
 export default function CreditCards () {
+  const formatCurrency = useFormatCurrency();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newCredit, setNewCredit] = useState({
     title: '',
