@@ -54,9 +54,11 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
     }
 
     onAddBankAccount({
+      name: accountName, // Backend schema'sında 'name' field'ı required
       type: accountType,
       bankName,
       accountName,
+      balance: 0, // Default balance for new accounts
       currency: 'TRY',
       hasCheckingAccount,
       hasCreditCard,
