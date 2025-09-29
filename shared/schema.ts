@@ -247,7 +247,11 @@ export const aiSettings = pgTable('ai_settings', {
   updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
 });
 
-export const insertAccountSchema = z.object({});
+export const insertAccountSchema = createInsertSchema(accounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 export const insertBankProductSchema = createInsertSchema(bankProducts).omit({
   id: true,

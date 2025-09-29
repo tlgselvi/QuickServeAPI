@@ -95,7 +95,7 @@ self.addEventListener('fetch', event => {
         return fetch(event.request)
           .then(response => {
             // Başarılı response'u cache'le
-            if (response.status === 200) {
+            if (response.status === 200 && event.request.url.startsWith('http')) {
               const responseClone = response.clone();
               caches.open(CACHE_NAME).then(cache => {
                 cache.put(event.request, responseClone);

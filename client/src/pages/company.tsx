@@ -74,16 +74,29 @@ export default function Company () {
 
   // Add account function
   const handleAddAccount = async (accountData: any) => {
+    // Validate required fields
+    if (!accountData.name || !accountData.type || !accountData.balance) {
+      alert('Lütfen tüm alanları doldurun!');
+      return;
+    }
+
     setIsAddingAccount(true);
     try {
+      console.log('Sending account data:', accountData);
       const response = await apiRequest('POST', '/api/accounts', accountData);
+      console.log('Account response:', response);
+      
       if (response.ok) {
         setShowAddAccountDialog(false);
         // Refresh accounts data
         window.location.reload();
+      } else {
+        const errorData = await response.json();
+        alert(`Hata: ${errorData.message || 'Hesap eklenemedi'}`);
       }
     } catch (error) {
       console.error('Error adding account:', error);
+      alert('Hesap eklenirken hata oluştu!');
     } finally {
       setIsAddingAccount(false);
     }
