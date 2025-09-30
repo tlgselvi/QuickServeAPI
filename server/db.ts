@@ -1,8 +1,11 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { neon, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@shared/schema';
 
-// Only use WebSocket in development - production uses HTTP
+// Force HTTP for production - WebSocket causes issues on Render
+neonConfig.fetchConnectionCache = true;
+
+// Only use WebSocket in development
 if (process.env.NODE_ENV !== 'production') {
   try {
     // Dynamic import for ESM compatibility
@@ -23,5 +26,5 @@ if (process.env.NODE_ENV !== 'production') {
 //   );
 // }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+export const sql = neon(process.env.DATABASE_URL || '');
+export const db = drizzle({ client: sql, schema });
