@@ -5,8 +5,8 @@ services:
     region: frankfurt
     plan: free
     rootDir: .
-    buildCommand: npm ci && npx vite build && npx drizzle-kit push && npm run seed:render
-    startCommand: npx tsx server/index.ts
+    buildCommand: npm ci && npx vite build
+    startCommand: node scripts/setup-database.js && npx tsx server/index.ts
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
