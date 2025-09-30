@@ -1,0 +1,23 @@
+CREATE TABLE "aging_reports" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" varchar(255) NOT NULL,
+	"report_type" varchar(20) NOT NULL,
+	"customer_vendor_id" varchar(255) NOT NULL,
+	"customer_vendor_name" varchar(500) NOT NULL,
+	"invoice_number" varchar(100),
+	"invoice_date" timestamp NOT NULL,
+	"due_date" timestamp NOT NULL,
+	"original_amount" numeric(19, 4) NOT NULL,
+	"current_amount" numeric(19, 4) NOT NULL,
+	"currency" varchar(3) DEFAULT 'TRY' NOT NULL,
+	"aging_days" integer NOT NULL,
+	"aging_bucket" varchar(20) NOT NULL,
+	"description" varchar(1000),
+	"status" varchar(20) DEFAULT 'outstanding' NOT NULL,
+	"payment_terms" varchar(100),
+	"last_payment_date" timestamp,
+	"last_payment_amount" numeric(19, 4),
+	"metadata" jsonb,
+	"created_at" timestamp DEFAULT NOW() NOT NULL,
+	"updated_at" timestamp DEFAULT NOW() NOT NULL
+);

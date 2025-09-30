@@ -473,52 +473,6 @@ export type InsertLoan = z.infer<typeof insertLoanSchema>;
 export type RecurringTransaction = typeof recurringTransactions.$inferSelect;
 export type InsertRecurringTransaction = z.infer<typeof insertRecurringTransactionSchema>;
 
-// =====================
-// AR/AP AGING TABLES (Sprint 1.2)
-// =====================
-
-export const agingReports = pgTable('aging_reports', {
-  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar('user_id', { length: 255 }).notNull(),
-  reportType: varchar('report_type', { length: 20 }).notNull(), // 'ar' (accounts receivable) or 'ap' (accounts payable)
-  customerVendorId: varchar('customer_vendor_id', { length: 255 }).notNull(),
-  customerVendorName: varchar('customer_vendor_name', { length: 500 }).notNull(),
-  invoiceNumber: varchar('invoice_number', { length: 100 }),
-  invoiceDate: timestamp('invoice_date').notNull(),
-  dueDate: timestamp('due_date').notNull(),
-  originalAmount: decimal('original_amount', { precision: 19, scale: 4 }).notNull(),
-  currentAmount: decimal('current_amount', { precision: 19, scale: 4 }).notNull(),
-  currency: varchar('currency', { length: 3 }).default('TRY').notNull(),
-  agingDays: integer('aging_days').notNull(),
-  agingBucket: varchar('aging_bucket', { length: 20 }).notNull(), // '0-30', '30-60', '60-90', '90+'
-  description: varchar('description', { length: 1000 }),
-  status: varchar('status', { length: 20 }).default('outstanding').notNull(), // 'outstanding', 'paid', 'overdue'
-  paymentTerms: varchar('payment_terms', { length: 100 }),
-  lastPaymentDate: timestamp('last_payment_date'),
-  lastPaymentAmount: decimal('last_payment_amount', { precision: 19, scale: 4 }),
-  metadata: jsonb('metadata'),
-  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
-  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
-});
-
-export const insertAgingReportSchema = z.object({
-  reportType: z.enum(['ar', 'ap']),
-  customerVendorId: z.string(),
-  customerVendorName: z.string(),
-  invoiceNumber: z.string().optional(),
-  invoiceDate: z.date(),
-  dueDate: z.date(),
-  originalAmount: z.number(),
-  currentAmount: z.number(),
-  currency: z.string().default('TRY'),
-  description: z.string().optional(),
-  paymentTerms: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
-});
-
-export type AgingReport = typeof agingReports.$inferSelect;
-export type InsertAgingReport = z.infer<typeof insertAgingReportSchema>;
-
 export const users = pgTable('users', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   username: text('username').notNull().unique(),

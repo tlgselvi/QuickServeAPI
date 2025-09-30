@@ -10,7 +10,10 @@ export interface CSVExportOptions {
 export interface CSVExportData {
   accounts?: Account[];
   transactions?: Transaction[];
-  type: 'accounts' | 'transactions' | 'combined';
+  agingReports?: any[];
+  runwayData?: any;
+  cashGapData?: any;
+  type: 'accounts' | 'transactions' | 'aging' | 'runway' | 'cashgap' | 'combined';
 }
 
 /**
@@ -37,6 +40,9 @@ export function exportToCSV(
       headers: {
         accounts: ['ID', 'Banka Adı', 'Hesap Adı', 'Tip', 'Bakiye', 'Para Birimi', 'Oluşturma Tarihi'],
         transactions: ['ID', 'Hesap', 'Tutar', 'Açıklama', 'Kategori', 'Tarih', 'Tip'],
+        aging: ['ID', 'Tip', 'Müşteri/Tedarikçi', 'Fatura No', 'Fatura Tarihi', 'Vade Tarihi', 'Tutar', 'Gün', 'Kova', 'Durum'],
+        runway: ['Ay', 'Başlangıç Nakit', 'Giderler', 'Net Nakit', 'Kapanış Nakit'],
+        cashgap: ['Dönem', 'Alacak', 'Borç', 'Net Akış', 'Birikimli Nakit'],
       },
     },
     'en-US': {
@@ -47,6 +53,9 @@ export function exportToCSV(
       headers: {
         accounts: ['ID', 'Bank Name', 'Account Name', 'Type', 'Balance', 'Currency', 'Created Date'],
         transactions: ['ID', 'Account', 'Amount', 'Description', 'Category', 'Date', 'Type'],
+        aging: ['ID', 'Type', 'Customer/Vendor', 'Invoice No', 'Invoice Date', 'Due Date', 'Amount', 'Days', 'Bucket', 'Status'],
+        runway: ['Month', 'Opening Cash', 'Expenses', 'Net Cash', 'Closing Cash'],
+        cashgap: ['Period', 'Receivables', 'Payables', 'Net Flow', 'Cumulative Cash'],
       },
     },
   };
@@ -173,5 +182,66 @@ export function getCSVExportOptions(locale: string): CSVExportOptions {
     currency: 'TRY', // TODO Tolga'dan teyit al - Default currency
     includeHeaders: true,
   };
+}
+
+// Additional export functions for new modules
+function exportAgingReports(reports: any[], options: CSVExportOptions): string {
+  const config = localeConfig[options.locale];
+  const headers = config.headers.aging;
+  
+  if (reports.length === 0) return headers.join(config.separator);
+  
+  const rows = reports.map(report => [
+    report.id,
+    report.reportType === 'ar' ? 'Alacak' : 'Borç',
+    report.customerVendorName,
+    report.invoiceNumber || '',
+    formatDate(new Date(report.invoiceDate)),
+    formatDate(new Date(report.dueDate)),
+    formatNumber(parseFloat(report.currentAmount)),
+    report.agingDays.toString(),
+    report.agingBucket,
+    report.status === 'outstanding' ? 'Beklemede' : report.status === 'overdue' ? 'Gecikmiş' : 'Ödenmiş',
+  ]);
+  
+  return [headers, ...rows].map(row => row.join(config.separator)).join('\n');
+}
+
+function exportRunwayData(runwayData: any, options: CSVExportOptions): string {
+  const config = localeConfig[options.locale];
+  const headers = config.headers.runway;
+  
+  if (!runwayData || !runwayData.monthlyBreakdown) {
+    return headers.join(config.separator);
+  }
+  
+  const rows = runwayData.monthlyBreakdown.map((month: any) => [
+    month.month,
+    formatNumber(month.projectedCash),
+    formatNumber(month.expenses),
+    formatNumber(month.netCash),
+    formatNumber(month.projectedCash),
+  ]);
+  
+  return [headers, ...rows].map(row => row.join(config.separator)).join('\n');
+}
+
+function exportCashGapData(cashGapData: any, options: CSVExportOptions): string {
+  const config = localeConfig[options.locale];
+  const headers = config.headers.cashgap;
+  
+  if (!cashGapData || !cashGapData.timeline) {
+    return headers.join(config.separator);
+  }
+  
+  const rows = cashGapData.timeline.map((period: any) => [
+    period.period,
+    formatNumber(period.arAmount),
+    formatNumber(period.apAmount),
+    formatNumber(period.netCashFlow),
+    formatNumber(period.cumulativeCash),
+  ]);
+  
+  return [headers, ...rows].map(row => row.join(config.separator)).join('\n');
 }
 

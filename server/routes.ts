@@ -29,6 +29,8 @@ import exportRouter from './routes/export';
 import recurringRouter from './routes/recurring';
 import budgetCompareRouter from './routes/budget-compare';
 import scenarioRouter from './routes/scenario';
+import agingRouter from './routes/aging';
+import dashboardExtendedRouter from './routes/dashboard-extended';
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -2813,6 +2815,16 @@ export async function registerRoutes (app: Express): Promise<Server> {
   // SCENARIO ANALYSIS ROUTES
   // ===================================
   app.use('/api/scenario', scenarioRouter);
+
+  // ===================================
+  // AGING ANALYSIS ROUTES
+  // ===================================
+  app.use('/api/aging', agingRouter);
+
+  // ===================================
+  // DASHBOARD EXTENDED ROUTES
+  // ===================================
+  app.use('/api/dashboard', dashboardExtendedRouter);
 
   const httpServer = createServer(app);
   return httpServer;
