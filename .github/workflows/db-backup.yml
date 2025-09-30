@@ -8,7 +8,6 @@ on:
 jobs:
   backup:
     runs-on: ubuntu-latest
-    if: ${{ secrets.DATABASE_URL != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,11 +15,19 @@ jobs:
       - name: Setup Postgres client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
+      - name: Check DATABASE_URL secret
+        run: |
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            echo "❌ DATABASE_URL secret not found"
+            echo "Please add DATABASE_URL to repository secrets"
+            exit 1
+          fi
+          echo "✅ DATABASE_URL secret found"
+
       - name: Dump database
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          
           echo "🔄 Starting database backup..."
           export PGPASSWORD=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.password)")
           export PGUSER=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.username)")
