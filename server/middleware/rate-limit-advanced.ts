@@ -166,8 +166,15 @@ export class AdvancedRateLimiter {
     return slowDown({
       windowMs: 15 * 60 * 1000, // 15 minutes
       delayAfter: 50, // Allow 50 requests per window without delay
-      delayMs: 500, // Add 500ms delay per request after delayAfter
+      delayMs: (used: number, req: Request) => {
+        // New express-slow-down v2 behavior
+        const delayAfter = req.slowDown?.limit || 50;
+        return (used - delayAfter) * 500;
+      },
       maxDelayMs: 20000, // Max delay of 20 seconds
+      validate: {
+        delayMs: false // Disable warning for delayMs
+      },
       skip: (req: Request) => {
         // Skip slow down for admin bypass
         const isAdminBypass = req.headers['x-admin-bypass'] === process.env.ADMIN_BYPASS_KEY;

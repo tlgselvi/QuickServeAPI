@@ -5,9 +5,12 @@ import * as schema from '@shared/schema';
 // Only use WebSocket in development - production uses HTTP
 if (process.env.NODE_ENV !== 'production') {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const ws = require('ws');
-    neonConfig.webSocketConstructor = ws;
+    // Dynamic import for ESM compatibility
+    import('ws').then((ws) => {
+      neonConfig.webSocketConstructor = ws.default;
+    }).catch(() => {
+      console.warn('WebSocket support not available - using HTTP fallback');
+    });
   } catch (error) {
     console.warn('WebSocket support not available:', error);
   }

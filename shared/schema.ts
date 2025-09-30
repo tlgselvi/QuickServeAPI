@@ -1453,14 +1453,37 @@ export type InsertUserActivityLog = z.infer<typeof insertUserActivityLogSchema>;
 export type UserActivityLog = typeof userActivityLogs.$inferSelect;
 export type LogUserActivity = z.infer<typeof logUserActivitySchema>;
 
+export const insertUserTwoFactorAuthSchema = z.object({
+  userId: z.string(),
+  secret: z.string(),
+  backupCodes: z.array(z.string()).optional(),
+  isEnabled: z.boolean().default(false),
+  smsEnabled: z.boolean().default(false),
+  smsPhoneNumber: z.string().optional(),
+  lastUsedAt: z.date().optional(),
+});
+
+export const updateUserTwoFactorAuthSchema = insertUserTwoFactorAuthSchema.partial();
+
 export type InsertUserTwoFactorAuth = typeof userTwoFactorAuth.$inferInsert;
+export type UpdateUserTwoFactorAuth = typeof userTwoFactorAuth.$inferInsert;
 export type UserTwoFactorAuth = typeof userTwoFactorAuth.$inferSelect;
 export type SetupTwoFactorAuth = z.infer<typeof setupTwoFactorAuthSchema>;
 export type VerifyTwoFactorAuth = z.infer<typeof verifyTwoFactorAuthSchema>;
 export type EnableTwoFactorAuth = z.infer<typeof enableTwoFactorAuthSchema>;
 export type DisableTwoFactorAuth = z.infer<typeof disableTwoFactorAuthSchema>;
 
+export const insertPasswordResetTokenSchema = z.object({
+  userId: z.string(),
+  token: z.string(),
+  expiresAt: z.date(),
+  used: z.boolean().default(false),
+});
+
+export const updatePasswordResetTokenSchema = insertPasswordResetTokenSchema.partial();
+
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+export type UpdatePasswordResetToken = typeof passwordResetTokens.$inferInsert;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type RequestPasswordReset = z.infer<typeof requestPasswordResetSchema>;
 export type ResetPassword = z.infer<typeof resetPasswordV2Schema>;

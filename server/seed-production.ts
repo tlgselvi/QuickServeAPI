@@ -11,34 +11,65 @@ export async function seedProductionData() {
     console.log('🌱 Seeding production database...');
 
     // Check if demo user already exists
-    const existingUser = await db
+    const existingDemoUser = await db
       .select()
       .from(users)
       .where(sql`email = 'demo@finbot.com'`)
       .limit(1);
 
-    if (existingUser.length > 0) {
-      console.log('✅ Demo user already exists, skipping seed');
+    // Check if admin user already exists
+    const existingAdminUser = await db
+      .select()
+      .from(users)
+      .where(sql`email = 'admin@finbot.com'`)
+      .limit(1);
+
+    if (existingDemoUser.length > 0 && existingAdminUser.length > 0) {
+      console.log('✅ Demo and admin users already exist, skipping seed');
       return;
     }
 
     // Create demo user
-    const hashedPassword = await bcrypt.hash('demo123', 10);
-    const [demoUser] = await db.insert(users).values({
-      username: 'demo',
-      email: 'demo@finbot.com',
-      password: hashedPassword,
-      role: 'admin',
-      isActive: true,
-      isEmailVerified: true,
-    }).returning();
+    if (existingDemoUser.length === 0) {
+      const hashedPassword = await bcrypt.hash('demo123', 10);
+      const [demoUser] = await db.insert(users).values({
+        username: 'demo',
+        email: 'demo@finbot.com',
+        password: hashedPassword,
+        role: 'admin',
+        isActive: true,
+        isEmailVerified: true,
+      }).returning();
 
-    console.log('✅ Demo user created:', demoUser.email);
+      console.log('✅ Demo user created:', demoUser.email);
+    }
+
+    // Create admin user
+    if (existingAdminUser.length === 0) {
+      const hashedAdminPassword = await bcrypt.hash('admin123', 10);
+      const [adminUser] = await db.insert(users).values({
+        username: 'admin',
+        email: 'admin@finbot.com',
+        password: hashedAdminPassword,
+        role: 'admin',
+        isActive: true,
+        isEmailVerified: true,
+      }).returning();
+
+      console.log('✅ Admin user created:', adminUser.email);
+    }
 
     // Create demo accounts
+    const demoUserForAccounts = existingDemoUser[0] || await db
+      .select()
+      .from(users)
+      .where(sql`email = 'demo@finbot.com'`)
+      .limit(1)
+      .then(users => users[0]);
+
     const demoAccounts = [
       {
-        userId: demoUser.id,
+        userId: demoUserForAccounts.id,
         type: 'personal',
         bankName: 'Garanti BBVA',
         accountName: 'Vadesiz Hesap',

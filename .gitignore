@@ -86,6 +86,7 @@ Desktop.ini
 # Cursor/VSCode
 .vscode/
 .history/
+.vscode/chrome-debug-profile/
 *.swp
 *.swo
 *~
