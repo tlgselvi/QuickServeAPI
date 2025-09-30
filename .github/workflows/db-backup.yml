@@ -8,6 +8,7 @@ on:
 jobs:
   backup:
     runs-on: ubuntu-latest
+    if: ${{ secrets.DATABASE_URL != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,10 +20,6 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          if [ -z "$DATABASE_URL" ]; then
-            echo "❌ DATABASE_URL not found in secrets"
-            exit 1
-          fi
           
           echo "🔄 Starting database backup..."
           export PGPASSWORD=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.password)")
