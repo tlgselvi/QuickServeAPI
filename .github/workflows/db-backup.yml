@@ -8,8 +8,6 @@ on:
 jobs:
   backup:
     runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,23 +15,25 @@ jobs:
       - name: Setup Postgres client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Check DATABASE_URL secret
+      - name: Dump database
         run: |
-          if [ -z "$DATABASE_URL" ]; then
+          echo "🔄 Starting database backup..."
+          
+          # Parse DATABASE_URL
+          DB_URL="${{ secrets.DATABASE_URL }}"
+          if [ -z "$DB_URL" ]; then
             echo "❌ DATABASE_URL secret not found"
             echo "Please add DATABASE_URL to repository secrets"
             exit 1
           fi
           echo "✅ DATABASE_URL secret found"
-
-      - name: Dump database
-        run: |
-          echo "🔄 Starting database backup..."
-          export PGPASSWORD=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.password)")
-          export PGUSER=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.username)")
-          export PGHOST=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.hostname)")
-          export PGPORT=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.port||5432)")
-          export PGDATABASE=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(u.pathname.slice(1))")
+          
+          # Extract connection parameters
+          export PGPASSWORD=$(node -e "const u=new URL('$DB_URL');console.log(u.password)")
+          export PGUSER=$(node -e "const u=new URL('$DB_URL');console.log(u.username)")
+          export PGHOST=$(node -e "const u=new URL('$DB_URL');console.log(u.hostname)")
+          export PGPORT=$(node -e "const u=new URL('$DB_URL');console.log(u.port||5432)")
+          export PGDATABASE=$(node -e "const u=new URL('$DB_URL');console.log(u.pathname.slice(1))")
           
           pg_dump -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -F c -Z 9 -f backup.dump
           echo "✅ Database backup completed"
