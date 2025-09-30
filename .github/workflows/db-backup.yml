@@ -16,8 +16,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Check DATABASE_URL secret
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+          if [ -z "$DATABASE_URL" ]; then
             echo "❌ DATABASE_URL secret not found"
             echo "Please add DATABASE_URL to repository secrets"
             exit 1
