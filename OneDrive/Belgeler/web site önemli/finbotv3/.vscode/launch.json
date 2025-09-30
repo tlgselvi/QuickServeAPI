@@ -1,0 +1,84 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run Backend",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/QuickServeAPI/server/index.ts",
+        "runtimeArgs": ["-r", "tsx"],
+        "envFile": "${workspaceFolder}/QuickServeAPI/.env",
+        "skipFiles": ["<node_internals>/**"],
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/QuickServeAPI",
+        "env": {
+          "PORT": "3000"
+        }
+      },
+      {
+        "name": "Run Frontend",
+        "type": "node-terminal",
+        "request": "launch",
+        "command": "npm run dev",
+        "cwd": "${workspaceFolder}/QuickServeAPI"
+      },
+      {
+        "name": "Run Backend Only",
+        "type": "node-terminal",
+        "request": "launch",
+        "command": "npm run start:dev",
+        "cwd": "${workspaceFolder}/QuickServeAPI",
+        "env": {
+          "PORT": "3000"
+        }
+      },
+      {
+        "name": "Open Chrome",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:5173/",
+        "webRoot": "${workspaceFolder}/QuickServeAPI/client",
+        "sourceMaps": true,
+        "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
+        "runtimeExecutable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "runtimeArgs": [
+          "--disable-web-security",
+          "--disable-features=VizDisplayCompositor",
+          "--remote-debugging-port=9222",
+          "--no-first-run",
+          "--no-default-browser-check"
+        ]
+      },
+      {
+        "name": "Run Tests",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/QuickServeAPI/node_modules/.bin/vitest",
+        "args": ["run"],
+        "cwd": "${workspaceFolder}/QuickServeAPI",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Run Lint",
+        "type": "node-terminal",
+        "request": "launch",
+        "command": "npm run lint",
+        "cwd": "${workspaceFolder}/QuickServeAPI"
+      }
+    ],
+    "compounds": [
+      {
+        "name": "FinBot Full Stack",
+        "configurations": ["Run Backend", "Run Frontend", "Open Chrome"]
+      },
+      {
+        "name": "FinBot Development",
+        "configurations": ["Run Backend", "Run Frontend"]
+      },
+      {
+        "name": "FinBot Backend Only",
+        "configurations": ["Run Backend Only"]
+      }
+    ]
+  }
+  
