@@ -17,7 +17,7 @@ jobs:
 
       - name: Dump database
         env:
-          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL || secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
             echo "❌ DATABASE_URL not found in secrets"
