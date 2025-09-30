@@ -38,6 +38,7 @@ import performanceRouter from './routes/performance';
 import enhancedExportRouter from './routes/enhanced-export';
 import cashboxRouter from './routes/cashbox';
 import bankIntegrationRouter from './routes/bank-integration';
+import securityRouter from './routes/security';
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -2867,6 +2868,11 @@ export async function registerRoutes (app: Express): Promise<Server> {
   // BANK INTEGRATION ROUTES
   // ===================================
   app.use('/api/bank-integrations', bankIntegrationRouter);
+
+  // ===================================
+  // SECURITY ROUTES
+  // ===================================
+  app.use('/api/security', securityRouter);
 
   const httpServer = createServer(app);
   return httpServer;

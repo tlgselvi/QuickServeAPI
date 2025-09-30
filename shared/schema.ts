@@ -1025,7 +1025,177 @@ export const canManageAccountType = (userRole: UserRoleType, accountType: 'perso
 };
 
 // =====================
-// MULTI-USER SYSTEM SCHEMA
+// ADVANCED SECURITY & USER MANAGEMENT
+// =====================
+
+// Enhanced User Roles
+export const UserRoleV2 = {
+  ADMIN: 'admin',
+  FINANCE: 'finance', 
+  VIEWER: 'viewer',
+  AUDITOR: 'auditor',
+} as const;
+
+export type UserRoleV2Type = typeof UserRoleV2[keyof typeof UserRoleV2];
+
+// Granular Permissions
+export const PermissionV2 = {
+  // Dashboard Access
+  VIEW_DASHBOARD: 'view_dashboard',
+  MANAGE_DASHBOARD: 'manage_dashboard',
+  
+  // Cashbox Management
+  VIEW_CASHBOXES: 'view_cashboxes',
+  MANAGE_CASHBOXES: 'manage_cashboxes',
+  TRANSFER_CASHBOX: 'transfer_cashbox',
+  
+  // Bank Integration
+  VIEW_BANK_INTEGRATIONS: 'view_bank_integrations',
+  MANAGE_BANK_INTEGRATIONS: 'manage_bank_integrations',
+  IMPORT_BANK_DATA: 'import_bank_data',
+  RECONCILE_TRANSACTIONS: 'reconcile_transactions',
+  
+  // Reports & Analytics
+  VIEW_REPORTS: 'view_reports',
+  EXPORT_REPORTS: 'export_reports',
+  VIEW_ANALYTICS: 'view_analytics',
+  
+  // User Management
+  VIEW_USERS: 'view_users',
+  MANAGE_USERS: 'manage_users',
+  ASSIGN_ROLES: 'assign_roles',
+  
+  // System Administration
+  VIEW_AUDIT_LOGS: 'view_audit_logs',
+  MANAGE_SETTINGS: 'manage_settings',
+  VIEW_SYSTEM_STATUS: 'view_system_status',
+} as const;
+
+export type PermissionV2Type = typeof PermissionV2[keyof typeof PermissionV2];
+
+// Enhanced Role-Permission Mapping
+export const rolePermissionsV2: Record<UserRoleV2Type, PermissionV2Type[]> = {
+  [UserRoleV2.ADMIN]: [
+    PermissionV2.VIEW_DASHBOARD,
+    PermissionV2.MANAGE_DASHBOARD,
+    PermissionV2.VIEW_CASHBOXES,
+    PermissionV2.MANAGE_CASHBOXES,
+    PermissionV2.TRANSFER_CASHBOX,
+    PermissionV2.VIEW_BANK_INTEGRATIONS,
+    PermissionV2.MANAGE_BANK_INTEGRATIONS,
+    PermissionV2.IMPORT_BANK_DATA,
+    PermissionV2.RECONCILE_TRANSACTIONS,
+    PermissionV2.VIEW_REPORTS,
+    PermissionV2.EXPORT_REPORTS,
+    PermissionV2.VIEW_ANALYTICS,
+    PermissionV2.VIEW_USERS,
+    PermissionV2.MANAGE_USERS,
+    PermissionV2.ASSIGN_ROLES,
+    PermissionV2.VIEW_AUDIT_LOGS,
+    PermissionV2.MANAGE_SETTINGS,
+    PermissionV2.VIEW_SYSTEM_STATUS,
+  ],
+  [UserRoleV2.FINANCE]: [
+    PermissionV2.VIEW_DASHBOARD,
+    PermissionV2.VIEW_CASHBOXES,
+    PermissionV2.MANAGE_CASHBOXES,
+    PermissionV2.TRANSFER_CASHBOX,
+    PermissionV2.VIEW_BANK_INTEGRATIONS,
+    PermissionV2.MANAGE_BANK_INTEGRATIONS,
+    PermissionV2.IMPORT_BANK_DATA,
+    PermissionV2.RECONCILE_TRANSACTIONS,
+    PermissionV2.VIEW_REPORTS,
+    PermissionV2.EXPORT_REPORTS,
+    PermissionV2.VIEW_ANALYTICS,
+  ],
+  [UserRoleV2.VIEWER]: [
+    PermissionV2.VIEW_DASHBOARD,
+    PermissionV2.VIEW_CASHBOXES,
+    PermissionV2.VIEW_BANK_INTEGRATIONS,
+    PermissionV2.VIEW_REPORTS,
+    PermissionV2.EXPORT_REPORTS,
+    PermissionV2.VIEW_ANALYTICS,
+  ],
+  [UserRoleV2.AUDITOR]: [
+    PermissionV2.VIEW_DASHBOARD,
+    PermissionV2.VIEW_CASHBOXES,
+    PermissionV2.VIEW_BANK_INTEGRATIONS,
+    PermissionV2.VIEW_REPORTS,
+    PermissionV2.EXPORT_REPORTS,
+    PermissionV2.VIEW_ANALYTICS,
+    PermissionV2.VIEW_AUDIT_LOGS,
+    PermissionV2.VIEW_USERS,
+  ],
+};
+
+// Enhanced Permission Helper Functions
+export const hasPermissionV2 = (userRole: UserRoleV2Type, permission: PermissionV2Type): boolean => {
+  return rolePermissionsV2[userRole]?.includes(permission) || false;
+};
+
+export const hasAnyPermissionV2 = (userRole: UserRoleV2Type, permissions: PermissionV2Type[]): boolean => {
+  return permissions.some(permission => hasPermissionV2(userRole, permission));
+};
+
+// User Activity Logging Tables
+export const userActivityLogs = pgTable('user_activity_logs', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id').notNull(),
+  action: varchar('action', { length: 100 }).notNull(), // 'login', 'logout', 'api_call', 'cashbox_transfer', etc.
+  resource: varchar('resource', { length: 100 }), // 'cashbox', 'bank_account', 'report', etc.
+  resourceId: varchar('resource_id'), // ID of the affected resource
+  endpoint: varchar('endpoint', { length: 255 }), // API endpoint called
+  method: varchar('method', { length: 10 }), // HTTP method
+  statusCode: integer('status_code'), // HTTP status code
+  ipAddress: varchar('ip_address', { length: 45 }), // IPv4 or IPv6
+  userAgent: text('user_agent'), // Browser/client info
+  metadata: jsonb('metadata'), // Additional context data
+  timestamp: timestamp('timestamp').default(sql`NOW()`).notNull(),
+});
+
+// Two-Factor Authentication Tables
+export const userTwoFactorAuth = pgTable('user_two_factor_auth', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id').notNull().unique(),
+  secret: varchar('secret', { length: 32 }).notNull(), // TOTP secret
+  isEnabled: boolean('is_enabled').default(false).notNull(),
+  backupCodes: varchar('backup_codes', { length: 255 }).array(), // Encrypted backup codes
+  phoneNumber: varchar('phone_number', { length: 20 }), // For SMS 2FA
+  smsEnabled: boolean('sms_enabled').default(false).notNull(),
+  lastUsed: timestamp('last_used'),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+});
+
+// Password Reset Tokens
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id').notNull(),
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  used: boolean('used').default(false).notNull(),
+  usedAt: timestamp('used_at'),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+});
+
+// Enhanced User Profiles
+export const userProfiles = pgTable('user_profiles', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id').notNull().unique(),
+  role: varchar('role', { length: 20 }).default('viewer').notNull(), // ADMIN, FINANCE, VIEWER, AUDITOR
+  permissions: text('permissions').array(), // Custom permissions override
+  lastLogin: timestamp('last_login'),
+  passwordChangedAt: timestamp('password_changed_at').default(sql`NOW()`).notNull(),
+  failedLoginAttempts: integer('failed_login_attempts').default(0).notNull(),
+  lockedUntil: timestamp('locked_until'), // Account lockout
+  twoFactorEnabled: boolean('two_factor_enabled').default(false).notNull(),
+  sessionTimeout: integer('session_timeout').default(3600).notNull(), // seconds
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+});
+
+// =====================
+// LEGACY MULTI-USER SYSTEM SCHEMA
 // =====================
 
 export const teams = pgTable('teams', {
@@ -1171,12 +1341,135 @@ export const acceptInviteSchema = z.object({
   userId: z.string().optional(),
 });
 
+// =====================
+// SECURITY SCHEMAS & VALIDATION
+// =====================
+
+// User Activity Log Schemas
+export const insertUserActivityLogSchema = z.object({
+  userId: z.string(),
+  action: z.string().max(100),
+  resource: z.string().max(100).optional(),
+  resourceId: z.string().optional(),
+  endpoint: z.string().max(255).optional(),
+  method: z.string().max(10).optional(),
+  statusCode: z.number().int().optional(),
+  ipAddress: z.string().max(45).optional(),
+  userAgent: z.string().optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const logUserActivitySchema = z.object({
+  action: z.string().max(100),
+  resource: z.string().max(100).optional(),
+  resourceId: z.string().optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+// Two-Factor Authentication Schemas
+export const setupTwoFactorAuthSchema = z.object({
+  phoneNumber: z.string().max(20).optional(),
+  enableSMS: z.boolean().default(false),
+});
+
+export const verifyTwoFactorAuthSchema = z.object({
+  token: z.string().length(6),
+  backupCode: z.string().optional(),
+});
+
+export const enableTwoFactorAuthSchema = z.object({
+  secret: z.string().length(32),
+  token: z.string().length(6),
+});
+
+export const disableTwoFactorAuthSchema = z.object({
+  password: z.string().min(8),
+  backupCode: z.string().optional(),
+});
+
+// Password Reset Schemas
+export const requestPasswordResetSchema = z.object({
+  email: z.string().email('Geçerli bir email adresi giriniz'),
+});
+
+export const resetPasswordV2Schema = z.object({
+  token: z.string().min(1, 'Reset token gerekli'),
+  newPassword: z.string()
+    .min(8, 'Şifre en az 8 karakter olmalı')
+    .regex(/[A-Z]/, 'En az bir büyük harf içermeli')
+    .regex(/[a-z]/, 'En az bir küçük harf içermeli')
+    .regex(/[0-9]/, 'En az bir rakam içermeli')
+    .regex(/[^A-Za-z0-9]/, 'En az bir özel karakter içermeli'),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'Şifreler eşleşmiyor',
+  path: ['confirmPassword'],
+});
+
+// User Profile Schemas
+export const updateUserProfileSchema = z.object({
+  role: z.enum(['admin', 'finance', 'viewer', 'auditor']).optional(),
+  permissions: z.array(z.string()).optional(),
+  sessionTimeout: z.number().int().min(300).max(86400).optional(), // 5 min to 24 hours
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Mevcut şifre gerekli'),
+  newPassword: z.string()
+    .min(8, 'Şifre en az 8 karakter olmalı')
+    .regex(/[A-Z]/, 'En az bir büyük harf içermeli')
+    .regex(/[a-z]/, 'En az bir küçük harf içermeli')
+    .regex(/[0-9]/, 'En az bir rakam içermeli')
+    .regex(/[^A-Za-z0-9]/, 'En az bir özel karakter içermeli'),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'Şifreler eşleşmiyor',
+  path: ['confirmPassword'],
+});
+
+// Permission Check Schema
+export const checkPermissionSchema = z.object({
+  permission: z.string(),
+  resource: z.string().optional(),
+  resourceId: z.string().optional(),
+});
+
+// =====================
+// LEGACY SCHEMA TYPES
+// =====================
+
 export type InsertTeam = z.infer<typeof insertTeamSchema>;
 export type Team = typeof teams.$inferSelect;
 export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
 export type TeamMember = typeof teamMembers.$inferSelect;
 export type InsertInvite = z.infer<typeof insertInviteSchema>;
 export type Invite = typeof invites.$inferSelect;
+
+// =====================
+// SECURITY SCHEMA TYPES
+// =====================
+
+export type InsertUserActivityLog = z.infer<typeof insertUserActivityLogSchema>;
+export type UserActivityLog = typeof userActivityLogs.$inferSelect;
+export type LogUserActivity = z.infer<typeof logUserActivitySchema>;
+
+export type InsertUserTwoFactorAuth = typeof userTwoFactorAuth.$inferInsert;
+export type UserTwoFactorAuth = typeof userTwoFactorAuth.$inferSelect;
+export type SetupTwoFactorAuth = z.infer<typeof setupTwoFactorAuthSchema>;
+export type VerifyTwoFactorAuth = z.infer<typeof verifyTwoFactorAuthSchema>;
+export type EnableTwoFactorAuth = z.infer<typeof enableTwoFactorAuthSchema>;
+export type DisableTwoFactorAuth = z.infer<typeof disableTwoFactorAuthSchema>;
+
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type RequestPasswordReset = z.infer<typeof requestPasswordResetSchema>;
+export type ResetPassword = z.infer<typeof resetPasswordV2Schema>;
+
+export type InsertUserProfile = typeof userProfiles.$inferInsert;
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type UpdateUserProfile = z.infer<typeof updateUserProfileSchema>;
+export type ChangePassword = z.infer<typeof changePasswordSchema>;
+export type CheckPermission = z.infer<typeof checkPermissionSchema>;
 export type InviteUserRequest = z.infer<typeof inviteUserSchema>;
 export type AcceptInviteRequest = z.infer<typeof acceptInviteSchema>;
 
