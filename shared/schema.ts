@@ -671,6 +671,10 @@ export const Permission = {
   VIEW_PERSONAL_REPORTS: 'view_personal_reports',
   EXPORT_DATA: 'export_data',
 
+  // Dashboard Management
+  MANAGE_DASHBOARD: 'manage_dashboard',
+  VIEW_ANALYTICS: 'view_analytics',
+
   // System Settings
   MANAGE_SETTINGS: 'manage_settings',
   VIEW_SETTINGS: 'view_settings',

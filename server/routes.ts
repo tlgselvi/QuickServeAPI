@@ -31,6 +31,9 @@ import budgetCompareRouter from './routes/budget-compare';
 import scenarioRouter from './routes/scenario';
 import agingRouter from './routes/aging';
 import dashboardExtendedRouter from './routes/dashboard-extended';
+import dashboardLayoutRouter from './routes/dashboard-layout';
+import realtimeRouter from './routes/realtime';
+import analyticsRouter from './routes/analytics';
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -2825,6 +2828,21 @@ export async function registerRoutes (app: Express): Promise<Server> {
   // DASHBOARD EXTENDED ROUTES
   // ===================================
   app.use('/api/dashboard', dashboardExtendedRouter);
+
+  // ===================================
+  // DASHBOARD LAYOUT ROUTES
+  // ===================================
+  app.use('/api/dashboard', dashboardLayoutRouter);
+
+  // ===================================
+  // REALTIME ROUTES
+  // ===================================
+  app.use('/api/realtime', realtimeRouter);
+
+  // ===================================
+  // ANALYTICS ROUTES
+  // ===================================
+  app.use('/api/analytics', analyticsRouter);
 
   const httpServer = createServer(app);
   return httpServer;
