@@ -36,6 +36,8 @@ import realtimeRouter from './routes/realtime';
 import analyticsRouter from './routes/analytics';
 import performanceRouter from './routes/performance';
 import enhancedExportRouter from './routes/enhanced-export';
+import cashboxRouter from './routes/cashbox';
+import bankIntegrationRouter from './routes/bank-integration';
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -2855,6 +2857,16 @@ export async function registerRoutes (app: Express): Promise<Server> {
   // ENHANCED EXPORT ROUTES
   // ===================================
   app.use('/api/export', enhancedExportRouter);
+
+  // ===================================
+  // CASHBOX ROUTES
+  // ===================================
+  app.use('/api/cashbox', cashboxRouter);
+
+  // ===================================
+  // BANK INTEGRATION ROUTES
+  // ===================================
+  app.use('/api/bank-integrations', bankIntegrationRouter);
 
   const httpServer = createServer(app);
   return httpServer;

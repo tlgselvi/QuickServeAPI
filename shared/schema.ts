@@ -477,6 +477,141 @@ export type InsertRecurringTransaction = z.infer<typeof insertRecurringTransacti
 // AR/AP AGING TABLES (Sprint 1.2)
 // =====================
 
+export const cashboxes = pgTable('cashboxes', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: varchar('description', { length: 1000 }),
+  location: varchar('location', { length: 255 }),
+  currentBalance: decimal('current_balance', { precision: 19, scale: 4 }).default('0').notNull(),
+  currency: varchar('currency', { length: 3 }).default('TRY').notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  isDeleted: boolean('is_deleted').default(false).notNull(),
+  deletedAt: timestamp('deleted_at'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+});
+
+export const cashboxTransactions = pgTable('cashbox_transactions', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  cashboxId: varchar('cashbox_id', { length: 255 }).notNull().references(() => cashboxes.id),
+  type: varchar('type', { length: 20 }).notNull(), // 'deposit', 'withdrawal', 'transfer_in', 'transfer_out'
+  amount: decimal('amount', { precision: 19, scale: 4 }).notNull(),
+  currency: varchar('currency', { length: 3 }).default('TRY').notNull(),
+  description: varchar('description', { length: 1000 }),
+  reference: varchar('reference', { length: 255 }), // external reference (invoice, receipt, etc.)
+  transferToCashboxId: varchar('transfer_to_cashbox_id', { length: 255 }).references(() => cashboxes.id),
+  transferFromCashboxId: varchar('transfer_from_cashbox_id', { length: 255 }).references(() => cashboxes.id),
+  balanceAfter: decimal('balance_after', { precision: 19, scale: 4 }).notNull(),
+  isReconciled: boolean('is_reconciled').default(false).notNull(),
+  reconciledAt: timestamp('reconciled_at'),
+  reconciledBy: varchar('reconciled_by', { length: 255 }),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+});
+
+export const cashboxAuditLogs = pgTable('cashbox_audit_logs', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  cashboxId: varchar('cashbox_id', { length: 255 }).references(() => cashboxes.id),
+  transactionId: varchar('transaction_id', { length: 255 }).references(() => cashboxTransactions.id),
+  action: varchar('action', { length: 50 }).notNull(), // 'create', 'update', 'delete', 'restore', 'transfer'
+  entityType: varchar('entity_type', { length: 50 }).notNull(), // 'cashbox', 'transaction'
+  entityId: varchar('entity_id', { length: 255 }).notNull(),
+  oldValues: jsonb('old_values'),
+  newValues: jsonb('new_values'),
+  changes: jsonb('changes'),
+  reason: varchar('reason', { length: 500 }),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: varchar('user_agent', { length: 1000 }),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+});
+
+export const bankIntegrations = pgTable('bank_integrations', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  bankName: varchar('bank_name', { length: 255 }).notNull(),
+  bankCode: varchar('bank_code', { length: 50 }).notNull(),
+  accountNumber: varchar('account_number', { length: 100 }).notNull(),
+  accountType: varchar('account_type', { length: 50 }).notNull(), // 'checking', 'savings', 'credit', 'investment'
+  currency: varchar('currency', { length: 3 }).default('TRY').notNull(),
+  apiEndpoint: varchar('api_endpoint', { length: 500 }),
+  apiKey: varchar('api_key', { length: 500 }),
+  credentials: jsonb('credentials'), // Encrypted credentials
+  isActive: boolean('is_active').default(true).notNull(),
+  lastSyncAt: timestamp('last_sync_at'),
+  syncStatus: varchar('sync_status', { length: 20 }).default('idle'), // 'idle', 'syncing', 'success', 'error'
+  syncError: varchar('sync_error', { length: 1000 }),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+});
+
+export const bankTransactions = pgTable('bank_transactions', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  bankIntegrationId: varchar('bank_integration_id', { length: 255 }).notNull().references(() => bankIntegrations.id),
+  externalTransactionId: varchar('external_transaction_id', { length: 255 }).notNull(),
+  accountId: varchar('account_id', { length: 255 }).references(() => accounts.id),
+  date: timestamp('date').notNull(),
+  amount: decimal('amount', { precision: 19, scale: 4 }).notNull(),
+  currency: varchar('currency', { length: 3 }).default('TRY').notNull(),
+  description: varchar('description', { length: 1000 }),
+  reference: varchar('reference', { length: 255 }),
+  category: varchar('category', { length: 100 }),
+  subcategory: varchar('subcategory', { length: 100 }),
+  balance: decimal('balance', { precision: 19, scale: 4 }),
+  transactionType: varchar('transaction_type', { length: 50 }).notNull(), // 'debit', 'credit'
+  isReconciled: boolean('is_reconciled').default(false).notNull(),
+  reconciledAt: timestamp('reconciled_at'),
+  reconciledBy: varchar('reconciled_by', { length: 255 }),
+  isImported: boolean('is_imported').default(false).notNull(),
+  importSource: varchar('import_source', { length: 50 }), // 'api', 'csv', 'ofx', 'xml'
+  importBatchId: varchar('import_batch_id', { length: 255 }),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+});
+
+export const importBatches = pgTable('import_batches', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  bankIntegrationId: varchar('bank_integration_id', { length: 255 }).references(() => bankIntegrations.id),
+  fileName: varchar('file_name', { length: 255 }),
+  fileType: varchar('file_type', { length: 20 }).notNull(), // 'csv', 'ofx', 'xml'
+  fileSize: integer('file_size'),
+  totalRecords: integer('total_records').default(0),
+  processedRecords: integer('processed_records').default(0),
+  successfulRecords: integer('successful_records').default(0),
+  failedRecords: integer('failed_records').default(0),
+  status: varchar('status', { length: 20 }).default('pending'), // 'pending', 'processing', 'completed', 'failed'
+  errorMessage: varchar('error_message', { length: 1000 }),
+  validationErrors: jsonb('validation_errors'),
+  duplicateRecords: jsonb('duplicate_records'),
+  startDate: timestamp('start_date'),
+  endDate: timestamp('end_date'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+});
+
+export const reconciliationLogs = pgTable('reconciliation_logs', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  bankIntegrationId: varchar('bank_integration_id', { length: 255 }).references(() => bankIntegrations.id),
+  bankTransactionId: varchar('bank_transaction_id', { length: 255 }).references(() => bankTransactions.id),
+  systemTransactionId: varchar('system_transaction_id', { length: 255 }).references(() => transactions.id),
+  matchType: varchar('match_type', { length: 50 }).notNull(), // 'exact', 'fuzzy', 'manual'
+  matchScore: decimal('match_score', { precision: 5, scale: 2 }),
+  status: varchar('status', { length: 20 }).notNull(), // 'matched', 'unmatched', 'disputed'
+  reason: varchar('reason', { length: 500 }),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+});
+
 export const agingReports = pgTable('aging_reports', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar('user_id', { length: 255 }).notNull(),
@@ -501,6 +636,101 @@ export const agingReports = pgTable('aging_reports', {
   updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
 });
 
+export const insertCashboxSchema = z.object({
+  name: z.string().min(1, 'Kasa adı gereklidir').max(255, 'Kasa adı çok uzun'),
+  description: z.string().max(1000, 'Açıklama çok uzun').optional(),
+  location: z.string().max(255, 'Konum çok uzun').optional(),
+  currency: z.string().length(3, 'Para birimi 3 karakter olmalı').default('TRY'),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const updateCashboxSchema = z.object({
+  name: z.string().min(1, 'Kasa adı gereklidir').max(255, 'Kasa adı çok uzun').optional(),
+  description: z.string().max(1000, 'Açıklama çok uzun').optional(),
+  location: z.string().max(255, 'Konum çok uzun').optional(),
+  currency: z.string().length(3, 'Para birimi 3 karakter olmalı').optional(),
+  isActive: z.boolean().optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const insertCashboxTransactionSchema = z.object({
+  cashboxId: z.string().min(1, 'Kasa ID gereklidir'),
+  type: z.enum(['deposit', 'withdrawal', 'transfer_in', 'transfer_out'], {
+    errorMap: () => ({ message: 'Geçersiz işlem tipi' }),
+  }),
+  amount: z.number().positive('Tutar pozitif olmalı'),
+  currency: z.string().length(3, 'Para birimi 3 karakter olmalı').default('TRY'),
+  description: z.string().max(1000, 'Açıklama çok uzun').optional(),
+  reference: z.string().max(255, 'Referans çok uzun').optional(),
+  transferToCashboxId: z.string().optional(),
+  transferFromCashboxId: z.string().optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const insertBankIntegrationSchema = z.object({
+  bankName: z.string().min(1, 'Banka adı gereklidir').max(255, 'Banka adı çok uzun'),
+  bankCode: z.string().min(1, 'Banka kodu gereklidir').max(50, 'Banka kodu çok uzun'),
+  accountNumber: z.string().min(1, 'Hesap numarası gereklidir').max(100, 'Hesap numarası çok uzun'),
+  accountType: z.enum(['checking', 'savings', 'credit', 'investment'], {
+    errorMap: () => ({ message: 'Geçersiz hesap tipi' }),
+  }),
+  currency: z.string().length(3, 'Para birimi 3 karakter olmalı').default('TRY'),
+  apiEndpoint: z.string().url('Geçersiz API endpoint').optional(),
+  apiKey: z.string().optional(),
+  credentials: z.record(z.any()).optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const updateBankIntegrationSchema = z.object({
+  bankName: z.string().min(1, 'Banka adı gereklidir').max(255, 'Banka adı çok uzun').optional(),
+  bankCode: z.string().min(1, 'Banka kodu gereklidir').max(50, 'Banka kodu çok uzun').optional(),
+  accountNumber: z.string().min(1, 'Hesap numarası gereklidir').max(100, 'Hesap numarası çok uzun').optional(),
+  accountType: z.enum(['checking', 'savings', 'credit', 'investment']).optional(),
+  currency: z.string().length(3, 'Para birimi 3 karakter olmalı').optional(),
+  apiEndpoint: z.string().url('Geçersiz API endpoint').optional(),
+  apiKey: z.string().optional(),
+  credentials: z.record(z.any()).optional(),
+  isActive: z.boolean().optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const importTransactionsSchema = z.object({
+  bankIntegrationId: z.string().min(1, 'Banka entegrasyon ID gereklidir'),
+  fileType: z.enum(['csv', 'ofx', 'xml'], {
+    errorMap: () => ({ message: 'Geçersiz dosya tipi' }),
+  }),
+  fileName: z.string().optional(),
+  autoReconcile: z.boolean().default(false),
+  duplicateHandling: z.enum(['skip', 'update', 'create'], {
+    errorMap: () => ({ message: 'Geçersiz duplicate handling' }),
+  }).default('skip'),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const reconciliationSchema = z.object({
+  bankTransactionId: z.string().min(1, 'Banka işlem ID gereklidir'),
+  systemTransactionId: z.string().min(1, 'Sistem işlem ID gereklidir'),
+  matchType: z.enum(['exact', 'fuzzy', 'manual'], {
+    errorMap: () => ({ message: 'Geçersiz eşleştirme tipi' }),
+  }),
+  matchScore: z.number().min(0).max(100).optional(),
+  reason: z.string().max(500, 'Sebep çok uzun').optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const transferCashboxSchema = z.object({
+  fromCashboxId: z.string().min(1, 'Kaynak kasa ID gereklidir'),
+  toCashboxId: z.string().min(1, 'Hedef kasa ID gereklidir'),
+  amount: z.number().positive('Tutar pozitif olmalı'),
+  currency: z.string().length(3, 'Para birimi 3 karakter olmalı').default('TRY'),
+  description: z.string().max(1000, 'Açıklama çok uzun').optional(),
+  reference: z.string().max(255, 'Referans çok uzun').optional(),
+  metadata: z.record(z.any()).optional(),
+}).refine(data => data.fromCashboxId !== data.toCashboxId, {
+  message: 'Kaynak ve hedef kasa aynı olamaz',
+  path: ['toCashboxId'],
+});
+
 export const insertAgingReportSchema = z.object({
   reportType: z.enum(['ar', 'ap']),
   customerVendorId: z.string(),
@@ -515,6 +745,27 @@ export const insertAgingReportSchema = z.object({
   paymentTerms: z.string().optional(),
   metadata: z.record(z.any()).optional(),
 });
+
+export type Cashbox = typeof cashboxes.$inferSelect;
+export type InsertCashbox = z.infer<typeof insertCashboxSchema>;
+export type UpdateCashbox = z.infer<typeof updateCashboxSchema>;
+
+export type CashboxTransaction = typeof cashboxTransactions.$inferSelect;
+export type InsertCashboxTransaction = z.infer<typeof insertCashboxTransactionSchema>;
+export type TransferCashbox = z.infer<typeof transferCashboxSchema>;
+
+export type CashboxAuditLog = typeof cashboxAuditLogs.$inferSelect;
+
+export type BankIntegration = typeof bankIntegrations.$inferSelect;
+export type InsertBankIntegration = z.infer<typeof insertBankIntegrationSchema>;
+export type UpdateBankIntegration = z.infer<typeof updateBankIntegrationSchema>;
+
+export type BankTransaction = typeof bankTransactions.$inferSelect;
+export type ImportTransactions = z.infer<typeof importTransactionsSchema>;
+
+export type ImportBatch = typeof importBatches.$inferSelect;
+export type ReconciliationLog = typeof reconciliationLogs.$inferSelect;
+export type Reconciliation = z.infer<typeof reconciliationSchema>;
 
 export type AgingReport = typeof agingReports.$inferSelect;
 export type InsertAgingReport = z.infer<typeof insertAgingReportSchema>;
@@ -674,6 +925,17 @@ export const Permission = {
   // Dashboard Management
   MANAGE_DASHBOARD: 'manage_dashboard',
   VIEW_ANALYTICS: 'view_analytics',
+
+  // Cashbox Management
+  MANAGE_CASHBOXES: 'manage_cashboxes',
+  VIEW_CASHBOXES: 'view_cashboxes',
+  TRANSFER_CASHBOX: 'transfer_cashbox',
+
+  // Bank Integration
+  MANAGE_BANK_INTEGRATIONS: 'manage_bank_integrations',
+  VIEW_BANK_INTEGRATIONS: 'view_bank_integrations',
+  IMPORT_BANK_DATA: 'import_bank_data',
+  RECONCILE_TRANSACTIONS: 'reconcile_transactions',
 
   // System Settings
   MANAGE_SETTINGS: 'manage_settings',
