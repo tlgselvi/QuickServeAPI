@@ -58,7 +58,7 @@ async function setupDatabase() {
     };
 
     // Check if admin exists
-    const existingUser = await db.query.users.findFirst({
+    const existingUser = await db.query.users?.findFirst({
       where: eq(schema.users.email, adminUser.email)
     });
 
@@ -78,6 +78,9 @@ async function setupDatabase() {
     console.log('⚠️  Continuing without database setup...');
   }
 }
+
+// Export for use in server
+export { setupDatabase };
 
 // Only run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {

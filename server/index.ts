@@ -6,6 +6,7 @@ import { pool } from './db';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeProduction } from './seed-production';
+import { setupDatabase } from '../scripts/setup-database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -143,6 +144,14 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
+  // Setup database on startup
+  try {
+    await setupDatabase();
+  } catch (error) {
+    log('Database setup failed:', error.message);
+    log('Continuing without database setup...');
+  }
+
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen(port, () => {
     log(`serving on port ${port}`);
