@@ -34,6 +34,8 @@ import dashboardExtendedRouter from './routes/dashboard-extended';
 import dashboardLayoutRouter from './routes/dashboard-layout';
 import realtimeRouter from './routes/realtime';
 import analyticsRouter from './routes/analytics';
+import performanceRouter from './routes/performance';
+import enhancedExportRouter from './routes/enhanced-export';
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -2843,6 +2845,16 @@ export async function registerRoutes (app: Express): Promise<Server> {
   // ANALYTICS ROUTES
   // ===================================
   app.use('/api/analytics', analyticsRouter);
+
+  // ===================================
+  // PERFORMANCE ROUTES
+  // ===================================
+  app.use('/api/performance', performanceRouter);
+
+  // ===================================
+  // ENHANCED EXPORT ROUTES
+  // ===================================
+  app.use('/api/export', enhancedExportRouter);
 
   const httpServer = createServer(app);
   return httpServer;
