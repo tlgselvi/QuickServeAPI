@@ -39,6 +39,10 @@ import enhancedExportRouter from './routes/enhanced-export';
 import cashboxRouter from './routes/cashbox';
 import bankIntegrationRouter from './routes/bank-integration';
 import securityRouter from './routes/security';
+import { securityHeadersMiddleware, advancedSecurityHeaders } from './middleware/security-headers-advanced';
+import { auditComplianceMiddleware, auditComplianceManager } from './middleware/audit-compliance';
+import { rateLimitMiddleware } from './middleware/rate-limit-advanced';
+import { authHardeningService } from './services/auth/auth-hardening';
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -55,6 +59,40 @@ declare module 'express-session' {
 }
 
 export async function registerRoutes (app: Express): Promise<Server> {
+  // ===================================
+  // ADVANCED SECURITY MIDDLEWARE
+  // ===================================
+  
+  // Security headers for all routes
+  app.use(securityHeadersMiddleware.main);
+  
+  // Rate limiting with advanced policies
+  app.use('/api/auth', rateLimitMiddleware.login);
+  app.use('/api/security', rateLimitMiddleware.login);
+  app.use('/api', rateLimitMiddleware.slowDown);
+  
+  // Audit compliance middleware
+  app.use('/api', auditComplianceMiddleware.logRequests);
+  app.use('/api/auth', auditComplianceMiddleware.logAuth);
+  app.use('/api', auditComplianceMiddleware.logDataAccess);
+  
+  // API-specific security headers
+  app.use('/api', securityHeadersMiddleware.api);
+  
+  // Development bypass for testing
+  if (process.env.NODE_ENV === 'development') {
+    app.use(securityHeadersMiddleware.development);
+  }
+  
+  // Static file security headers
+  app.use(securityHeadersMiddleware.static);
+  
+  // Error page security headers
+  app.use(securityHeadersMiddleware.error);
+  
+  // CSP violation reporting endpoint
+  app.post('/api/security/csp-report', securityHeadersMiddleware.cspReport);
+
   // Lightweight health endpoint for uptime checks
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -113,7 +151,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         res.json(account);
       } catch (error) {
         console.error('❌ Account validation error:', error);
-        res.status(400).json({ error: 'Geçersiz hesap verisi', details: error.message });
+        res.status(400).json({ error: 'Geçersiz hesap verisi', details: (error as Error).message });
       }
     },
   );
@@ -582,8 +620,8 @@ export async function registerRoutes (app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Geçersiz email veya şifre' });
       }
 
-      // Check password
-      const isValidPassword = await bcrypt.compare(validatedData.password, user.password);
+      // Check password with Argon2id
+      const isValidPassword = await authHardeningService.verifyPassword(validatedData.password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: 'Geçersiz email veya şifre' });
       }
@@ -596,12 +634,17 @@ export async function registerRoutes (app: Express): Promise<Server> {
         });
       }
 
+      // Check for revoked tokens
+      const isTokenRevoked = await authHardeningService.isTokenRevoked(user.id);
+      if (isTokenRevoked) {
+        return res.status(401).json({ error: 'Oturumunuz sonlandırılmış' });
+      }
+
       // Update last login
       await storage.updateLastLogin(user.id);
 
-      // Generate JWT tokens
-      const accessToken = JWTAuthService.generateToken(user);
-      const refreshToken = JWTAuthService.generateRefreshToken(user.id);
+      // Generate JWT tokens with rotation
+      const tokenPair = await authHardeningService.generateTokenPair(user.id);
 
       console.log('✅ JWT tokens generated for user:', user.id);
 
@@ -610,8 +653,8 @@ export async function registerRoutes (app: Express): Promise<Server> {
       res.json({
         message: 'Giriş başarılı',
         user: userWithoutPassword,
-        accessToken,
-        refreshToken,
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
         tokenType: 'Bearer',
       });
     } catch (error) {
@@ -628,26 +671,16 @@ export async function registerRoutes (app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Refresh token is required' });
       }
 
-      // Verify refresh token
-      const payload = JWTAuthService.verifyRefreshToken(refreshToken);
-      if (!payload) {
-        return res.status(401).json({ error: 'Invalid or expired refresh token' });
+      // Verify refresh token with rotation
+      const result = await authHardeningService.rotateRefreshToken(refreshToken);
+      if (!result.success) {
+        return res.status(401).json({ error: result.error || 'Invalid or expired refresh token' });
       }
-
-      // Get user data
-      const user = await storage.getUser(payload.userId);
-      if (!user?.isActive) {
-        return res.status(401).json({ error: 'User not found or inactive' });
-      }
-
-      // Generate new tokens
-      const newAccessToken = JWTAuthService.generateToken(user);
-      const newRefreshToken = JWTAuthService.generateRefreshToken(user.id);
 
       res.json({
         message: 'Token refreshed successfully',
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
         tokenType: 'Bearer',
       });
     } catch (error) {
@@ -665,9 +698,9 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const token = JWTAuthService.extractTokenFromHeader(req.headers.authorization);
 
         if (token) {
-          // Add token to blacklist
-          TokenBlacklist.addToBlacklist(token);
-          console.log('🚪 JWT token blacklisted for user:', req.user?.id);
+          // Revoke token using auth hardening service
+          await authHardeningService.revokeToken(token, req.user?.id || '');
+          console.log('🚪 JWT token revoked for user:', req.user?.id);
         }
 
         res.json({ message: 'Çıkış başarılı' });
@@ -1549,7 +1582,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           teamId: team.id,
           userId: req.user!.id,
           teamRole: 'owner',
-          permissions: null,
+          permissions: undefined,
           isActive: true,
         });
 
@@ -1816,7 +1849,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           teamId: validatedData.teamId,
           inviterUserId: req.user!.id,
           invitedEmail: validatedData.email,
-          invitedUserId: null,
+          invitedUserId: undefined,
           teamRole: validatedData.teamRole,
           status: 'pending',
           inviteToken,
@@ -1906,7 +1939,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
             teamId: invite.teamId,
             userId: req.user!.id,
             teamRole: invite.teamRole,
-            permissions: null,
+            permissions: undefined,
             isActive: true,
           });
 

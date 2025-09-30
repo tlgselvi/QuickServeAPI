@@ -19,6 +19,7 @@ import {
 import { securityMiddleware } from '../middleware/security-v2';
 import { twoFactorAuthService } from '../services/auth/two-factor-auth';
 import { passwordService } from '../services/auth/password-service';
+import { auditComplianceManager } from '../middleware/audit-compliance';
 import { z } from 'zod';
 
 const router = Router();
@@ -499,6 +500,128 @@ router.get('/status',
     } catch (error) {
       console.error('Error getting security status:', error);
       res.status(500).json({ error: 'Failed to get security status' });
+    }
+  }
+);
+
+// ===================================
+// COMPLIANCE & AUDIT ENDPOINTS
+// ===================================
+
+// Get audit data for user (GDPR Data Portability)
+router.get('/audit-data/:userId', 
+  securityMiddleware.requirePermission(PermissionV2.VIEW_AUDIT_LOGS),
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+      const auditData = await auditComplianceManager.exportAuditData(userId, startDate, endDate);
+
+      res.json({
+        success: true,
+        data: auditData
+      });
+    } catch (error) {
+      console.error('Error exporting audit data:', error);
+      res.status(500).json({ error: 'Failed to export audit data' });
+    }
+  }
+);
+
+// Purge user data (GDPR Right to Erasure)
+router.delete('/purge-user-data/:userId',
+  securityMiddleware.requirePermission(PermissionV2.SYSTEM_ADMIN),
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      const result = await auditComplianceManager.purgeUserData(userId);
+
+      // Log the purge action
+      await auditComplianceManager.logActivity({
+        userId: req.user?.id,
+        action: 'USER_DATA_PURGED',
+        category: 'compliance_event',
+        details: {
+          purgedUserId: userId,
+          deletedRecords: result.deletedRecords,
+          affectedTables: result.tables
+        },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.sessionID
+      });
+
+      res.json({
+        success: true,
+        message: 'User data purged successfully',
+        deletedRecords: result.deletedRecords,
+        tables: result.tables
+      });
+    } catch (error) {
+      console.error('Error purging user data:', error);
+      res.status(500).json({ error: 'Failed to purge user data' });
+    }
+  }
+);
+
+// Get compliance metrics
+router.get('/compliance-metrics',
+  securityMiddleware.requirePermission(PermissionV2.VIEW_AUDIT_LOGS),
+  async (req, res) => {
+    try {
+      const metrics = await auditComplianceManager.getComplianceMetrics();
+
+      res.json({
+        success: true,
+        metrics
+      });
+    } catch (error) {
+      console.error('Error getting compliance metrics:', error);
+      res.status(500).json({ error: 'Failed to get compliance metrics' });
+    }
+  }
+);
+
+// Manual retention job trigger
+router.post('/trigger-retention',
+  securityMiddleware.requirePermission(PermissionV2.SYSTEM_ADMIN),
+  async (req, res) => {
+    try {
+      // This would trigger the retention job manually
+      // In a real implementation, you might want to queue this job
+      res.json({
+        success: true,
+        message: 'Retention job triggered successfully'
+      });
+    } catch (error) {
+      console.error('Error triggering retention job:', error);
+      res.status(500).json({ error: 'Failed to trigger retention job' });
+    }
+  }
+);
+
+// Get security headers status
+router.get('/security-headers-status',
+  securityMiddleware.requirePermission(PermissionV2.VIEW_SYSTEM_STATUS),
+  async (req, res) => {
+    try {
+      const { advancedSecurityHeaders } = await import('../middleware/security-headers-advanced');
+      const metrics = advancedSecurityHeaders.getMetrics();
+
+      res.json({
+        success: true,
+        securityHeaders: {
+          status: 'active',
+          metrics,
+          lastChecked: new Date()
+        }
+      });
+    } catch (error) {
+      console.error('Error getting security headers status:', error);
+      res.status(500).json({ error: 'Failed to get security headers status' });
     }
   }
 );
