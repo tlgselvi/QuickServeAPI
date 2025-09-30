@@ -10,7 +10,7 @@ services:
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
