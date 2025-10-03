@@ -191,15 +191,7 @@ export default function BankAccountCard ({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
-                        console.log('🔧 BankAccountCard: Edit button clicked', { bank, onEditAccount });
-                        if (onEditAccount) {
-                          console.log('🔧 BankAccountCard: Calling onEditAccount');
-                          onEditAccount(bank);
-                        } else {
-                          console.log('🔧 BankAccountCard: onEditAccount is undefined');
-                        }
-                      }}
+                      onClick={() => onEditAccount?.(bank)}
                       className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
                       title="Düzenle"
                     >

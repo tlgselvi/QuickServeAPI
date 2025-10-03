@@ -33,10 +33,6 @@ export default function Company () {
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
   const [newAccountName, setNewAccountName] = useState('');
 
-  // Debug: Log state changes
-  React.useEffect(() => {
-    console.log('🔧 Dialog state changed:', { editDialogOpen, editingAccount, newAccountName });
-  }, [editDialogOpen, editingAccount, newAccountName]);
 
   // Fetch company accounts
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
@@ -297,29 +293,12 @@ export default function Company () {
                 }, 100);
               }}
               onEditAccount={(bank) => {
-                console.log('🔧 onEditAccount called with:', bank);
                 // Open edit dialog with current account data
                 const account = accounts.find((a: Account) => a.id === bank.id);
-                console.log('🔧 Found account:', account);
                 if (account) {
-                  console.log('🔧 Setting edit dialog state:', {
-                    account,
-                    newName: account.accountName,
-                    editDialogOpen: true
-                  });
                   setEditingAccount(account);
                   setNewAccountName(account.accountName);
                   setEditDialogOpen(true);
-                  console.log('🔧 Edit dialog state set, checking in 100ms...');
-                  setTimeout(() => {
-                    console.log('🔧 Edit dialog state after timeout:', {
-                      editDialogOpen,
-                      editingAccount,
-                      newAccountName
-                    });
-                  }, 100);
-                } else {
-                  console.log('🔧 Account not found!');
                 }
               }}
               onDeleteAccount={(accountId) => {
