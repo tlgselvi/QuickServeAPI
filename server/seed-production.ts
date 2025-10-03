@@ -63,7 +63,7 @@ export async function seedProductionData() {
     const demoUserForAccounts = existingDemoUser[0] || await db
       .select()
       .from(users)
-      .where(sql`email = 'demo@finbot.com'`)
+      .where(eq(users.email, 'demo@finbot.com'))
       .limit(1)
       .then(users => users[0]);
 

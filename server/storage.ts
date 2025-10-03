@@ -2,7 +2,7 @@ import { type Account, type InsertAccount, type Transaction, type InsertTransact
 import { randomUUID } from 'crypto';
 import type { UserRoleType } from '../shared/schema.ts';
 import { db } from './db.ts';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, sql, and, isNull, or, ilike, count } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export interface IStorage {
@@ -1510,7 +1510,7 @@ export class PostgresStorage implements IStorage {
   // Account methods
   async getAccounts (): Promise<Account[]> {
     return db.select().from(accounts)
-      .where(and(eq(accounts.isActive, true), sql`${accounts.deletedAt} IS NULL`));
+      .where(and(eq(accounts.isActive, true), isNull(accounts.deletedAt)));
   }
 
   async getAccount (id: string): Promise<Account | undefined> {
@@ -1659,7 +1659,7 @@ export class PostgresStorage implements IStorage {
   // Transaction methods
   async getTransactions (): Promise<Transaction[]> {
     return db.select().from(transactions)
-      .where(and(eq(transactions.isActive, true), sql`${transactions.deletedAt} IS NULL`))
+      .where(and(eq(transactions.isActive, true), isNull(transactions.deletedAt)))
       .orderBy(desc(transactions.date));
   }
 
@@ -1667,23 +1667,29 @@ export class PostgresStorage implements IStorage {
     // Build where conditions
     const whereConditions = [
       eq(transactions.isActive, true),
-      sql`${transactions.deletedAt} IS NULL`
+      isNull(transactions.deletedAt)
     ];
     if (accountId) {
       whereConditions.push(eq(transactions.accountId, accountId));
     }
     if (search) {
-      whereConditions.push(sql`${transactions.description} ILIKE ${`%${search}%`} OR ${transactions.category} ILIKE ${`%${search}%`} OR ${transactions.amount}::text ILIKE ${`%${search}%`}`);
+      whereConditions.push(
+        or(
+          ilike(transactions.description, `%${search}%`),
+          ilike(transactions.category, `%${search}%`),
+          ilike(sql`${transactions.amount}::text`, `%${search}%`)
+        )
+      );
     }
 
     // Get total count
-    const countResult = await db.select({ count: sql<number>`count(*)` }).from(transactions).where(whereConditions.length > 0 ? sql`${whereConditions.join(' AND ')}` : undefined);
+    const countResult = await db.select({ count: count() }).from(transactions).where(and(...whereConditions));
     const total = countResult[0]?.count || 0;
 
     // Apply pagination and ordering
     const offset = (page - 1) * limit;
     const transactionResults = await db.select().from(transactions)
-      .where(whereConditions.length > 0 ? sql`${whereConditions.join(' AND ')}` : undefined)
+      .where(and(...whereConditions))
       .orderBy(desc(transactions.date))
       .limit(limit)
       .offset(offset);
@@ -1700,7 +1706,7 @@ export class PostgresStorage implements IStorage {
       .where(and(
         eq(transactions.accountId, accountId),
         eq(transactions.isActive, true),
-        sql`${transactions.deletedAt} IS NULL`
+        isNull(transactions.deletedAt)
       ))
       .orderBy(desc(transactions.date));
   }
@@ -2062,7 +2068,7 @@ export class PostgresStorage implements IStorage {
   // Credits methods implementation for PostgresStorage
   async getCredits (): Promise<Credit[]> {
     return db.select().from(credits)
-      .where(and(eq(credits.isActive, true), sql`${credits.deletedAt} IS NULL`))
+      .where(and(eq(credits.isActive, true), isNull(credits.deletedAt)))
       .orderBy(desc(credits.createdAt));
   }
 
