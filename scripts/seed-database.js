@@ -36,7 +36,7 @@ async function seedDatabase() {
     if (DATABASE_URL.includes('neon.tech')) {
       // Neon database with HTTP connection
       sqlClient = neon(DATABASE_URL);
-      db = drizzle({ client: sqlClient, schema });
+      db = drizzle(sqlClient, { schema });
     } else {
       // Standard PostgreSQL
       sqlClient = postgres(DATABASE_URL);
