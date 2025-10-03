@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { pgTable, text, varchar, decimal, timestamp, boolean, jsonb, integer } from 'drizzle-orm/pg-core';
-import { createInsertSchema } from 'drizzle-zod';
+// import { createInsertSchema } from 'drizzle-zod'; // Removed due to version conflict
 import { z } from 'zod';
 
 // Sub-account types
@@ -1742,10 +1742,20 @@ export const revokedTokens = pgTable('revoked_tokens', {
 });
 
 // JWT Token Schemas
-export const insertRefreshTokenSchema = createInsertSchema(refreshTokens);
+export const insertRefreshTokenSchema = z.object({
+  userId: z.string(),
+  token: z.string(),
+  expiresAt: z.date(),
+  createdAt: z.date().optional(),
+});
 export const updateRefreshTokenSchema = insertRefreshTokenSchema.partial();
 
-export const insertRevokedTokenSchema = createInsertSchema(revokedTokens);
+export const insertRevokedTokenSchema = z.object({
+  jti: z.string(),
+  userId: z.string(),
+  reason: z.string(),
+  revokedAt: z.date(),
+});
 export const updateRevokedTokenSchema = insertRevokedTokenSchema.partial();
 
 export type RefreshToken = typeof refreshTokens.$inferSelect;
@@ -1778,7 +1788,17 @@ export const auditLogs = pgTable('audit_logs', {
 });
 
 // Audit Log Schemas
-export const insertAuditLogSchema = createInsertSchema(auditLogs);
+export const insertAuditLogSchema = z.object({
+  tableName: z.string(),
+  recordId: z.string(),
+  userId: z.string().optional(),
+  operation: z.string(),
+  oldValues: z.record(z.any()).optional(),
+  newValues: z.record(z.any()).optional(),
+  timestamp: z.date(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+});
 export const updateAuditLogSchema = insertAuditLogSchema.partial();
 
 export type AuditLog = typeof auditLogs.$inferSelect;
@@ -1836,25 +1856,55 @@ export const transactionTags = pgTable('transaction_tags', {
 });
 
 // Category Schemas
-export const insertCategorySchema = createInsertSchema(categories);
+export const insertCategorySchema = z.object({
+  userId: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  color: z.string().optional(),
+  icon: z.string().optional(),
+  parentId: z.string().optional(),
+  isActive: z.boolean().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+  deletedAt: z.date().optional(),
+});
 export const updateCategorySchema = insertCategorySchema.partial();
 export const deleteCategorySchema = z.object({
   reason: z.string().max(500, 'Sebep çok uzun').optional(),
 });
 
 // Tag Schemas
-export const insertTagSchema = createInsertSchema(tags);
+export const insertTagSchema = z.object({
+  userId: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  color: z.string().optional(),
+  isActive: z.boolean().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+  deletedAt: z.date().optional(),
+});
 export const updateTagSchema = insertTagSchema.partial();
 export const deleteTagSchema = z.object({
   reason: z.string().max(500, 'Sebep çok uzun').optional(),
 });
 
 // Transaction-Category Schemas
-export const insertTransactionCategorySchema = createInsertSchema(transactionCategories);
+export const insertTransactionCategorySchema = z.object({
+  transactionId: z.string(),
+  categoryId: z.string(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
 export const updateTransactionCategorySchema = insertTransactionCategorySchema.partial();
 
 // Transaction-Tag Schemas
-export const insertTransactionTagSchema = createInsertSchema(transactionTags);
+export const insertTransactionTagSchema = z.object({
+  transactionId: z.string(),
+  tagId: z.string(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
 export const updateTransactionTagSchema = insertTransactionTagSchema.partial();
 
 export type Category = typeof categories.$inferSelect;
