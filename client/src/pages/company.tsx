@@ -33,6 +33,11 @@ export default function Company () {
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
   const [newAccountName, setNewAccountName] = useState('');
 
+  // Debug: Log state changes
+  React.useEffect(() => {
+    console.log('🔧 Dialog state changed:', { editDialogOpen, editingAccount, newAccountName });
+  }, [editDialogOpen, editingAccount, newAccountName]);
+
   // Fetch company accounts
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['/api/accounts', 'company'], // Unique queryKey for company accounts
