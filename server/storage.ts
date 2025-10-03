@@ -2,7 +2,7 @@ import { type Account, type InsertAccount, type Transaction, type InsertTransact
 import { randomUUID } from 'crypto';
 import type { UserRoleType } from '../shared/schema.ts';
 import { db } from './db.ts';
-import { eq, desc, sql, and, isNull, or, ilike, count, lte, gte, gt } from 'drizzle-orm';
+import { eq, desc, sql, and, isNull, or, ilike, lte, gte, gt } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export interface IStorage {
@@ -1686,7 +1686,7 @@ export class PostgresStorage implements IStorage {
     }
 
     // Get total count
-    const countResult = await db.select({ count: count() }).from(transactions).where(and(...whereConditions));
+    const countResult = await db.select({ count: sql<number>`count(*)` }).from(transactions).where(and(...whereConditions));
     const total = countResult[0]?.count || 0;
 
     // Apply pagination and ordering
