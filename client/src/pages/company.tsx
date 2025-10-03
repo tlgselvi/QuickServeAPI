@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from '@/components/ui/use-toast';
 import BankAccountDialog from '@/components/bank-account-dialog';
 import BankAccountCard from '@/components/bank-account-card';
 import AccountTransactionForm from '@/components/account-transaction-form';
@@ -22,6 +25,13 @@ export default function Company () {
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const [selectedAccountForTransaction, setSelectedAccountForTransaction] = useState<string | null>(null);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
+  
+  // Dialog states
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
+  const [newAccountName, setNewAccountName] = useState('');
 
   // Fetch company accounts
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
@@ -119,48 +129,68 @@ export default function Company () {
       const response = await apiRequest('PUT', `/api/accounts/${accountId}`, updatedData);
       if (response.ok) {
         console.log('✅ Company: Account updated successfully');
-        alert('✅ Hesap başarıyla güncellendi!');
+        toast({
+          title: "✅ Başarılı",
+          description: "Hesap başarıyla güncellendi!",
+        });
         // Invalidate and refetch accounts data
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+        setEditDialogOpen(false);
+        setEditingAccount(null);
+        setNewAccountName('');
       } else {
         const errorData = await response.json();
         console.error('❌ Company: API error:', errorData);
-        alert(`❌ Hesap güncellenirken hata: ${errorData.error || 'Bilinmeyen hata'}`);
+        toast({
+          title: "❌ Hata",
+          description: `Hesap güncellenirken hata: ${errorData.error || 'Bilinmeyen hata'}`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('❌ Company: Error updating account:', error);
-      alert('❌ Hesap güncellenirken hata oluştu!');
+      toast({
+        title: "❌ Hata",
+        description: "Hesap güncellenirken hata oluştu!",
+        variant: "destructive",
+      });
     }
   };
 
   // Delete account function
   const handleDeleteAccount = async (accountId: string) => {
-    const account = accounts.find((a: Account) => a.id === accountId);
-    const accountName = account?.accountName || 'Bu hesap';
-    
-    if (!confirm(`⚠️ HESAP SİLME ONAYI\n\n${accountName} hesabını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz ve hesaptaki tüm veriler silinecektir.\n\nDevam etmek için "Tamam"a basın.`)) {
-      return;
-    }
-
     try {
       const response = await apiRequest('DELETE', `/api/accounts/${accountId}`);
       if (response.ok) {
         console.log('✅ Company: Account deleted successfully');
-        alert('✅ Hesap başarıyla silindi!');
+        toast({
+          title: "✅ Başarılı",
+          description: "Hesap başarıyla silindi!",
+        });
         // Invalidate and refetch accounts data
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+        setDeleteDialogOpen(false);
+        setDeletingAccountId(null);
       } else {
         const errorData = await response.json();
         console.error('❌ Company: API error:', errorData);
-        alert(`❌ Hesap silinirken hata: ${errorData.error || 'Bilinmeyen hata'}`);
+        toast({
+          title: "❌ Hata",
+          description: `Hesap silinirken hata: ${errorData.error || 'Bilinmeyen hata'}`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('❌ Company: Error deleting account:', error);
-      alert('❌ Hesap silinirken hata oluştu!');
+      toast({
+        title: "❌ Hata",
+        description: "Hesap silinirken hata oluştu!",
+        variant: "destructive",
+      });
     }
   };
 
@@ -265,15 +295,14 @@ export default function Company () {
                 // Open edit dialog with current account data
                 const account = accounts.find((a: Account) => a.id === bank.id);
                 if (account) {
-                  // Show a more user-friendly prompt
-                  const newName = prompt(`Hesap adını güncelleyin:\n\nMevcut: ${account.accountName}\n\nYeni ad:`, account.accountName);
-                  if (newName && newName.trim() && newName !== account.accountName) {
-                    handleEditAccount(account.id, { accountName: newName.trim() });
-                  }
+                  setEditingAccount(account);
+                  setNewAccountName(account.accountName);
+                  setEditDialogOpen(true);
                 }
               }}
               onDeleteAccount={(accountId) => {
-                handleDeleteAccount(accountId);
+                setDeletingAccountId(accountId);
+                setDeleteDialogOpen(true);
               }}
             />
           );
@@ -385,6 +414,83 @@ export default function Company () {
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Account Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hesap Düzenle</DialogTitle>
+            <DialogDescription>
+              {editingAccount?.bankName} hesabının adını güncelleyin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Hesap Adı</label>
+              <Input
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+                placeholder="Hesap adını girin"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setEditingAccount(null);
+                setNewAccountName('');
+              }}
+            >
+              İptal
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingAccount && newAccountName && newAccountName !== editingAccount.accountName) {
+                  handleEditAccount(editingAccount.id, { accountName: newAccountName });
+                }
+              }}
+              disabled={!newAccountName || newAccountName === editingAccount?.accountName}
+            >
+              Güncelle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hesabı Sil</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu hesabı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve hesaptaki tüm veriler silinecektir.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeletingAccountId(null);
+              }}
+            >
+              İptal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deletingAccountId) {
+                  handleDeleteAccount(deletingAccountId);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Sil
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
