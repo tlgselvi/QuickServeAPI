@@ -119,6 +119,7 @@ export default function Company () {
       const response = await apiRequest('PUT', `/api/accounts/${accountId}`, updatedData);
       if (response.ok) {
         console.log('✅ Company: Account updated successfully');
+        alert('✅ Hesap başarıyla güncellendi!');
         // Invalidate and refetch accounts data
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
@@ -136,7 +137,10 @@ export default function Company () {
 
   // Delete account function
   const handleDeleteAccount = async (accountId: string) => {
-    if (!confirm('Bu hesabı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+    const account = accounts.find((a: Account) => a.id === accountId);
+    const accountName = account?.accountName || 'Bu hesap';
+    
+    if (!confirm(`⚠️ HESAP SİLME ONAYI\n\n${accountName} hesabını silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz ve hesaptaki tüm veriler silinecektir.\n\nDevam etmek için "Tamam"a basın.`)) {
       return;
     }
 
@@ -144,6 +148,7 @@ export default function Company () {
       const response = await apiRequest('DELETE', `/api/accounts/${accountId}`);
       if (response.ok) {
         console.log('✅ Company: Account deleted successfully');
+        alert('✅ Hesap başarıyla silindi!');
         // Invalidate and refetch accounts data
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
@@ -201,7 +206,7 @@ export default function Company () {
       </div>
 
       {/* Accounts Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
         {filteredAccounts.map((account: Account) => {
           // Parse subAccounts if they exist
           let subAccounts = [];
@@ -260,10 +265,10 @@ export default function Company () {
                 // Open edit dialog with current account data
                 const account = accounts.find((a: Account) => a.id === bank.id);
                 if (account) {
-                  // For now, show a simple prompt - in production, use a proper edit dialog
-                  const newName = prompt('Hesap adını güncelleyin:', account.accountName);
-                  if (newName && newName !== account.accountName) {
-                    handleEditAccount(account.id, { accountName: newName });
+                  // Show a more user-friendly prompt
+                  const newName = prompt(`Hesap adını güncelleyin:\n\nMevcut: ${account.accountName}\n\nYeni ad:`, account.accountName);
+                  if (newName && newName.trim() && newName !== account.accountName) {
+                    handleEditAccount(account.id, { accountName: newName.trim() });
                   }
                 }
               }}
