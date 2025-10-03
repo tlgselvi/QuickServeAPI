@@ -297,8 +297,10 @@ export default function Company () {
                 }, 100);
               }}
               onEditAccount={(bank) => {
+                console.log('🔧 onEditAccount called with:', bank);
                 // Open edit dialog with current account data
                 const account = accounts.find((a: Account) => a.id === bank.id);
+                console.log('🔧 Found account:', account);
                 if (account) {
                   console.log('🔧 Setting edit dialog state:', {
                     account,
@@ -316,6 +318,8 @@ export default function Company () {
                       newAccountName
                     });
                   }, 100);
+                } else {
+                  console.log('🔧 Account not found!');
                 }
               }}
               onDeleteAccount={(accountId) => {
