@@ -18,7 +18,7 @@ const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
   console.error('❌ DATABASE_URL environment variable is required');
-  process.exit(1);
+  throw new Error('DATABASE_URL environment variable is required');
 }
 
 async function seedDatabase() {
@@ -61,7 +61,8 @@ async function seedDatabase() {
   } catch (error) {
     console.error('❌ Database seeding failed:', error.message);
     console.error('📋 Error details:', error.stack);
-    process.exit(1);
+    // Do not exit the process on Render; allow server to continue
+    throw error;
   } finally {
     // Cleanup connections
     try {

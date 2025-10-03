@@ -18,7 +18,7 @@ const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
   console.error('❌ DATABASE_URL environment variable is required');
-  process.exit(1);
+  throw new Error('DATABASE_URL environment variable is required');
 }
 
 // Argon2id Configuration
@@ -116,7 +116,8 @@ async function migratePasswords() {
   } catch (error) {
     console.error('❌ Password migration failed:', error.message);
     console.error('📋 Error details:', error.stack);
-    process.exit(1);
+    // Do not exit process in Render runtime; propagate error
+    throw error;
   } finally {
     // Cleanup connections
     try {
