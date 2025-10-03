@@ -1,7 +1,7 @@
 import { db } from './db.ts';
 import { users, accounts, transactions, budgetLines } from '../shared/schema.ts';
 import bcrypt from 'bcryptjs';
-import { sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 /**
  * Seed production database with demo data
@@ -14,14 +14,14 @@ export async function seedProductionData() {
     const existingDemoUser = await db
       .select()
       .from(users)
-      .where(sql`email = 'demo@finbot.com'`)
+      .where(eq(users.email, 'demo@finbot.com'))
       .limit(1);
 
     // Check if admin user already exists
     const existingAdminUser = await db
       .select()
       .from(users)
-      .where(sql`email = 'admin@finbot.com'`)
+      .where(eq(users.email, 'admin@finbot.com'))
       .limit(1);
 
     if (existingDemoUser.length > 0 && existingAdminUser.length > 0) {

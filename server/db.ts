@@ -19,12 +19,10 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
-// Temporarily disable database requirement for local setup
-// if (!process.env.DATABASE_URL) {
-//   throw new Error(
-//     "DATABASE_URL must be set. Did you forget to provision a database?",
-//   );
-// }
+// Check for database URL
+if (!process.env.DATABASE_URL) {
+  console.warn('DATABASE_URL not set - using fallback for development');
+}
 
-export const sql = neon(process.env.DATABASE_URL || '');
+export const sql = neon(process.env.DATABASE_URL || 'postgresql://localhost:5432/finbot');
 export const db = drizzle(sql, { schema });
