@@ -29,11 +29,11 @@ export class EmailService {
     const emailConfig = this.getEmailConfig();
     
     if (emailConfig) {
-      this.transporter = nodemailer.createTransporter(emailConfig);
+      this.transporter = nodemailer.createTransport(emailConfig);
       this.isConfigured = true;
     } else {
       // Use mock transporter for development
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         jsonTransport: true
       });
       this.isConfigured = false;
