@@ -2,7 +2,7 @@ import { type Account, type InsertAccount, type Transaction, type InsertTransact
 import { randomUUID } from 'crypto';
 import type { UserRoleType } from '../shared/schema.ts';
 import { db } from './db.ts';
-import { eq, desc, sql, and, isNull, or, ilike, count } from 'drizzle-orm';
+import { eq, desc, sql, and, isNull, or, ilike, count, lte, gte, gt } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export interface IStorage {
@@ -1548,7 +1548,10 @@ export class PostgresStorage implements IStorage {
         ), 0)`,
       })
         .from(transactions)
-        .where(sql`${transactions.accountId} = ${id} AND ${transactions.date} <= ${date.toISOString()}`);
+        .where(and(
+          eq(transactions.accountId, id),
+          lte(transactions.date, date.toISOString())
+        ));
 
       balanceHistory.push({
         date: date.toISOString().split('T')[0],
@@ -1803,7 +1806,11 @@ export class PostgresStorage implements IStorage {
     })
       .from(teams)
       .innerJoin(teamMembers, eq(teams.id, teamMembers.teamId))
-      .where(sql`${teamMembers.userId} = ${userId} AND ${teamMembers.isActive} = true AND ${teams.isActive} = true`);
+      .where(and(
+        eq(teamMembers.userId, userId),
+        eq(teamMembers.isActive, true),
+        eq(teams.isActive, true)
+      ));
 
     return result;
   }
@@ -1829,12 +1836,19 @@ export class PostgresStorage implements IStorage {
 
   async getTeamMembers (teamId: string): Promise<TeamMember[]> {
     return db.select().from(teamMembers)
-      .where(sql`${teamMembers.teamId} = ${teamId} AND ${teamMembers.isActive} = true`);
+      .where(and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.isActive, true)
+      ));
   }
 
   async getTeamMember (teamId: string, userId: string): Promise<TeamMember | undefined> {
     const result = await db.select().from(teamMembers)
-      .where(sql`${teamMembers.teamId} = ${teamId} AND ${teamMembers.userId} = ${userId} AND ${teamMembers.isActive} = true`);
+      .where(and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.userId, userId),
+        eq(teamMembers.isActive, true)
+      ));
     return result[0];
   }
 
@@ -1854,7 +1868,10 @@ export class PostgresStorage implements IStorage {
     }
 
     const result = await db.delete(teamMembers)
-      .where(sql`${teamMembers.teamId} = ${teamId} AND ${teamMembers.userId} = ${userId}`)
+      .where(and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.userId, userId)
+      ))
       .returning();
     return result.length > 0;
   }
@@ -1886,7 +1903,10 @@ export class PostgresStorage implements IStorage {
 
   async getPendingInvitesByEmail (email: string): Promise<Invite[]> {
     return db.select().from(invites)
-      .where(sql`${invites.invitedEmail} = ${email} AND ${invites.status} = 'pending'`);
+      .where(and(
+        eq(invites.invitedEmail, email),
+        eq(invites.status, 'pending')
+      ));
   }
 
   async updateInviteStatus (id: string, status: 'pending' | 'accepted' | 'declined' | 'expired', userId?: string): Promise<Invite | undefined> {
@@ -1921,7 +1941,10 @@ export class PostgresStorage implements IStorage {
 
   async getActiveSystemAlerts (): Promise<SystemAlert[]> {
     return db.select().from(systemAlerts)
-      .where(sql`${systemAlerts.isActive} = true AND ${systemAlerts.isDismissed} = false`)
+      .where(and(
+        eq(systemAlerts.isActive, true),
+        eq(systemAlerts.isDismissed, false)
+      ))
       .orderBy(desc(systemAlerts.createdAt));
   }
 
@@ -2003,7 +2026,10 @@ export class PostgresStorage implements IStorage {
     // Get all active expenses that are due
     const dueExpenses = await db.select()
       .from(fixedExpenses)
-      .where(sql`${fixedExpenses.isActive} = true AND ${fixedExpenses.nextDueDate} <= ${now}`);
+      .where(and(
+        eq(fixedExpenses.isActive, true),
+        lte(fixedExpenses.nextDueDate, now)
+      ));
 
     for (const expense of dueExpenses) {
       // Check if end date has passed
@@ -2140,7 +2166,11 @@ export class PostgresStorage implements IStorage {
     const now = new Date();
     return db.select()
       .from(credits)
-      .where(sql`${credits.isActive} = true AND ${credits.dueDate} < ${now} AND ${credits.remainingAmount} > 0`);
+      .where(and(
+        eq(credits.isActive, true),
+        lte(credits.dueDate, now),
+        gt(credits.remainingAmount, 0)
+      ));
   }
 
   // Investment methods implementation for PostgresStorage
