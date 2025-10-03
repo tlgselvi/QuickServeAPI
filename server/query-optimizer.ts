@@ -1,5 +1,5 @@
 import { db } from './db';
-import { sql, and, or, eq, desc, asc, count, like, ilike, gte, lte, between } from 'drizzle-orm';
+import { sql, and, or, eq, desc, asc, like, ilike, gte, lte, between, isNull } from 'drizzle-orm';
 import { accounts, transactions, credits, auditLogs, categories, tags } from '@shared/schema';
 
 // Query optimization utilities
@@ -20,7 +20,7 @@ export class QueryOptimizer {
   }) {
     const conditions = [
       eq(transactions.isActive, true),
-      sql`${transactions.deletedAt} IS NULL`
+      isNull(transactions.deletedAt)
     ];
 
     // Add filters with proper indexing
@@ -89,7 +89,7 @@ export class QueryOptimizer {
   }) {
     const conditions = [
       eq(transactions.isActive, true),
-      sql`${transactions.deletedAt} IS NULL`
+      isNull(transactions.deletedAt)
     ];
 
     // Add filters
@@ -169,7 +169,7 @@ export class QueryOptimizer {
   }) {
     const conditions = [
       eq(accounts.isActive, filters.isActive ?? true),
-      sql`${accounts.deletedAt} IS NULL`
+      isNull(accounts.deletedAt)
     ];
 
     if (filters.userId) {
@@ -201,7 +201,7 @@ export class QueryOptimizer {
   }) {
     const conditions = [
       eq(credits.isActive, filters.isActive ?? true),
-      sql`${credits.deletedAt} IS NULL`
+      isNull(credits.deletedAt)
     ];
 
     if (filters.userId) {
@@ -289,7 +289,7 @@ export class QueryOptimizer {
   static async getDashboardStatsOptimized(userId?: string) {
     const baseConditions = [
       eq(accounts.isActive, true),
-      sql`${accounts.deletedAt} IS NULL`
+      isNull(accounts.deletedAt)
     ];
 
     if (userId) {
@@ -310,7 +310,7 @@ export class QueryOptimizer {
     // Get transaction counts efficiently
     const transactionConditions = [
       eq(transactions.isActive, true),
-      sql`${transactions.deletedAt} IS NULL`
+      isNull(transactions.deletedAt)
     ];
 
     const transactionStats = await db
@@ -359,7 +359,7 @@ export class QueryOptimizer {
       .where(and(
         ...conditions,
         eq(accounts.isActive, true),
-        sql`${accounts.deletedAt} IS NULL`,
+        isNull(accounts.deletedAt),
         or(
           ilike(accounts.accountName, searchPattern),
           ilike(accounts.bankName, searchPattern)
@@ -373,7 +373,7 @@ export class QueryOptimizer {
       .from(transactions)
       .where(and(
         eq(transactions.isActive, true),
-        sql`${transactions.deletedAt} IS NULL`,
+        isNull(transactions.deletedAt),
         or(
           ilike(transactions.description, searchPattern),
           ilike(transactions.category, searchPattern)
@@ -388,7 +388,7 @@ export class QueryOptimizer {
       .where(and(
         ...conditions,
         eq(credits.isActive, true),
-        sql`${credits.deletedAt} IS NULL`,
+        isNull(credits.deletedAt),
         or(
           ilike(credits.title, searchPattern),
           ilike(credits.description, searchPattern)

@@ -1626,7 +1626,10 @@ export class PostgresStorage implements IStorage {
       // Atomically debit the source account with conditional check
       const debitResult = await tx.update(accounts)
         .set({ balance: sql`${accounts.balance}::numeric - ${amount.toFixed(4)}::numeric` })
-        .where(sql`${accounts.id} = ${fromAccountId} AND ${accounts.balance}::numeric >= ${amount.toFixed(4)}::numeric`)
+        .where(and(
+          eq(accounts.id, fromAccountId),
+          gte(sql`${accounts.balance}::numeric`, sql`${amount.toFixed(4)}::numeric`)
+        ))
         .returning();
 
       if (debitResult.length === 0) {
@@ -1680,7 +1683,7 @@ export class PostgresStorage implements IStorage {
         or(
           ilike(transactions.description, `%${search}%`),
           ilike(transactions.category, `%${search}%`),
-          ilike(sql`${transactions.amount}::text`, `%${search}%`)
+          sql`${transactions.amount}::text ILIKE ${`%${search}%`}`
         )
       );
     }
