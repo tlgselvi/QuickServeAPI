@@ -295,9 +295,22 @@ export default function Company () {
                 // Open edit dialog with current account data
                 const account = accounts.find((a: Account) => a.id === bank.id);
                 if (account) {
+                  console.log('🔧 Setting edit dialog state:', {
+                    account,
+                    newName: account.accountName,
+                    editDialogOpen: true
+                  });
                   setEditingAccount(account);
                   setNewAccountName(account.accountName);
                   setEditDialogOpen(true);
+                  console.log('🔧 Edit dialog state set, checking in 100ms...');
+                  setTimeout(() => {
+                    console.log('🔧 Edit dialog state after timeout:', {
+                      editDialogOpen,
+                      editingAccount,
+                      newAccountName
+                    });
+                  }, 100);
                 }
               }}
               onDeleteAccount={(accountId) => {
