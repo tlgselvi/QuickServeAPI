@@ -1,7 +1,7 @@
-import { type Account, type InsertAccount, type Transaction, type InsertTransaction, type User, type InsertUser, type Team, type InsertTeam, type TeamMember, type InsertTeamMember, type Invite, type InsertInvite, type SystemAlert, type InsertSystemAlert, type FixedExpense, type InsertFixedExpense, type Credit, type InsertCredit, type Investment, type InsertInvestment, type Forecast, type InsertForecast, type Tenant, type InsertTenant, accounts, transactions, users, teams, teamMembers, invites, systemAlerts, fixedExpenses, credits, investments, forecasts, tenants } from '@shared/schema';
+import { type Account, type InsertAccount, type Transaction, type InsertTransaction, type User, type InsertUser, type Team, type InsertTeam, type TeamMember, type InsertTeamMember, type Invite, type InsertInvite, type SystemAlert, type InsertSystemAlert, type FixedExpense, type InsertFixedExpense, type Credit, type InsertCredit, type Investment, type InsertInvestment, type Forecast, type InsertForecast, type Tenant, type InsertTenant, accounts, transactions, users, teams, teamMembers, invites, systemAlerts, fixedExpenses, credits, investments, forecasts, tenants } from '../shared/schema.ts';
 import { randomUUID } from 'crypto';
-import type { UserRoleType } from '@shared/schema';
-import { db } from './db';
+import type { UserRoleType } from '../shared/schema.ts';
+import { db } from './db.ts';
 import { eq, desc, sql, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
@@ -14,11 +14,14 @@ export interface IStorage {
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   updateUserPassword(id: string, hashedPassword: string): Promise<User | undefined>;
   setResetToken(email: string, token: string, expires: Date): Promise<User | undefined>;
+  findUserByResetToken(token: string): Promise<User | undefined>;
+  clearPasswordResetToken(token: string): Promise<User | undefined>;
   verifyEmail(id: string): Promise<User | undefined>;
   updateLastLogin(id: string): Promise<User | undefined>;
 
   // Admin user management methods
   getAllUsers(): Promise<User[]>;
+  getUsersByRole(role: UserRoleType): Promise<User[]>;
   updateUserRole(id: string, role: UserRoleType): Promise<User | undefined>;
   updateUserStatus(id: string, isActive: boolean): Promise<User | undefined>;
   updateUserProfile(id: string, updates: { username: string; email: string }): Promise<User | undefined>;
@@ -28,6 +31,8 @@ export interface IStorage {
   getAccount(id: string): Promise<Account | undefined>;
   getAccountSummary(id: string): Promise<{ account: Account; recentTransactions: Transaction[]; balanceHistory: { date: string; balance: number }[] } | undefined>;
   createAccount(account: InsertAccount): Promise<Account>;
+  updateAccount(id: string, updates: Partial<Account>): Promise<Account | undefined>;
+  deleteAccount(id: string): Promise<boolean>;
   updateAccountBalance(id: string, balance: number): Promise<Account | undefined>;
   adjustAccountBalance(id: string, amount: number): Promise<Account | undefined>;
 
@@ -36,6 +41,8 @@ export interface IStorage {
   getTransactionsPaginated(page: number, limit: number, search?: string, accountId?: string): Promise<{ transactions: Transaction[]; total: number; totalPages: number }>;
   getTransactionsByAccount(accountId: string): Promise<Transaction[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
+  updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined>;
+  deleteTransaction(id: string): Promise<boolean>;
   performTransaction(transactionData: InsertTransaction, balanceAdjustment: number): Promise<Transaction>;
   performTransfer(fromAccountId: string, toAccountId: string, amount: number, description: string, virmanPairId: string): Promise<{ outTransaction: Transaction; inTransaction: Transaction }>;
 
@@ -393,6 +400,22 @@ export class MemStorage implements IStorage {
     return undefined;
   }
 
+  async findUserByResetToken (token: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => 
+      user.resetToken === token && 
+      user.resetTokenExpires && 
+      user.resetTokenExpires > new Date()
+    );
+  }
+
+  async clearPasswordResetToken (token: string): Promise<User | undefined> {
+    const user = await this.findUserByResetToken(token);
+    if (user) {
+      return this.updateUser(user.id, { resetToken: null, resetTokenExpires: null });
+    }
+    return undefined;
+  }
+
   async verifyEmail (id: string): Promise<User | undefined> {
     return this.updateUser(id, { emailVerified: new Date() });
   }
@@ -404,6 +427,10 @@ export class MemStorage implements IStorage {
   // Admin user management methods
   async getAllUsers (): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+
+  async getUsersByRole (role: UserRoleType): Promise<User[]> {
+    return Array.from(this.users.values()).filter(user => user.role === role);
   }
 
   async updateUserRole (id: string, role: UserRoleType): Promise<User | undefined> {
@@ -419,7 +446,8 @@ export class MemStorage implements IStorage {
   }
 
   async getAccounts (): Promise<Account[]> {
-    return Array.from(this.accounts.values());
+    return Array.from(this.accounts.values())
+      .filter(account => account.isActive && !account.deletedAt);
   }
 
   async getAccount (id: string): Promise<Account | undefined> {
@@ -488,6 +516,28 @@ export class MemStorage implements IStorage {
     return account;
   }
 
+  async updateAccount (id: string, updates: Partial<Account>): Promise<Account | undefined> {
+    const account = this.accounts.get(id);
+    if (account) {
+      const updatedAccount = { ...account, ...updates, updatedAt: new Date() };
+      this.accounts.set(id, updatedAccount);
+      return updatedAccount;
+    }
+    return undefined;
+  }
+
+  async deleteAccount (id: string): Promise<boolean> {
+    const account = this.accounts.get(id);
+    if (account) {
+      // Soft delete - set deletedAt timestamp
+      account.deletedAt = new Date();
+      account.isActive = false;
+      this.accounts.set(id, account);
+      return true;
+    }
+    return false;
+  }
+
   async updateAccountBalance (id: string, balance: number): Promise<Account | undefined> {
     const account = this.accounts.get(id);
     if (account) {
@@ -499,13 +549,16 @@ export class MemStorage implements IStorage {
   }
 
   async getTransactions (): Promise<Transaction[]> {
-    return Array.from(this.transactions.values()).sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
+    return Array.from(this.transactions.values())
+      .filter(transaction => transaction.isActive && !transaction.deletedAt)
+      .sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
   }
 
   async getTransactionsPaginated (page: number, limit: number, search?: string, accountId?: string): Promise<{ transactions: Transaction[]; total: number; totalPages: number }> {
-    let filteredTransactions = Array.from(this.transactions.values());
+    let filteredTransactions = Array.from(this.transactions.values())
+      .filter(transaction => transaction.isActive && !transaction.deletedAt);
 
     // Apply filters
     if (accountId) {
@@ -538,7 +591,7 @@ export class MemStorage implements IStorage {
 
   async getTransactionsByAccount (accountId: string): Promise<Transaction[]> {
     return Array.from(this.transactions.values())
-      .filter(t => t.accountId === accountId)
+      .filter(t => t.accountId === accountId && t.isActive && !t.deletedAt)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
@@ -554,6 +607,28 @@ export class MemStorage implements IStorage {
     };
     this.transactions.set(id, transaction);
     return transaction;
+  }
+
+  async updateTransaction (id: string, updates: Partial<Transaction>): Promise<Transaction | undefined> {
+    const transaction = this.transactions.get(id);
+    if (transaction) {
+      const updatedTransaction = { ...transaction, ...updates, updatedAt: new Date() };
+      this.transactions.set(id, updatedTransaction);
+      return updatedTransaction;
+    }
+    return undefined;
+  }
+
+  async deleteTransaction (id: string): Promise<boolean> {
+    const transaction = this.transactions.get(id);
+    if (transaction) {
+      // Soft delete - set deletedAt timestamp
+      transaction.deletedAt = new Date();
+      transaction.isActive = false;
+      this.transactions.set(id, transaction);
+      return true;
+    }
+    return false;
   }
 
   async adjustAccountBalance (id: string, amount: number): Promise<Account | undefined> {
@@ -996,7 +1071,8 @@ export class MemStorage implements IStorage {
   // Credits methods implementation for MemStorage
 
   async getCredits (): Promise<Credit[]> {
-    return Array.from(this.credits.values());
+    return Array.from(this.credits.values())
+      .filter(credit => credit.isActive && !credit.deletedAt);
   }
 
   async getCredit (id: string): Promise<Credit | undefined> {
@@ -1403,6 +1479,10 @@ export class PostgresStorage implements IStorage {
     return db.select().from(users);
   }
 
+  async getUsersByRole (role: UserRoleType): Promise<User[]> {
+    return db.select().from(users).where(eq(users.role, role));
+  }
+
   async updateUserRole (id: string, role: UserRoleType): Promise<User | undefined> {
     const result = await db.update(users)
       .set({ role })
@@ -1429,7 +1509,8 @@ export class PostgresStorage implements IStorage {
 
   // Account methods
   async getAccounts (): Promise<Account[]> {
-    return db.select().from(accounts);
+    return db.select().from(accounts)
+      .where(and(eq(accounts.isActive, true), sql`${accounts.deletedAt} IS NULL`));
   }
 
   async getAccount (id: string): Promise<Account | undefined> {
@@ -1485,6 +1566,26 @@ export class PostgresStorage implements IStorage {
   async createAccount (insertAccount: InsertAccount): Promise<Account> {
     const result = await db.insert(accounts).values(insertAccount).returning();
     return result[0];
+  }
+
+  async updateAccount (id: string, updates: Partial<Account>): Promise<Account | undefined> {
+    const result = await db.update(accounts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(accounts.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAccount (id: string): Promise<boolean> {
+    const result = await db.update(accounts)
+      .set({ 
+        deletedAt: new Date(), 
+        isActive: false, 
+        updatedAt: new Date() 
+      })
+      .where(eq(accounts.id, id))
+      .returning();
+    return result.length > 0;
   }
 
   async updateAccountBalance (id: string, balance: number): Promise<Account | undefined> {
@@ -1557,12 +1658,17 @@ export class PostgresStorage implements IStorage {
 
   // Transaction methods
   async getTransactions (): Promise<Transaction[]> {
-    return db.select().from(transactions).orderBy(desc(transactions.date));
+    return db.select().from(transactions)
+      .where(and(eq(transactions.isActive, true), sql`${transactions.deletedAt} IS NULL`))
+      .orderBy(desc(transactions.date));
   }
 
   async getTransactionsPaginated (page: number, limit: number, search?: string, accountId?: string): Promise<{ transactions: Transaction[]; total: number; totalPages: number }> {
     // Build where conditions
-    const whereConditions = [];
+    const whereConditions = [
+      eq(transactions.isActive, true),
+      sql`${transactions.deletedAt} IS NULL`
+    ];
     if (accountId) {
       whereConditions.push(eq(transactions.accountId, accountId));
     }
@@ -1591,13 +1697,37 @@ export class PostgresStorage implements IStorage {
 
   async getTransactionsByAccount (accountId: string): Promise<Transaction[]> {
     return db.select().from(transactions)
-      .where(eq(transactions.accountId, accountId))
+      .where(and(
+        eq(transactions.accountId, accountId),
+        eq(transactions.isActive, true),
+        sql`${transactions.deletedAt} IS NULL`
+      ))
       .orderBy(desc(transactions.date));
   }
 
   async createTransaction (insertTransaction: InsertTransaction): Promise<Transaction> {
     const result = await db.insert(transactions).values(insertTransaction).returning();
     return result[0];
+  }
+
+  async updateTransaction (id: string, updates: Partial<Transaction>): Promise<Transaction | undefined> {
+    const result = await db.update(transactions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(transactions.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteTransaction (id: string): Promise<boolean> {
+    const result = await db.update(transactions)
+      .set({ 
+        deletedAt: new Date(), 
+        isActive: false, 
+        updatedAt: new Date() 
+      })
+      .where(eq(transactions.id, id))
+      .returning();
+    return result.length > 0;
   }
 
   async getDashboardStats () {
@@ -1931,7 +2061,9 @@ export class PostgresStorage implements IStorage {
 
   // Credits methods implementation for PostgresStorage
   async getCredits (): Promise<Credit[]> {
-    return db.select().from(credits).orderBy(desc(credits.createdAt));
+    return db.select().from(credits)
+      .where(and(eq(credits.isActive, true), sql`${credits.deletedAt} IS NULL`))
+      .orderBy(desc(credits.createdAt));
   }
 
   async getCredit (id: string): Promise<Credit | undefined> {

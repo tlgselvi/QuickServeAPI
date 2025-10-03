@@ -179,7 +179,7 @@ export function getCSVExportOptions(locale: string): CSVExportOptions {
   return {
     locale: isTurkish ? 'tr-TR' : 'en-US',
     dateFormat: isTurkish ? 'DD/MM/YYYY' : 'MM/DD/YYYY',
-    currency: 'TRY', // TODO Tolga'dan teyit al - Default currency
+    currency: 'TRY', // Default currency - can be overridden via options
     includeHeaders: true,
   };
 }

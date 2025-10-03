@@ -17,6 +17,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { LoadingProvider, GlobalLoadingIndicator } from '@/components/loading-states';
 
 import Dashboard from '@/pages/dashboard';
+import { DashboardExtended } from '@/pages/dashboard-extended';
 import Analytics from '@/pages/analytics';
 import Company from '@/pages/company';
 import Personal from '@/pages/personal';
@@ -28,6 +29,9 @@ import Simulation from '@/pages/simulation';
 import Reports from '@/pages/reports';
 import Alerts from '@/pages/alerts';
 import Settings from '@/pages/settings';
+import { BudgetManagement } from '@/pages/budget-management';
+import { CashboxManagement } from '@/pages/cashbox-management';
+import { BankIntegration } from '@/pages/bank-integration';
 import Login from '@/pages/login';
 import Register from '@/pages/register';
 import JWTLogin from '@/pages/jwt-login';
@@ -119,6 +123,11 @@ function Router () {
                 <Dashboard />
               </RouteGuard>
             </Route>
+            <Route path="/dashboard-extended">
+              <RouteGuard route="/dashboard-extended">
+                <DashboardExtended />
+              </RouteGuard>
+            </Route>
             <Route path="/analytics">
               <RouteGuard route="/analytics">
                 <Analytics />
@@ -172,6 +181,21 @@ function Router () {
             <Route path="/settings">
               <RouteGuard route="/settings">
                 <Settings />
+              </RouteGuard>
+            </Route>
+            <Route path="/budget-management">
+              <RouteGuard route="/budget-management">
+                <BudgetManagement />
+              </RouteGuard>
+            </Route>
+            <Route path="/cashbox-management">
+              <RouteGuard route="/cashbox-management">
+                <CashboxManagement />
+              </RouteGuard>
+            </Route>
+            <Route path="/bank-integration">
+              <RouteGuard route="/bank-integration">
+                <BankIntegration />
               </RouteGuard>
             </Route>
             <Route component={NotFound} />

@@ -143,9 +143,9 @@ export function AgingSummary({ reportType, title, description }: AgingSummaryPro
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="border-l-4 border-l-green-500 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+        <CardTitle className="flex items-center gap-2 text-green-900 dark:text-green-100">
           {reportType === 'ar' ? (
             <TrendingUp className="h-5 w-5 text-green-600" />
           ) : (
@@ -153,7 +153,7 @@ export function AgingSummary({ reportType, title, description }: AgingSummaryPro
           )}
           {title}
         </CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription className="text-green-700 dark:text-green-300">{description}</CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-6">

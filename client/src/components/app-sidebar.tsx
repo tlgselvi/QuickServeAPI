@@ -13,6 +13,11 @@ import {
   TrendingUp,
   PieChart,
   PlayCircle,
+  LayoutGrid,
+  Clock,
+  Target,
+  Wallet,
+  Building,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import type { UserRoleType } from '@shared/schema';
@@ -50,6 +55,11 @@ const menuGroups: MenuGroup[] = [
         title: 'Genel Özet',
         path: '/',
         icon: Home,
+      },
+      {
+        title: 'Dashboard Extended',
+        path: '/dashboard-extended',
+        icon: LayoutGrid,
       },
       {
         title: 'Analiz',
@@ -100,6 +110,31 @@ const menuGroups: MenuGroup[] = [
         title: 'Simülasyon',
         path: '/simulation',
         icon: PlayCircle,
+      },
+    ],
+  },
+  {
+    title: 'Finansal Yönetim',
+    items: [
+      {
+        title: 'Bütçe Yönetimi',
+        path: '/budget-management',
+        icon: Target,
+      },
+      {
+        title: 'Kasa Yönetimi',
+        path: '/cashbox-management',
+        icon: Wallet,
+      },
+      {
+        title: 'Banka Entegrasyonu',
+        path: '/bank-integration',
+        icon: Building,
+      },
+      {
+        title: 'Yaşlandırma Analizi',
+        path: '/aging-analysis',
+        icon: Clock,
       },
     ],
   },

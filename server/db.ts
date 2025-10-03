@@ -1,6 +1,6 @@
 import { neon, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import * as schema from '@shared/schema';
+import * as schema from '../shared/schema.ts';
 
 // Force HTTP for production - WebSocket causes issues on Render
 neonConfig.fetchConnectionCache = true;

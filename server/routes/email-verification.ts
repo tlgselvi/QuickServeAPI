@@ -1,26 +1,37 @@
 import { Router } from 'express';
 import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
+import { emailService } from '../services/email-service';
+import { randomBytes } from 'crypto';
 
 const router = Router();
 
-// Mock email verification API
+// Email verification API
 router.post('/send-verification', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const { email } = req.body;
     const userId = req.user!.id;
 
-    // TODO Tolga'dan teyit al - Mock implementation
-    // In production, this would send actual email
-    console.log(`📧 Mock email verification sent to ${email} for user ${userId}`);
+    // Generate verification code
+    const verificationCode = randomBytes(3).toString('hex').toUpperCase();
+    
+    // Store verification code (in production, store in database with expiration)
+    // For now, we'll just send the email
+    
+    // Send verification email
+    const template = emailService.generateEmailVerificationTemplate(verificationCode);
+    const emailSent = await emailService.sendEmail(email, template);
 
-    // Simulate email sending delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    res.json({
-      success: true,
-      message: 'Doğrulama e-postası gönderildi',
-      verificationId: `mock_${Date.now()}`,
-    });
+    if (emailSent) {
+      res.json({
+        success: true,
+        message: 'Doğrulama e-postası gönderildi',
+        verificationId: `verify_${Date.now()}`,
+      });
+    } else {
+      res.status(500).json({
+        error: 'E-posta gönderilemedi',
+      });
+    }
   } catch (error) {
     console.error('Email verification error:', error);
     res.status(500).json({

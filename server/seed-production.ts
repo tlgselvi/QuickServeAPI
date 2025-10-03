@@ -1,5 +1,5 @@
-import { db } from './db';
-import { users, accounts, transactions, budgetLines } from '@shared/schema';
+import { db } from './db.ts';
+import { users, accounts, transactions, budgetLines } from '../shared/schema.ts';
 import bcrypt from 'bcryptjs';
 import { sql } from 'drizzle-orm';
 

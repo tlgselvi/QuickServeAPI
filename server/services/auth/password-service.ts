@@ -10,7 +10,7 @@ import {
 } from '../../../shared/schema';
 import { z } from 'zod';
 import * as crypto from 'crypto';
-import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 import nodemailer from 'nodemailer';
 
 // Password Policy Configuration
@@ -25,6 +25,16 @@ export const PASSWORD_POLICY = {
   MAX_ATTEMPTS: 5,
   LOCKOUT_DURATION_MINUTES: 30,
   HISTORY_COUNT: 5 // Remember last 5 passwords
+};
+
+// Argon2id Configuration for password hashing
+export const ARGON2_CONFIG = {
+  type: argon2.argon2id,
+  memoryCost: 2 ** 16, // 64 MB
+  timeCost: 3, // 3 iterations
+  parallelism: 1,
+  hashLength: 32,
+  saltLength: 16
 };
 
 // Password Service
@@ -111,15 +121,69 @@ export class PasswordService {
     }
   }
 
-  // Hash password
+  // Hash password with Argon2id
   async hashPassword(password: string): Promise<string> {
-    const saltRounds = 12;
-    return await bcrypt.hash(password, saltRounds);
+    try {
+      return await argon2.hash(password, {
+        type: ARGON2_CONFIG.type,
+        memoryCost: ARGON2_CONFIG.memoryCost,
+        timeCost: ARGON2_CONFIG.timeCost,
+        parallelism: ARGON2_CONFIG.parallelism,
+        hashLength: ARGON2_CONFIG.hashLength,
+        saltLength: ARGON2_CONFIG.saltLength
+      });
+    } catch (error) {
+      console.error('Error hashing password:', error);
+      throw new Error('Şifre hash\'lenemedi');
+    }
   }
 
-  // Verify password
+  // Verify password with Argon2id
   async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-    return await bcrypt.compare(password, hashedPassword);
+    try {
+      // Handle both Argon2id and legacy bcrypt hashes
+      if (hashedPassword.startsWith('$2b$') || hashedPassword.startsWith('$2a$')) {
+        // Legacy bcrypt hash - for backward compatibility
+        const bcrypt = await import('bcryptjs');
+        return await bcrypt.compare(password, hashedPassword);
+      } else {
+        // Argon2id hash
+        return await argon2.verify(hashedPassword, password);
+      }
+    } catch (error) {
+      console.error('Error verifying password:', error);
+      return false;
+    }
+  }
+
+  // Migrate bcrypt password to Argon2id
+  async migratePasswordToArgon2id(userId: string, plainPassword: string, bcryptHash: string): Promise<string> {
+    try {
+      // Verify the bcrypt password first
+      const bcrypt = await import('bcryptjs');
+      const isValid = await bcrypt.compare(plainPassword, bcryptHash);
+      
+      if (!isValid) {
+        throw new Error('Invalid current password');
+      }
+
+      // Hash with Argon2id
+      const argon2Hash = await this.hashPassword(plainPassword);
+      
+      // Update user password in database
+      await db
+        .update(userProfiles)
+        .set({ 
+          passwordChangedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(userProfiles.userId, userId));
+
+      return argon2Hash;
+    } catch (error) {
+      console.error('Error migrating password:', error);
+      throw new Error('Şifre migrasyonu başarısız');
+    }
   }
 
   // Change password

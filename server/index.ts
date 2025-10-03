@@ -1,37 +1,37 @@
 import express, { type Request, Response, NextFunction } from 'express';
 import session from 'express-session';
-import { registerRoutes } from './routes';
-import { setupVite, serveStatic, log } from './vite';
-import { pool } from './db';
+import { registerRoutes } from './routes.ts';
+import { setupVite, serveStatic, log } from './vite.ts';
+import { pool } from './db.ts';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { initializeProduction } from './seed-production';
+import { initializeProduction } from './seed-production.ts';
 import { setupDatabase } from '../scripts/setup-database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { requireAuth, requirePermission } from './middleware/auth';
-import { Permission } from '@shared/schema';
+import { requireAuth, requirePermission } from './middleware/auth.ts';
+import { Permission } from '../shared/schema.ts';
 import {
   errorHandler,
   notFoundHandler,
   requestIdMiddleware,
   setupGlobalErrorHandlers,
-} from './middleware/error-handler';
+} from './middleware/error-handler.ts';
 import {
   securityMiddleware,
   sanitizeInput,
   sqlInjectionProtection,
   xssProtection,
   requestSizeLimit,
-} from './middleware/security';
+} from './middleware/security.ts';
 import {
   performanceMonitor,
   queryOptimizer,
   memoryMonitor,
   cacheControl,
   getPerformanceMetrics,
-} from './middleware/performance';
+} from './middleware/performance.ts';
 
 const app = express();
 

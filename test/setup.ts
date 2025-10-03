@@ -3,6 +3,11 @@ import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
+// TextEncoder polyfill for Node.js
+import { TextEncoder, TextDecoder } from 'util';
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder as any;
+
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
 
@@ -14,6 +19,25 @@ afterEach(() => {
 // Mock environment variables
 process.env.NODE_ENV = 'test';
 process.env.SESSION_SECRET = 'test-secret-key';
+
+// Test database configuration
+process.env.DATABASE_URL = 'postgresql://finbot_test_user:test_password@localhost:5432/finbot_test';
+process.env.DB_HOST = 'localhost';
+process.env.DB_PORT = '5432';
+process.env.DB_NAME = 'finbot_test';
+process.env.DB_USER = 'finbot_test_user';
+process.env.DB_PASSWORD = 'test_password';
+
+// JWT test configuration
+process.env.JWT_SECRET = 'test_jwt_secret_key_for_testing_only';
+process.env.JWT_EXPIRES_IN = '1h';
+
+// Email test configuration
+process.env.SMTP_HOST = 'smtp.ethereal.email';
+process.env.SMTP_PORT = '587';
+process.env.SMTP_USER = 'test@ethereal.email';
+process.env.SMTP_PASS = 'test_password';
+process.env.SMTP_FROM = 'test@finbot.com';
 
 // Mock console methods to reduce noise in tests
 global.console = {

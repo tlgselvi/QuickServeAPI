@@ -105,3 +105,9 @@ export function useCurrency(): CurrencyContextType {
   }
   return context;
 }
+
+// Convenience hook for formatting currency
+export function useFormatCurrency() {
+  const { formatCurrency } = useCurrency();
+  return formatCurrency;
+}

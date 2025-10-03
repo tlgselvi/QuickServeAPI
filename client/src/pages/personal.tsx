@@ -105,6 +105,52 @@ export default function Personal () {
     }
   };
 
+  // Edit account function
+  const handleEditAccount = async (accountId: string, updatedData: any) => {
+    try {
+      const response = await apiRequest('PUT', `/api/accounts/${accountId}`, updatedData);
+      if (response.ok) {
+        console.log('✅ Personal: Account updated successfully');
+        // Invalidate and refetch accounts data
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Personal: API error:', errorData);
+        alert(`❌ Hesap güncellenirken hata: ${errorData.error || 'Bilinmeyen hata'}`);
+      }
+    } catch (error) {
+      console.error('❌ Personal: Error updating account:', error);
+      alert('❌ Hesap güncellenirken hata oluştu!');
+    }
+  };
+
+  // Delete account function
+  const handleDeleteAccount = async (accountId: string) => {
+    if (!confirm('Bu hesabı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest('DELETE', `/api/accounts/${accountId}`);
+      if (response.ok) {
+        console.log('✅ Personal: Account deleted successfully');
+        // Invalidate and refetch accounts data
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Personal: API error:', errorData);
+        alert(`❌ Hesap silinirken hata: ${errorData.error || 'Bilinmeyen hata'}`);
+      }
+    } catch (error) {
+      console.error('❌ Personal: Error deleting account:', error);
+      alert('❌ Hesap silinirken hata oluştu!');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -203,12 +249,18 @@ export default function Personal () {
                 }, 100);
               }}
               onEditAccount={(bank) => {
-                // TODO: Implement edit account functionality
-                console.log('Edit account:', bank);
+                // Open edit dialog with current account data
+                const account = accounts.find((a: Account) => a.id === bank.id);
+                if (account) {
+                  // For now, show a simple prompt - in production, use a proper edit dialog
+                  const newName = prompt('Hesap adını güncelleyin:', account.accountName);
+                  if (newName && newName !== account.accountName) {
+                    handleEditAccount(account.id, { accountName: newName });
+                  }
+                }
               }}
               onDeleteAccount={(accountId) => {
-                // TODO: Implement delete account functionality
-                console.log('Delete account:', accountId);
+                handleDeleteAccount(accountId);
               }}
             />
           );

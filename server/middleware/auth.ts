@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { UserRoleType, PermissionType } from '@shared/schema';
-import { hasPermission, hasAnyPermission } from '@shared/schema';
+import type { UserRoleType, PermissionType } from '../../shared/schema.ts';
+import { hasPermission, hasAnyPermission } from '../../shared/schema.ts';
 import jwt from 'jsonwebtoken';
 
 // Extend Request type to include user info
@@ -215,4 +215,141 @@ export const logAccess = (action: string) => {
     console.log(`🔐 [AUTH] ${action} - User: ${req.user?.username || 'anonymous'} (${req.user?.role || 'no-role'}) - IP: ${req.ip}`);
     next();
   };
+};
+
+// Admin Protection Middleware - Check if this is the last admin
+export const lastAdminCheck = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({
+      error: 'Oturum açmanız gerekiyor',
+      code: 'AUTH_REQUIRED',
+    });
+  }
+
+  try {
+    const { storage } = await import('../storage');
+    
+    // Get all users with admin role
+    const adminUsers = await storage.getUsersByRole('admin');
+    const activeAdminUsers = adminUsers.filter(user => user.isActive);
+
+    // If this is the last active admin, prevent certain operations
+    if (activeAdminUsers.length === 1 && activeAdminUsers[0].id === req.user.id) {
+      return res.status(403).json({
+        error: 'Bu işlem gerçekleştirilemez çünkü sistemde sadece siz aktif admin olarak bulunuyorsunuz',
+        code: 'LAST_ADMIN_PROTECTION',
+        message: 'En az bir aktif admin hesabının bulunması gerekmektedir',
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Last admin check error:', error);
+    return res.status(500).json({
+      error: 'Admin kontrolü sırasında hata oluştu',
+      code: 'ADMIN_CHECK_ERROR',
+    });
+  }
+};
+
+// Admin Role Change Guard - Prevent admin role changes without proper authorization
+export const adminRoleChangeGuard = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({
+      error: 'Oturum açmanız gerekiyor',
+      code: 'AUTH_REQUIRED',
+    });
+  }
+
+  try {
+    const { storage } = await import('../storage');
+    
+    // Check if this is a role change operation
+    const { role, userId } = req.body;
+    const targetUserId = userId || req.params.userId;
+    
+    if (!role || !targetUserId) {
+      return next(); // Not a role change operation
+    }
+
+    // Get target user
+    const targetUser = await storage.getUser(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({
+        error: 'Kullanıcı bulunamadı',
+        code: 'USER_NOT_FOUND',
+      });
+    }
+
+    // Check if target user is currently an admin
+    if (targetUser.role === 'admin') {
+      // Get all users with admin role
+      const adminUsers = await storage.getUsersByRole('admin');
+      const activeAdminUsers = adminUsers.filter(user => user.isActive);
+
+      // If this is the last active admin, prevent role change
+      if (activeAdminUsers.length === 1 && activeAdminUsers[0].id === targetUserId) {
+        return res.status(403).json({
+          error: 'Son aktif admin kullanıcısının rolü değiştirilemez',
+          code: 'LAST_ADMIN_ROLE_CHANGE_DENIED',
+          message: 'En az bir aktif admin hesabının bulunması gerekmektedir',
+        });
+      }
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin role change guard error:', error);
+    return res.status(500).json({
+      error: 'Rol değişikliği kontrolü sırasında hata oluştu',
+      code: 'ROLE_CHANGE_CHECK_ERROR',
+    });
+  }
+};
+
+// System Account Guard - Protect system accounts from modification
+export const systemAccountGuard = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({
+      error: 'Oturum açmanız gerekiyor',
+      code: 'AUTH_REQUIRED',
+    });
+  }
+
+  try {
+    const { storage } = await import('../storage');
+    
+    // Check if this is a user modification operation
+    const targetUserId = req.params.userId || req.body.userId;
+    
+    if (!targetUserId) {
+      return next(); // Not a user modification operation
+    }
+
+    // Get target user
+    const targetUser = await storage.getUser(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({
+        error: 'Kullanıcı bulunamadı',
+        code: 'USER_NOT_FOUND',
+      });
+    }
+
+    // Check if target user is a system account
+    if (targetUser.email === 'system@finbot.com' || targetUser.username === 'system') {
+      return res.status(403).json({
+        error: 'Sistem hesapları değiştirilemez',
+        code: 'SYSTEM_ACCOUNT_PROTECTION',
+        message: 'Sistem hesapları güvenlik nedeniyle korunmaktadır',
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('System account guard error:', error);
+    return res.status(500).json({
+      error: 'Sistem hesabı kontrolü sırasında hata oluştu',
+      code: 'SYSTEM_ACCOUNT_CHECK_ERROR',
+    });
+  }
 };

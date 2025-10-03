@@ -1,54 +1,16 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { PasswordService, PASSWORD_POLICY } from '../../server/services/auth/password-service';
-import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
-
-// Mock dependencies
-vi.mock('../../server/db', () => ({
-  db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          limit: vi.fn(() => Promise.resolve([]))
-        }))
-      }))
-    })),
-    insert: vi.fn(() => ({
-      values: vi.fn(() => Promise.resolve())
-    })),
-    update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: vi.fn(() => Promise.resolve())
-      }))
-    })),
-    delete: vi.fn(() => ({
-      where: vi.fn(() => Promise.resolve())
-    }))
-  }
-}));
-
-vi.mock('bcryptjs', () => ({
-  hash: vi.fn(),
-  compare: vi.fn()
-}));
-
-vi.mock('nodemailer', () => ({
-  createTransporter: vi.fn(() => ({
-    sendMail: vi.fn(() => Promise.resolve())
-  }))
-}));
+import { describe, it, expect, beforeEach } from 'vitest';
+import { PasswordService, PASSWORD_POLICY } from '../../server/services/auth/password-service.js';
+import { MockFactory } from '../utils/mock-factory.js';
 
 describe('PasswordService', () => {
   let service: PasswordService;
   const mockUserId = 'test-user-id';
+  const mockUser = MockFactory.createMockUser({ id: mockUserId });
+  const mockUserProfile = MockFactory.createMockUserProfile({ userId: mockUserId });
 
   beforeEach(() => {
     service = new PasswordService();
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
+    MockFactory.resetAllMocks();
   });
 
   describe('validatePassword', () => {

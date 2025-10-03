@@ -232,10 +232,13 @@ export function AgingTable({ reportType, title, description }: AgingTableProps) 
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+    <Card className="border-l-4 border-l-blue-500 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+        <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+          <Clock className="h-5 w-5 text-blue-600" />
+          {title}
+        </CardTitle>
+        <CardDescription className="text-blue-700 dark:text-blue-300">{description}</CardDescription>
         
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">

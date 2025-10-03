@@ -69,6 +69,11 @@ export const accounts = pgTable('accounts', {
   gracePeriod: varchar('grace_period', { length: 10 }), // Days after due date
   minimumPayment: decimal('minimum_payment', { precision: 19, scale: 4 }), // For credit cards
   interestRate: decimal('interest_rate', { precision: 5, scale: 2 }), // Annual interest rate
+  // Audit fields
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+  deletedAt: timestamp('deleted_at'), // Soft delete
+  isActive: boolean('is_active').default(true).notNull(),
 });
 
 // Bank products table - each bank can have multiple products
@@ -109,6 +114,11 @@ export const transactions = pgTable('transactions', {
   category: varchar('category', { length: 50 }),
   virmanPairId: varchar('virman_pair_id'), // for linking transfer transactions
   date: timestamp('date').default(sql`NOW()`).notNull(),
+  // Audit fields
+  createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
+  updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+  deletedAt: timestamp('deleted_at'), // Soft delete
+  isActive: boolean('is_active').default(true).notNull(),
 });
 
 // System alerts table for important dates and notifications
@@ -171,6 +181,7 @@ export const credits = pgTable('credits', {
   metadata: text('metadata'), // JSON string for additional data
   createdAt: timestamp('created_at').default(sql`NOW()`).notNull(),
   updatedAt: timestamp('updated_at').default(sql`NOW()`).notNull(),
+  deletedAt: timestamp('deleted_at'), // Soft delete
 });
 
 export const forecasts = pgTable('forecasts', {
@@ -260,6 +271,23 @@ export const insertAccountSchema = z.object({
   metadata: z.string().optional(),
 });
 
+export const updateAccountSchema = z.object({
+  accountName: z.string().min(2, 'Hesap adı en az 2 karakter olmalı').max(255, 'Hesap adı çok uzun').optional(),
+  bankName: z.string().max(100, 'Banka adı çok uzun').optional(),
+  currency: z.string().length(3, 'Para birimi 3 karakter olmalı').optional(),
+  subAccounts: z.string().optional(),
+  paymentDueDate: z.string().optional(),
+  cutOffDate: z.string().optional(),
+  gracePeriod: z.string().optional(),
+  minimumPayment: z.number().optional(),
+  interestRate: z.number().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const deleteAccountSchema = z.object({
+  reason: z.string().max(500, 'Sebep çok uzun').optional(),
+});
+
 export const insertBankProductSchema = z.object({
   name: z.string(),
   type: z.string(),
@@ -274,6 +302,19 @@ export const insertTransactionSchema = z.object({
   description: z.string(),
   category: z.string().optional(),
   virmanPairId: z.string().optional(),
+});
+
+export const updateTransactionSchema = z.object({
+  type: z.enum(['income', 'expense', 'transfer_in', 'transfer_out']).optional(),
+  accountId: z.string().optional(),
+  amount: z.number().positive('Tutar pozitif olmalı').optional(),
+  description: z.string().max(1000, 'Açıklama çok uzun').optional(),
+  category: z.string().max(50, 'Kategori çok uzun').optional(),
+  date: z.date().optional(),
+});
+
+export const deleteTransactionSchema = z.object({
+  reason: z.string().max(500, 'Sebep çok uzun').optional(),
 });
 
 export const insertSystemAlertSchema = z.object({
@@ -310,6 +351,28 @@ export const insertCreditSchema = z.object({
   accountNumber: z.string().optional(),
 });
 
+export const updateCreditSchema = z.object({
+  title: z.string().max(255, 'Başlık çok uzun').optional(),
+  description: z.string().max(1000, 'Açıklama çok uzun').optional(),
+  type: z.string().max(20, 'Tip çok uzun').optional(),
+  amount: z.number().positive('Tutar pozitif olmalı').optional(),
+  remainingAmount: z.number().positive('Kalan tutar pozitif olmalı').optional(),
+  currency: z.string().length(3, 'Para birimi 3 karakter olmalı').optional(),
+  interestRate: z.number().optional(),
+  accountId: z.string().optional(),
+  institution: z.string().max(100, 'Kurum adı çok uzun').optional(),
+  accountNumber: z.string().max(50, 'Hesap numarası çok uzun').optional(),
+  dueDate: z.date().optional(),
+  maturityDate: z.date().optional(),
+  minimumPayment: z.number().positive('Asgari ödeme pozitif olmalı').optional(),
+  status: z.string().max(20, 'Durum çok uzun').optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const deleteCreditSchema = z.object({
+  reason: z.string().max(500, 'Sebep çok uzun').optional(),
+});
+
 export const insertForecastSchema = z.object({
   type: z.string(),
   currency: z.string().optional(),
@@ -332,14 +395,20 @@ export const insertInvestmentSchema = z.object({
 });
 
 export type InsertAccount = z.infer<typeof insertAccountSchema>;
+export type UpdateAccount = z.infer<typeof updateAccountSchema>;
+export type DeleteAccount = z.infer<typeof deleteAccountSchema>;
 export type Account = typeof accounts.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+export type UpdateTransaction = z.infer<typeof updateTransactionSchema>;
+export type DeleteTransaction = z.infer<typeof deleteTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertSystemAlert = z.infer<typeof insertSystemAlertSchema>;
 export type SystemAlert = typeof systemAlerts.$inferSelect;
 export type InsertFixedExpense = z.infer<typeof insertFixedExpenseSchema>;
 export type FixedExpense = typeof fixedExpenses.$inferSelect;
 export type InsertCredit = z.infer<typeof insertCreditSchema>;
+export type UpdateCredit = z.infer<typeof updateCreditSchema>;
+export type DeleteCredit = z.infer<typeof deleteCreditSchema>;
 export type Credit = typeof credits.$inferSelect;
 export type InsertForecast = z.infer<typeof insertForecastSchema>;
 export type Forecast = typeof forecasts.$inferSelect;
@@ -837,7 +906,7 @@ export type UpdateUserRoleRequest = z.infer<typeof updateUserRoleSchema>;
 export type UpdateUserStatusRequest = z.infer<typeof updateUserStatusSchema>;
 
 // Predefined transaction categories
-export const transactionCategories = {
+export const predefinedTransactionCategories = {
   income: [
     { value: 'salary', label: 'Maaş' },
     { value: 'freelance', label: 'Serbest Çalışma' },
@@ -1642,4 +1711,228 @@ export const insertSimulationRunSchema = z.object({
 
 export type SimulationRun = typeof simulationRuns.$inferSelect;
 export type InsertSimulationRun = typeof simulationRuns.$inferInsert;
+
+// JWT Token Management Tables
+export const refreshTokens = pgTable('refresh_tokens', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  token: varchar('token', { length: 500 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  lastUsedAt: timestamp('last_used_at').defaultNow().notNull(),
+  isRevoked: boolean('is_revoked').default(false).notNull(),
+  revokedAt: timestamp('revoked_at'),
+  revokedBy: varchar('revoked_by', { length: 255 }), // User ID who revoked it
+  ipAddress: varchar('ip_address', { length: 45 }), // IPv4/IPv6
+  userAgent: text('user_agent'),
+  familyId: varchar('family_id', { length: 255 }), // For token family rotation
+});
+
+export const revokedTokens = pgTable('revoked_tokens', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  token: varchar('token', { length: 500 }).notNull(),
+  tokenType: varchar('token_type', { length: 20 }).notNull(), // 'access' or 'refresh'
+  expiresAt: timestamp('expires_at').notNull(),
+  revokedAt: timestamp('revoked_at').defaultNow().notNull(),
+  revokedBy: varchar('revoked_by', { length: 255 }), // User ID who revoked it
+  reason: varchar('reason', { length: 100 }), // 'logout', 'security', 'expired', 'rotation'
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+});
+
+// JWT Token Schemas
+export const insertRefreshTokenSchema = createInsertSchema(refreshTokens);
+export const updateRefreshTokenSchema = insertRefreshTokenSchema.partial();
+
+export const insertRevokedTokenSchema = createInsertSchema(revokedTokens);
+export const updateRevokedTokenSchema = insertRevokedTokenSchema.partial();
+
+export type RefreshToken = typeof refreshTokens.$inferSelect;
+export type InsertRefreshToken = typeof refreshTokens.$inferInsert;
+export type UpdateRefreshToken = typeof refreshTokens.$inferInsert;
+
+export type RevokedToken = typeof revokedTokens.$inferSelect;
+export type InsertRevokedToken = typeof revokedTokens.$inferInsert;
+export type UpdateRevokedToken = typeof revokedTokens.$inferInsert;
+
+// Audit Log Table for tracking all changes
+export const auditLogs = pgTable('audit_logs', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tableName: varchar('table_name', { length: 100 }).notNull(),
+  recordId: varchar('record_id', { length: 255 }).notNull(),
+  operation: varchar('operation', { length: 20 }).notNull(), // 'INSERT', 'UPDATE', 'DELETE'
+  userId: varchar('user_id', { length: 255 }),
+  userEmail: varchar('user_email', { length: 255 }),
+  userRole: varchar('user_role', { length: 50 }),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  oldValues: jsonb('old_values'),
+  newValues: jsonb('new_values'),
+  changedFields: jsonb('changed_fields'),
+  reason: text('reason'),
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+  sessionId: varchar('session_id', { length: 255 }),
+  requestId: varchar('request_id', { length: 255 }),
+  metadata: jsonb('metadata'),
+});
+
+// Audit Log Schemas
+export const insertAuditLogSchema = createInsertSchema(auditLogs);
+export const updateAuditLogSchema = insertAuditLogSchema.partial();
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+export type UpdateAuditLog = typeof auditLogs.$inferInsert;
+
+// Category Table for transaction categorization
+export const categories = pgTable('categories', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  color: varchar('color', { length: 7 }).default('#3B82F6'), // Hex color
+  icon: varchar('icon', { length: 50 }),
+  parentId: varchar('parent_id', { length: 255 }),
+  userId: varchar('user_id', { length: 255 }),
+  isSystem: boolean('is_system').default(false).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
+  metadata: jsonb('metadata'),
+});
+
+// Tag Table for flexible tagging system
+export const tags = pgTable('tags', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  color: varchar('color', { length: 7 }).default('#10B981'), // Hex color
+  userId: varchar('user_id', { length: 255 }),
+  isSystem: boolean('is_system').default(false).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
+  metadata: jsonb('metadata'),
+});
+
+// Transaction-Category relationship table
+export const transactionCategories = pgTable('transaction_categories', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  transactionId: varchar('transaction_id', { length: 255 }).notNull(),
+  categoryId: varchar('category_id', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Transaction-Tag relationship table
+export const transactionTags = pgTable('transaction_tags', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  transactionId: varchar('transaction_id', { length: 255 }).notNull(),
+  tagId: varchar('tag_id', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Category Schemas
+export const insertCategorySchema = createInsertSchema(categories);
+export const updateCategorySchema = insertCategorySchema.partial();
+export const deleteCategorySchema = z.object({
+  reason: z.string().max(500, 'Sebep çok uzun').optional(),
+});
+
+// Tag Schemas
+export const insertTagSchema = createInsertSchema(tags);
+export const updateTagSchema = insertTagSchema.partial();
+export const deleteTagSchema = z.object({
+  reason: z.string().max(500, 'Sebep çok uzun').optional(),
+});
+
+// Transaction-Category Schemas
+export const insertTransactionCategorySchema = createInsertSchema(transactionCategories);
+export const updateTransactionCategorySchema = insertTransactionCategorySchema.partial();
+
+// Transaction-Tag Schemas
+export const insertTransactionTagSchema = createInsertSchema(transactionTags);
+export const updateTransactionTagSchema = insertTransactionTagSchema.partial();
+
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = typeof categories.$inferInsert;
+export type UpdateCategory = typeof categories.$inferInsert;
+export type DeleteCategory = z.infer<typeof deleteCategorySchema>;
+
+export type Tag = typeof tags.$inferSelect;
+export type InsertTag = typeof tags.$inferInsert;
+export type UpdateTag = typeof tags.$inferInsert;
+export type DeleteTag = z.infer<typeof deleteTagSchema>;
+
+export type TransactionCategory = typeof transactionCategories.$inferSelect;
+export type InsertTransactionCategory = typeof transactionCategories.$inferInsert;
+export type UpdateTransactionCategory = typeof transactionCategories.$inferInsert;
+
+export type TransactionTag = typeof transactionTags.$inferSelect;
+export type InsertTransactionTag = typeof transactionTags.$inferInsert;
+export type UpdateTransactionTag = typeof transactionTags.$inferInsert;
+
+// Database Indexes for Performance Optimization
+import { index } from 'drizzle-orm/pg-core';
+
+// User indexes
+export const userEmailIndex = index('idx_users_email').on(users.email);
+export const userUsernameIndex = index('idx_users_username').on(users.username);
+export const userRoleIndex = index('idx_users_role').on(users.role);
+export const userIsActiveIndex = index('idx_users_is_active').on(users.isActive);
+
+// Account indexes
+export const accountUserIdIndex = index('idx_accounts_user_id').on(accounts.userId);
+export const accountTypeIndex = index('idx_accounts_type').on(accounts.type);
+export const accountIsActiveIndex = index('idx_accounts_is_active').on(accounts.isActive);
+export const accountDeletedAtIndex = index('idx_accounts_deleted_at').on(accounts.deletedAt);
+
+// Transaction indexes
+export const transactionAccountIdIndex = index('idx_transactions_account_id').on(transactions.accountId);
+export const transactionDateIndex = index('idx_transactions_date').on(transactions.date);
+export const transactionTypeIndex = index('idx_transactions_type').on(transactions.type);
+export const transactionIsActiveIndex = index('idx_transactions_is_active').on(transactions.isActive);
+export const transactionDeletedAtIndex = index('idx_transactions_deleted_at').on(transactions.deletedAt);
+export const transactionCategoryIndex = index('idx_transactions_category').on(transactions.category);
+
+// Credit indexes
+export const creditUserIdIndex = index('idx_credits_user_id').on(credits.userId);
+export const creditAccountIdIndex = index('idx_credits_account_id').on(credits.accountId);
+export const creditIsActiveIndex = index('idx_credits_is_active').on(credits.isActive);
+export const creditDeletedAtIndex = index('idx_credits_deleted_at').on(credits.deletedAt);
+
+// Audit log indexes
+export const auditLogTableNameIndex = index('idx_audit_logs_table_name').on(auditLogs.tableName);
+export const auditLogRecordIdIndex = index('idx_audit_logs_record_id').on(auditLogs.recordId);
+export const auditLogUserIdIndex = index('idx_audit_logs_user_id').on(auditLogs.userId);
+export const auditLogTimestampIndex = index('idx_audit_logs_timestamp').on(auditLogs.timestamp);
+export const auditLogOperationIndex = index('idx_audit_logs_operation').on(auditLogs.operation);
+
+// Category indexes
+export const categoryUserIdIndex = index('idx_categories_user_id').on(categories.userId);
+export const categoryIsActiveIndex = index('idx_categories_is_active').on(categories.isActive);
+export const categoryDeletedAtIndex = index('idx_categories_deleted_at').on(categories.deletedAt);
+export const categoryParentIdIndex = index('idx_categories_parent_id').on(categories.parentId);
+
+// Tag indexes
+export const tagUserIdIndex = index('idx_tags_user_id').on(tags.userId);
+export const tagIsActiveIndex = index('idx_tags_is_active').on(tags.isActive);
+export const tagDeletedAtIndex = index('idx_tags_deleted_at').on(tags.deletedAt);
+
+// Transaction-Category relationship indexes
+export const transactionCategoryTransactionIdIndex = index('idx_transaction_categories_transaction_id').on(transactionCategories.transactionId);
+export const transactionCategoryCategoryIdIndex = index('idx_transaction_categories_category_id').on(transactionCategories.categoryId);
+
+// Transaction-Tag relationship indexes
+export const transactionTagTransactionIdIndex = index('idx_transaction_tags_transaction_id').on(transactionTags.transactionId);
+export const transactionTagTagIdIndex = index('idx_transaction_tags_tag_id').on(transactionTags.tagId);
+
+// Composite indexes for common queries
+export const accountUserTypeIndex = index('idx_accounts_user_type').on(accounts.userId, accounts.type);
+export const transactionAccountDateIndex = index('idx_transactions_account_date').on(transactions.accountId, transactions.date);
+export const transactionAccountTypeIndex = index('idx_transactions_account_type').on(transactions.accountId, transactions.type);
+export const auditLogTableRecordIndex = index('idx_audit_logs_table_record').on(auditLogs.tableName, auditLogs.recordId);
 

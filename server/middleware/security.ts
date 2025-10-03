@@ -1,8 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
 
-// Simple rate limiting implementation
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+// Enhanced rate limiting implementation with IP + user + route tracking
+const rateLimitStore = new Map<string, { count: number; resetTime: number; blocked: boolean }>();
+const bruteForceStore = new Map<string, { attempts: number; lastAttempt: number; blocked: boolean }>();
 
 export const createRateLimit = (windowMs: number, max: number, message?: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -11,71 +12,231 @@ export const createRateLimit = (windowMs: number, max: number, message?: string)
       return next();
     }
     
-    // Temporarily increase rate limit for production testing
-    if (process.env.NODE_ENV === 'production') {
-      max = max * 10; // 10x higher limit for production
-    }
-    const key = req.ip || req.connection.remoteAddress || 'unknown';
     const now = Date.now();
-    const windowStart = now - windowMs;
+    const key = req.ip || req.connection.remoteAddress || 'unknown';
+    const routeKey = `${key}:${req.method}:${req.path}`;
+    const userKey = req.user?.id ? `user:${req.user.id}` : null;
 
     // Clean up expired entries
-    for (const [ip, data] of Array.from(rateLimitStore.entries())) {
+    for (const [k, data] of Array.from(rateLimitStore.entries())) {
       if (data.resetTime < now) {
-        rateLimitStore.delete(ip);
+        rateLimitStore.delete(k);
       }
     }
 
-    const current = rateLimitStore.get(key);
-
-    if (!current) {
-      rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
-      return next();
-    }
-
-    if (current.resetTime < now) {
-      rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
-      return next();
-    }
-
-    if (current.count >= max) {
+    // Check IP-based rate limit
+    const ipLimit = checkRateLimit(key, windowMs, max, now);
+    if (ipLimit.blocked) {
       return res.status(429).json({
         success: false,
         error: message || 'Too many requests from this IP, please try again later.',
         code: 'RATE_LIMIT_EXCEEDED',
-        retryAfter: Math.round((current.resetTime - now) / 1000),
+        retryAfter: Math.round((ipLimit.resetTime - now) / 1000),
+        type: 'IP_LIMIT'
       });
     }
 
-    current.count++;
+    // Check route-based rate limit
+    const routeLimit = checkRateLimit(routeKey, windowMs, Math.floor(max * 0.5), now);
+    if (routeLimit.blocked) {
+      return res.status(429).json({
+        success: false,
+        error: 'Too many requests to this endpoint, please try again later.',
+        code: 'ROUTE_RATE_LIMIT_EXCEEDED',
+        retryAfter: Math.round((routeLimit.resetTime - now) / 1000),
+        type: 'ROUTE_LIMIT'
+      });
+    }
+
+    // Check user-based rate limit (if authenticated)
+    if (userKey) {
+      const userLimit = checkRateLimit(userKey, windowMs, max * 2, now);
+      if (userLimit.blocked) {
+        return res.status(429).json({
+          success: false,
+          error: 'Too many requests from this user, please try again later.',
+          code: 'USER_RATE_LIMIT_EXCEEDED',
+          retryAfter: Math.round((userLimit.resetTime - now) / 1000),
+          type: 'USER_LIMIT'
+        });
+      }
+    }
+
+    // Set rate limit headers
+    res.setHeader('X-Rate-Limit-Remaining', Math.max(0, max - ipLimit.count));
+    res.setHeader('X-Rate-Limit-Reset', new Date(ipLimit.resetTime).toISOString());
+
     next();
   };
 };
 
-// Security headers middleware
+// Helper function to check rate limit
+function checkRateLimit(key: string, windowMs: number, max: number, now: number) {
+  const current = rateLimitStore.get(key);
+
+  if (!current) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs, blocked: false });
+    return { count: 1, resetTime: now + windowMs, blocked: false };
+  }
+
+  if (current.resetTime < now) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs, blocked: false });
+    return { count: 1, resetTime: now + windowMs, blocked: false };
+  }
+
+  if (current.count >= max) {
+    current.blocked = true;
+    return { count: current.count, resetTime: current.resetTime, blocked: true };
+  }
+
+  current.count++;
+  return { count: current.count, resetTime: current.resetTime, blocked: false };
+}
+
+// Brute force protection middleware
+export const bruteForceGuard = (maxAttempts: number = 5, windowMs: number = 15 * 60 * 1000) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const now = Date.now();
+    const key = req.ip || req.connection.remoteAddress || 'unknown';
+    const userKey = req.user?.id ? `user:${req.user.id}` : null;
+
+    // Clean up expired entries
+    for (const [k, data] of Array.from(bruteForceStore.entries())) {
+      if (now - data.lastAttempt > windowMs) {
+        bruteForceStore.delete(k);
+      }
+    }
+
+    // Check IP-based brute force
+    const ipBruteForce = checkBruteForce(key, maxAttempts, windowMs, now);
+    if (ipBruteForce.blocked) {
+      return res.status(429).json({
+        success: false,
+        error: 'Too many failed attempts from this IP. Please try again later.',
+        code: 'BRUTE_FORCE_BLOCKED',
+        retryAfter: Math.round((ipBruteForce.resetTime - now) / 1000),
+        type: 'IP_BRUTE_FORCE'
+      });
+    }
+
+    // Check user-based brute force (if authenticated)
+    if (userKey) {
+      const userBruteForce = checkBruteForce(userKey, maxAttempts, windowMs, now);
+      if (userBruteForce.blocked) {
+        return res.status(429).json({
+          success: false,
+          error: 'Too many failed attempts from this user. Please try again later.',
+          code: 'USER_BRUTE_FORCE_BLOCKED',
+          retryAfter: Math.round((userBruteForce.resetTime - now) / 1000),
+          type: 'USER_BRUTE_FORCE'
+        });
+      }
+    }
+
+    next();
+  };
+};
+
+// Helper function to check brute force
+function checkBruteForce(key: string, maxAttempts: number, windowMs: number, now: number) {
+  const current = bruteForceStore.get(key);
+
+  if (!current) {
+    bruteForceStore.set(key, { attempts: 1, lastAttempt: now, blocked: false });
+    return { attempts: 1, resetTime: now + windowMs, blocked: false };
+  }
+
+  if (now - current.lastAttempt > windowMs) {
+    bruteForceStore.set(key, { attempts: 1, lastAttempt: now, blocked: false });
+    return { attempts: 1, resetTime: now + windowMs, blocked: false };
+  }
+
+  if (current.attempts >= maxAttempts) {
+    current.blocked = true;
+    return { attempts: current.attempts, resetTime: current.lastAttempt + windowMs, blocked: true };
+  }
+
+  current.attempts++;
+  current.lastAttempt = now;
+  return { attempts: current.attempts, resetTime: current.lastAttempt + windowMs, blocked: false };
+}
+
+// Record failed attempt for brute force tracking
+export const recordFailedAttempt = (req: Request, res: Response, next: NextFunction) => {
+  const key = req.ip || req.connection.remoteAddress || 'unknown';
+  const userKey = req.user?.id ? `user:${req.user.id}` : null;
+  const now = Date.now();
+
+  // Record IP attempt
+  const ipData = bruteForceStore.get(key);
+  if (ipData) {
+    ipData.attempts++;
+    ipData.lastAttempt = now;
+  } else {
+    bruteForceStore.set(key, { attempts: 1, lastAttempt: now, blocked: false });
+  }
+
+  // Record user attempt (if authenticated)
+  if (userKey) {
+    const userData = bruteForceStore.get(userKey);
+    if (userData) {
+      userData.attempts++;
+      userData.lastAttempt = now;
+    } else {
+      bruteForceStore.set(userKey, { attempts: 1, lastAttempt: now, blocked: false });
+    }
+  }
+
+  next();
+};
+
+// Enhanced Security headers middleware with strict CSP
 export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
   // Security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=()');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  res.setHeader('X-Download-Options', 'noopen');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
 
-  // Content Security Policy
-  res.setHeader('Content-Security-Policy',
-    "default-src 'self'; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "script-src 'self'; " +
-    "img-src 'self' data: https:; " +
-    "connect-src 'self'; " +
-    "font-src 'self'; " +
-    "object-src 'none'; " +
-    "media-src 'self'; " +
-    "frame-src 'none';",
-  );
+  // Strict Content Security Policy
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' 'nonce-" + generateNonce() + "'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "media-src 'self'",
+    "object-src 'none'",
+    "frame-src 'none'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "manifest-src 'self'",
+    "worker-src 'self'",
+    "child-src 'self'",
+    "upgrade-insecure-requests",
+    "block-all-mixed-content"
+  ].join('; ');
+
+  res.setHeader('Content-Security-Policy', cspDirectives);
+  res.setHeader('Content-Security-Policy-Report-Only', cspDirectives);
 
   next();
 };
+
+// Generate nonce for CSP
+function generateNonce(): string {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
 
 // Security middleware
 export const securityMiddleware = [
@@ -353,7 +514,7 @@ export const ipWhitelist = (allowedIPs: string[]) => {
   };
 };
 
-// CORS configuration
+// Enhanced CORS configuration with whitelist and preflight cache
 export const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     // Allow requests with no origin (mobile apps, etc.)
@@ -365,21 +526,159 @@ export const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5000',
+      'https://localhost:3000',
+      'https://localhost:5000',
       ...(envOrigin ? [envOrigin] : []),
     ];
 
+    // Check if origin is in whitelist
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`CORS: Origin ${origin} not allowed`);
       callback(new Error('Not allowed by CORS'), false);
     }
   },
   credentials: true,
   optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'X-Requested-With',
+    'Idempotency-Key',
+    'X-API-Key',
+    'X-Client-Version',
+    'X-Client-Platform'
+  ],
+  exposedHeaders: [
+    'X-Total-Count',
+    'X-Total-Pages',
+    'X-Current-Page',
+    'X-Rate-Limit-Remaining',
+    'X-Rate-Limit-Reset',
+    'X-Request-ID'
+  ],
+  maxAge: 86400, // 24 hours preflight cache
+  preflightContinue: false,
+  preflightContinue: false
 };
+
+// CORS preflight cache middleware
+export const corsPreflightCache = (req: Request, res: Response, next: NextFunction) => {
+  if (req.method === 'OPTIONS') {
+    // Set preflight cache headers
+    res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', corsOptions.allowedHeaders?.join(', ') || '');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Expose-Headers', corsOptions.exposedHeaders?.join(', ') || '');
+    
+    // Cache preflight response
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Vary', 'Origin, Access-Control-Request-Method, Access-Control-Request-Headers');
+    
+    return res.status(200).end();
+  }
+  next();
+};
+
+// Idempotency-Key support for write operations
+const idempotencyStore = new Map<string, { response: any; timestamp: number }>();
+
+export const idempotencyKeyMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // Only apply to write operations
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    return next();
+  }
+
+  const idempotencyKey = req.headers['idempotency-key'] as string;
+  
+  if (!idempotencyKey) {
+    return res.status(400).json({
+      success: false,
+      error: 'Idempotency-Key header is required for write operations',
+      code: 'IDEMPOTENCY_KEY_REQUIRED'
+    });
+  }
+
+  // Validate idempotency key format
+  if (!/^[a-zA-Z0-9_-]{1,255}$/.test(idempotencyKey)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid Idempotency-Key format',
+      code: 'INVALID_IDEMPOTENCY_KEY'
+    });
+  }
+
+  // Check if we've seen this key before
+  const existingResponse = idempotencyStore.get(idempotencyKey);
+  const now = Date.now();
+  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+  if (existingResponse && (now - existingResponse.timestamp) < maxAge) {
+    // Return cached response
+    res.setHeader('Idempotency-Key', idempotencyKey);
+    res.setHeader('Idempotency-Status', 'duplicate');
+    return res.status(existingResponse.response.status || 200).json(existingResponse.response);
+  }
+
+  // Store the original response methods
+  const originalJson = res.json;
+  const originalStatus = res.status;
+
+  // Override response methods to capture the response
+  res.status = function(code: number) {
+    this.statusCode = code;
+    return this;
+  };
+
+  res.json = function(body: any) {
+    // Store the response for idempotency
+    idempotencyStore.set(idempotencyKey, {
+      response: { status: this.statusCode, body },
+      timestamp: now
+    });
+
+    // Set idempotency headers
+    this.setHeader('Idempotency-Key', idempotencyKey);
+    this.setHeader('Idempotency-Status', 'new');
+
+    // Clean up old entries
+    for (const [key, data] of Array.from(idempotencyStore.entries())) {
+      if (now - data.timestamp > maxAge) {
+        idempotencyStore.delete(key);
+      }
+    }
+
+    return originalJson.call(this, body);
+  };
+
+  next();
+};
+
+// Enhanced security middleware with all protections
+export const enhancedSecurityMiddleware = [
+  securityHeaders,
+  corsPreflightCache,
+  createRateLimit(15 * 60 * 1000, 100), // 100 requests per 15 minutes
+  createRateLimit(60 * 1000, 20, 'Too many requests per minute'), // 20 requests per minute
+  bruteForceGuard(5, 15 * 60 * 1000), // 5 attempts per 15 minutes
+  sanitizeInput,
+  sqlInjectionProtection,
+  xssProtection,
+  requestSizeLimit('10mb'),
+  idempotencyKeyMiddleware
+];
 
 export default {
   securityMiddleware,
+  enhancedSecurityMiddleware,
   sanitizeInput,
   validateRequest,
   commonValidations,
@@ -388,5 +687,9 @@ export default {
   requestSizeLimit,
   ipWhitelist,
   corsOptions,
+  corsPreflightCache,
   createRateLimit,
+  bruteForceGuard,
+  recordFailedAttempt,
+  idempotencyKeyMiddleware,
 };

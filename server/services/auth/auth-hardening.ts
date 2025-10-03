@@ -9,26 +9,9 @@ import { z } from 'zod';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import * as jwt from 'jsonwebtoken';
+import { tokenService, TokenMetadata } from './token-service.js';
 
-// Enhanced JWT Token Tables
-export const refreshTokens = {
-  id: 'refresh_tokens',
-  userId: 'user_id',
-  token: 'token',
-  jti: 'jti',
-  expiresAt: 'expires_at',
-  createdAt: 'created_at',
-  revoked: 'revoked',
-  revokedAt: 'revoked_at'
-} as const;
-
-export const revokedTokens = {
-  id: 'revoked_tokens',
-  jti: 'jti',
-  userId: 'user_id',
-  revokedAt: 'revoked_at',
-  reason: 'reason'
-} as const;
+// Token service integration
 
 // Argon2id Configuration
 export const ARGON2_CONFIG = {
@@ -518,7 +501,7 @@ export class AuthHardeningService {
     }
   }
   // Generate token pair (access + refresh)
-  async generateTokenPair(userId: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async generateTokenPair(userId: string, metadata?: Partial<TokenMetadata>): Promise<{ accessToken: string; refreshToken: string }> {
     try {
       // Get user info for access token
       const userProfile = await db
@@ -531,21 +514,16 @@ export class AuthHardeningService {
         throw new Error('User not found');
       }
 
-      const profile = userProfile[0];
-
-      // Generate access token
-      const accessToken = await this.generateAccessToken(
+      // Use token service to generate token pair
+      const tokenPair = await tokenService.generateTokenPair({
         userId,
-        profile.role,
-        profile.permissions || []
-      );
-
-      // Generate refresh token
-      const refreshTokenData = await this.generateRefreshToken(userId);
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent
+      });
 
       return {
-        accessToken,
-        refreshToken: refreshTokenData.token
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken
       };
     } catch (error) {
       console.error('Token pair generation error:', error);
@@ -554,33 +532,45 @@ export class AuthHardeningService {
   }
 
   // Rotate refresh token
-  async rotateRefreshToken(refreshToken: string): Promise<{
+  async rotateRefreshToken(refreshToken: string, metadata?: Partial<TokenMetadata>): Promise<{
     success: boolean;
     accessToken?: string;
     refreshToken?: string;
     error?: string;
   }> {
     try {
-      const result = await this.verifyRefreshToken(refreshToken);
-      if (!result) {
-        return {
-          success: false,
-          error: 'Invalid refresh token'
-        };
-      }
+      const tokenPair = await tokenService.rotateRefreshToken(refreshToken, {
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent
+      });
 
       return {
         success: true,
-        accessToken: result.newTokens.accessToken,
-        refreshToken: result.newTokens.refreshToken
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken
       };
     } catch (error) {
       console.error('Refresh token rotation error:', error);
       return {
         success: false,
-        error: 'Failed to rotate refresh token'
+        error: error instanceof Error ? error.message : 'Failed to rotate refresh token'
       };
     }
+  }
+
+  // Revoke refresh token
+  async revokeToken(token: string, userId: string, reason: string = 'logout'): Promise<void> {
+    await tokenService.revokeRefreshToken(token, userId, reason);
+  }
+
+  // Revoke all user tokens
+  async revokeAllUserTokens(userId: string, reason: string = 'security'): Promise<void> {
+    await tokenService.revokeAllUserTokens(userId, reason);
+  }
+
+  // Verify access token
+  verifyAccessToken(token: string): { userId: string; familyId: string } | null {
+    return tokenService.verifyAccessToken(token);
   }
 }
 

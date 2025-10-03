@@ -1,48 +1,48 @@
 import type { Express } from 'express';
 import { Router } from 'express';
 import { createServer, type Server } from 'http';
-import { storage } from './storage';
-import { insertAccountSchema, insertTransactionSchema, loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, insertTeamSchema, updateTeamSchema, insertTeamMemberSchema, inviteUserSchema, acceptInviteSchema, insertSystemAlertSchema, insertFixedExpenseSchema, insertInvestmentSchema, insertForecastSchema, insertAISettingsSchema, importTransactionJsonSchema, exportTransactionsByDateSchema, transactionJsonFileSchema, Permission, UserRole, TeamPermission, hasTeamPermission, TeamRole } from '@shared/schema';
+import { storage } from './storage.ts';
+import { insertAccountSchema, insertTransactionSchema, insertCreditSchema, updateAccountSchema, deleteAccountSchema, updateTransactionSchema, deleteTransactionSchema, updateCreditSchema, deleteCreditSchema, loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, insertTeamSchema, updateTeamSchema, insertTeamMemberSchema, inviteUserSchema, acceptInviteSchema, insertSystemAlertSchema, insertFixedExpenseSchema, insertInvestmentSchema, insertForecastSchema, insertAISettingsSchema, importTransactionJsonSchema, exportTransactionsByDateSchema, transactionJsonFileSchema, Permission, UserRole, TeamPermission, hasTeamPermission, TeamRole } from '../shared/schema.ts';
 import bcrypt from 'bcryptjs';
 import { randomBytes, randomUUID } from 'crypto';
-import type { AuthenticatedRequest } from './middleware/auth';
-import { requireAuth, requirePermission, requireAccountTypeAccess, optionalAuth, logAccess } from './middleware/auth';
-import { requireJWTAuth, requireJWTPermission, requireJWTAdmin, logJWTAccess } from './middleware/jwt-auth';
-import { updateUserRoleSchema, updateUserStatusSchema } from '@shared/schema';
-import { alertService } from './alert-service';
-import { transactionJsonService } from './transaction-json-service';
-import { realtimeService } from './realtime-service';
-import { JWTAuthService, TokenBlacklist } from './jwt-auth';
-import type { AuthenticatedRequest as JWTAuthenticatedRequest } from './middleware/jwt-auth';
-import { openaiService } from './services/ai/openaiService';
-import tenantsRouter from './routes/tenants';
-import investmentsRouter from './routes/investments';
-import portfolioRouter from './routes/portfolio';
-import aiAgentsRouter from './routes/ai-agents';
-import riskRouter from './routes/risk';
-import simulationRouter from './routes/simulation';
-import advisorRouter from './routes/advisor';
-import financeRouter from './routes/finance';
-import emailVerificationRouter from './routes/email-verification';
-import budgetLinesRouter from './routes/budget-lines';
-import exportRouter from './routes/export';
-import recurringRouter from './routes/recurring';
-import budgetCompareRouter from './routes/budget-compare';
-import scenarioRouter from './routes/scenario';
-import agingRouter from './routes/aging';
-import dashboardExtendedRouter from './routes/dashboard-extended';
-import dashboardLayoutRouter from './routes/dashboard-layout';
-import realtimeRouter from './routes/realtime';
-import analyticsRouter from './routes/analytics';
-import performanceRouter from './routes/performance';
-import enhancedExportRouter from './routes/enhanced-export';
-import cashboxRouter from './routes/cashbox';
-import bankIntegrationRouter from './routes/bank-integration';
-import securityRouter from './routes/security';
-import { securityHeadersMiddleware, advancedSecurityHeaders } from './middleware/security-headers-advanced';
-import { auditComplianceMiddleware, auditComplianceManager } from './middleware/audit-compliance';
-import { rateLimitMiddleware } from './middleware/rate-limit-advanced';
-import { authHardeningService } from './services/auth/auth-hardening';
+import type { AuthenticatedRequest } from './middleware/auth.ts';
+import { requireAuth, requirePermission, requireAccountTypeAccess, optionalAuth, logAccess } from './middleware/auth.ts';
+import { requireJWTAuth, requireJWTPermission, requireJWTAdmin, logJWTAccess } from './middleware/jwt-auth.ts';
+import { updateUserRoleSchema, updateUserStatusSchema } from '../shared/schema.ts';
+import { alertService } from './alert-service.ts';
+import { transactionJsonService } from './transaction-json-service.ts';
+import { realtimeService } from './realtime-service.ts';
+import { JWTAuthService, TokenBlacklist } from './jwt-auth.ts';
+import type { AuthenticatedRequest as JWTAuthenticatedRequest } from './middleware/jwt-auth.ts';
+import { openaiService } from './services/ai/openaiService.ts';
+import tenantsRouter from './routes/tenants.ts';
+import investmentsRouter from './routes/investments.ts';
+import portfolioRouter from './routes/portfolio.ts';
+import aiAgentsRouter from './routes/ai-agents.ts';
+import riskRouter from './routes/risk.ts';
+import simulationRouter from './routes/simulation.ts';
+import advisorRouter from './routes/advisor.ts';
+import financeRouter from './routes/finance.ts';
+import emailVerificationRouter from './routes/email-verification.ts';
+import budgetLinesRouter from './routes/budget-lines.ts';
+import exportRouter from './routes/export.ts';
+import recurringRouter from './routes/recurring.ts';
+import budgetCompareRouter from './routes/budget-compare.ts';
+import scenarioRouter from './routes/scenario.ts';
+import agingRouter from './routes/aging.ts';
+import dashboardExtendedRouter from './routes/dashboard-extended.ts';
+import dashboardLayoutRouter from './routes/dashboard-layout.ts';
+import realtimeRouter from './routes/realtime.ts';
+import analyticsRouter from './routes/analytics.ts';
+import performanceRouter from './routes/performance.ts';
+import enhancedExportRouter from './routes/enhanced-export.ts';
+import cashboxRouter from './routes/cashbox.ts';
+import bankIntegrationRouter from './routes/bank-integration.ts';
+import securityRouter from './routes/security.ts';
+import { securityHeadersMiddleware, advancedSecurityHeaders } from './middleware/security-headers-advanced.ts';
+import { auditComplianceMiddleware, auditComplianceManager } from './middleware/audit-compliance.ts';
+import { rateLimitMiddleware } from './middleware/rate-limit-advanced.ts';
+import { authHardeningService } from './services/auth/auth-hardening.ts';
 
 // Extend Express session to include user
 declare module 'express-session' {
@@ -136,9 +136,10 @@ export async function registerRoutes (app: Express): Promise<Server> {
     logAccess('CREATE_ACCOUNT'),
     async (req: AuthenticatedRequest, res) => {
       try {
-        console.log('🔍 Received account data:', JSON.stringify(req.body, null, 2));
+        const { log } = await import('./utils/logger.js');
+        log.debug({ body: req.body }, 'Received account data');
         const validatedData = insertAccountSchema.parse(req.body);
-        console.log('✅ Validation passed:', JSON.stringify(validatedData, null, 2));
+        log.debug({ validatedData }, 'Account validation passed');
 
         // Check if user can create this account type
         const accountType = validatedData.type as 'personal' | 'company';
@@ -147,11 +148,123 @@ export async function registerRoutes (app: Express): Promise<Server> {
         }
 
         const account = await storage.createAccount(validatedData);
-        console.log('🎉 Account created:', account);
+        log.business('accounts', 'create', { accountId: account.id, type: account.type });
         res.json(account);
       } catch (error) {
         console.error('❌ Account validation error:', error);
         res.status(400).json({ error: 'Geçersiz hesap verisi', details: (error as Error).message });
+      }
+    },
+  );
+
+  // PUT /api/accounts/:id - Update account
+  app.put('/api/accounts/:id',
+    requireAuth,
+    requirePermission(Permission.EDIT_PERSONAL_ACCOUNTS, Permission.EDIT_COMPANY_ACCOUNTS, Permission.EDIT_ALL_ACCOUNTS),
+    logAccess('UPDATE_ACCOUNT'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const validatedData = updateAccountSchema.parse(req.body);
+
+        // Check if account exists and user has access
+        const accounts = await storage.getAccounts();
+        const account = accounts.find(acc => acc.id === id);
+        
+        if (!account) {
+          return res.status(404).json({ error: 'Hesap bulunamadı' });
+        }
+
+        // Check if user can edit this account type
+        if (req.user!.role === UserRole.PERSONAL_USER && account.type === 'company') {
+          return res.status(403).json({ error: 'Şirket hesabı düzenleme yetkiniz bulunmuyor' });
+        }
+
+        const updatedAccount = await storage.updateAccount(id, validatedData);
+        if (!updatedAccount) {
+          return res.status(404).json({ error: 'Hesap güncellenemedi' });
+        }
+
+        res.json(updatedAccount);
+      } catch (error) {
+        console.error('❌ Account update error:', error);
+        res.status(400).json({ error: 'Hesap güncellenirken hata oluştu', details: (error as Error).message });
+      }
+    },
+  );
+
+  // DELETE /api/accounts/:id - Soft delete account
+  app.delete('/api/accounts/:id',
+    requireAuth,
+    requirePermission(Permission.DELETE_PERSONAL_ACCOUNTS, Permission.DELETE_COMPANY_ACCOUNTS, Permission.DELETE_ALL_ACCOUNTS),
+    logAccess('DELETE_ACCOUNT'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const validatedData = deleteAccountSchema.parse(req.body);
+
+        // Check if account exists and user has access
+        const accounts = await storage.getAccounts();
+        const account = accounts.find(acc => acc.id === id);
+        
+        if (!account) {
+          return res.status(404).json({ error: 'Hesap bulunamadı' });
+        }
+
+        // Check if user can delete this account type
+        if (req.user!.role === UserRole.PERSONAL_USER && account.type === 'company') {
+          return res.status(403).json({ error: 'Şirket hesabı silme yetkiniz bulunmuyor' });
+        }
+
+        const deleted = await storage.deleteAccount(id);
+        if (!deleted) {
+          return res.status(404).json({ error: 'Hesap silinemedi' });
+        }
+
+        res.json({ message: 'Hesap başarıyla silindi', reason: validatedData.reason });
+      } catch (error) {
+        console.error('❌ Account delete error:', error);
+        res.status(400).json({ error: 'Hesap silinirken hata oluştu', details: (error as Error).message });
+      }
+    },
+  );
+
+  // PATCH /api/accounts/:id/status - Toggle account status (active/passive)
+  app.patch('/api/accounts/:id/status',
+    requireAuth,
+    requirePermission(Permission.EDIT_PERSONAL_ACCOUNTS, Permission.EDIT_COMPANY_ACCOUNTS, Permission.EDIT_ALL_ACCOUNTS),
+    logAccess('TOGGLE_ACCOUNT_STATUS'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const { isActive } = req.body;
+
+        if (typeof isActive !== 'boolean') {
+          return res.status(400).json({ error: 'isActive değeri boolean olmalıdır' });
+        }
+
+        // Check if account exists and user has access
+        const accounts = await storage.getAccounts();
+        const account = accounts.find(acc => acc.id === id);
+        
+        if (!account) {
+          return res.status(404).json({ error: 'Hesap bulunamadı' });
+        }
+
+        // Check if user can edit this account type
+        if (req.user!.role === UserRole.PERSONAL_USER && account.type === 'company') {
+          return res.status(403).json({ error: 'Şirket hesabı durumu değiştirme yetkiniz bulunmuyor' });
+        }
+
+        const updatedAccount = await storage.updateAccount(id, { isActive });
+        if (!updatedAccount) {
+          return res.status(404).json({ error: 'Hesap durumu güncellenemedi' });
+        }
+
+        res.json(updatedAccount);
+      } catch (error) {
+        console.error('❌ Account status update error:', error);
+        res.status(400).json({ error: 'Hesap durumu güncellenirken hata oluştu', details: (error as Error).message });
       }
     },
   );
@@ -303,6 +416,130 @@ export async function registerRoutes (app: Express): Promise<Server> {
     },
   );
 
+  // PUT /api/transactions/:id - Update transaction
+  app.put('/api/transactions/:id',
+    requireAuth,
+    requirePermission(Permission.EDIT_PERSONAL_TRANSACTIONS, Permission.EDIT_COMPANY_TRANSACTIONS, Permission.EDIT_ALL_TRANSACTIONS),
+    logAccess('UPDATE_TRANSACTION'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const validatedData = updateTransactionSchema.parse(req.body);
+
+        // Check if transaction exists and user has access
+        const transaction = await storage.getTransaction(id);
+        if (!transaction) {
+          return res.status(404).json({ error: 'İşlem bulunamadı' });
+        }
+
+        // Check if user can access the account
+        const account = await storage.getAccount(transaction.accountId);
+        if (!account) {
+          return res.status(404).json({ error: 'Hesap bulunamadı' });
+        }
+
+        // Check account type permissions
+        if (req.user!.role === UserRole.PERSONAL_USER && account.type === 'company') {
+          return res.status(403).json({ error: 'Şirket hesabındaki işlemi düzenleme yetkiniz bulunmuyor' });
+        }
+
+        const updatedTransaction = await storage.updateTransaction(id, validatedData);
+        if (!updatedTransaction) {
+          return res.status(404).json({ error: 'İşlem güncellenemedi' });
+        }
+
+        res.json(updatedTransaction);
+      } catch (error) {
+        console.error('❌ Transaction update error:', error);
+        res.status(400).json({ error: 'İşlem güncellenirken hata oluştu', details: (error as Error).message });
+      }
+    },
+  );
+
+  // DELETE /api/transactions/:id - Soft delete transaction
+  app.delete('/api/transactions/:id',
+    requireAuth,
+    requirePermission(Permission.DELETE_PERSONAL_TRANSACTIONS, Permission.DELETE_COMPANY_TRANSACTIONS, Permission.DELETE_ALL_TRANSACTIONS),
+    logAccess('DELETE_TRANSACTION'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const validatedData = deleteTransactionSchema.parse(req.body);
+
+        // Check if transaction exists and user has access
+        const transaction = await storage.getTransaction(id);
+        if (!transaction) {
+          return res.status(404).json({ error: 'İşlem bulunamadı' });
+        }
+
+        // Check if user can access the account
+        const account = await storage.getAccount(transaction.accountId);
+        if (!account) {
+          return res.status(404).json({ error: 'Hesap bulunamadı' });
+        }
+
+        // Check account type permissions
+        if (req.user!.role === UserRole.PERSONAL_USER && account.type === 'company') {
+          return res.status(403).json({ error: 'Şirket hesabındaki işlemi silme yetkiniz bulunmuyor' });
+        }
+
+        const deleted = await storage.deleteTransaction(id);
+        if (!deleted) {
+          return res.status(404).json({ error: 'İşlem silinemedi' });
+        }
+
+        res.json({ message: 'İşlem başarıyla silindi', reason: validatedData.reason });
+      } catch (error) {
+        console.error('❌ Transaction delete error:', error);
+        res.status(400).json({ error: 'İşlem silinirken hata oluştu', details: (error as Error).message });
+      }
+    },
+  );
+
+  // PATCH /api/transactions/:id/category - Update transaction category
+  app.patch('/api/transactions/:id/category',
+    requireAuth,
+    requirePermission(Permission.EDIT_PERSONAL_TRANSACTIONS, Permission.EDIT_COMPANY_TRANSACTIONS, Permission.EDIT_ALL_TRANSACTIONS),
+    logAccess('UPDATE_TRANSACTION_CATEGORY'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const { category } = req.body;
+
+        if (!category || typeof category !== 'string') {
+          return res.status(400).json({ error: 'Kategori değeri string olmalıdır' });
+        }
+
+        // Check if transaction exists and user has access
+        const transaction = await storage.getTransaction(id);
+        if (!transaction) {
+          return res.status(404).json({ error: 'İşlem bulunamadı' });
+        }
+
+        // Check if user can access the account
+        const account = await storage.getAccount(transaction.accountId);
+        if (!account) {
+          return res.status(404).json({ error: 'Hesap bulunamadı' });
+        }
+
+        // Check account type permissions
+        if (req.user!.role === UserRole.PERSONAL_USER && account.type === 'company') {
+          return res.status(403).json({ error: 'Şirket hesabındaki işlemi düzenleme yetkiniz bulunmuyor' });
+        }
+
+        const updatedTransaction = await storage.updateTransaction(id, { category });
+        if (!updatedTransaction) {
+          return res.status(404).json({ error: 'İşlem kategorisi güncellenemedi' });
+        }
+
+        res.json(updatedTransaction);
+      } catch (error) {
+        console.error('❌ Transaction category update error:', error);
+        res.status(400).json({ error: 'İşlem kategorisi güncellenirken hata oluştu', details: (error as Error).message });
+      }
+    },
+  );
+
   // Money transfer (virman) route - Protected by authentication
   app.post('/api/virman',
     requireAuth,
@@ -358,6 +595,126 @@ export async function registerRoutes (app: Express): Promise<Server> {
           return res.status(400).json({ error: 'Yetersiz bakiye' });
         }
         res.status(400).json({ error: 'Virman işleminde hata oluştu' });
+      }
+    },
+  );
+
+  // Credit routes - Protected by authentication and account type permissions
+  app.get('/api/credits',
+    requireAuth,
+    requirePermission(Permission.VIEW_PERSONAL_ACCOUNTS, Permission.VIEW_COMPANY_ACCOUNTS, Permission.VIEW_ALL_ACCOUNTS),
+    logAccess('VIEW_CREDITS'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const credits = await storage.getCredits();
+
+        // Filter credits based on user role
+        const filteredCredits = credits.filter(credit => {
+          if (req.user!.role === UserRole.ADMIN) {
+            return true;
+          }
+          if (req.user!.role === UserRole.COMPANY_USER) {
+            return true;
+          } // Can see both
+          if (req.user!.role === UserRole.PERSONAL_USER) {
+            // Personal users can only see credits linked to personal accounts
+            return !credit.accountId || credit.accountId.startsWith('personal');
+          }
+          return false;
+        });
+
+        res.json(filteredCredits);
+      } catch (error) {
+        res.status(500).json({ error: 'Krediler yüklenirken hata oluştu' });
+      }
+    },
+  );
+
+  app.post('/api/credits',
+    requireAuth,
+    logAccess('CREATE_CREDIT'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const validatedData = insertCreditSchema.parse(req.body);
+
+        // Check if user can create this credit type
+        if (req.user!.role === UserRole.PERSONAL_USER && validatedData.type === 'company') {
+          return res.status(403).json({ error: 'Şirket kredisi oluşturma yetkiniz bulunmuyor' });
+        }
+
+        const credit = await storage.createCredit(validatedData);
+        res.json(credit);
+      } catch (error) {
+        console.error('❌ Credit validation error:', error);
+        res.status(400).json({ error: 'Geçersiz kredi verisi', details: (error as Error).message });
+      }
+    },
+  );
+
+  // PUT /api/credits/:id - Update credit
+  app.put('/api/credits/:id',
+    requireAuth,
+    requirePermission(Permission.EDIT_PERSONAL_ACCOUNTS, Permission.EDIT_COMPANY_ACCOUNTS, Permission.EDIT_ALL_ACCOUNTS),
+    logAccess('UPDATE_CREDIT'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const validatedData = updateCreditSchema.parse(req.body);
+
+        // Check if credit exists and user has access
+        const credit = await storage.getCredit(id);
+        if (!credit) {
+          return res.status(404).json({ error: 'Kredi bulunamadı' });
+        }
+
+        // Check if user can edit this credit type
+        if (req.user!.role === UserRole.PERSONAL_USER && credit.type === 'company') {
+          return res.status(403).json({ error: 'Şirket kredisini düzenleme yetkiniz bulunmuyor' });
+        }
+
+        const updatedCredit = await storage.updateCredit(id, validatedData);
+        if (!updatedCredit) {
+          return res.status(404).json({ error: 'Kredi güncellenemedi' });
+        }
+
+        res.json(updatedCredit);
+      } catch (error) {
+        console.error('❌ Credit update error:', error);
+        res.status(400).json({ error: 'Kredi güncellenirken hata oluştu', details: (error as Error).message });
+      }
+    },
+  );
+
+  // DELETE /api/credits/:id - Soft delete credit
+  app.delete('/api/credits/:id',
+    requireAuth,
+    requirePermission(Permission.DELETE_PERSONAL_ACCOUNTS, Permission.DELETE_COMPANY_ACCOUNTS, Permission.DELETE_ALL_ACCOUNTS),
+    logAccess('DELETE_CREDIT'),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const validatedData = deleteCreditSchema.parse(req.body);
+
+        // Check if credit exists and user has access
+        const credit = await storage.getCredit(id);
+        if (!credit) {
+          return res.status(404).json({ error: 'Kredi bulunamadı' });
+        }
+
+        // Check if user can delete this credit type
+        if (req.user!.role === UserRole.PERSONAL_USER && credit.type === 'company') {
+          return res.status(403).json({ error: 'Şirket kredisini silme yetkiniz bulunmuyor' });
+        }
+
+        const deleted = await storage.deleteCredit(id);
+        if (!deleted) {
+          return res.status(404).json({ error: 'Kredi silinemedi' });
+        }
+
+        res.json({ message: 'Kredi başarıyla silindi', reason: validatedData.reason });
+      } catch (error) {
+        console.error('❌ Credit delete error:', error);
+        res.status(400).json({ error: 'Kredi silinirken hata oluştu', details: (error as Error).message });
       }
     },
   );
@@ -485,30 +842,31 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
   // Authentication routes
   app.post('/api/auth/register', async (req, res) => {
-    console.log('🔐 Register endpoint hit');
+    const { log } = await import('./utils/logger.js');
+    log.info({ endpoint: 'register' }, 'Register endpoint hit');
     try {
       const validatedData = registerSchema.parse(req.body);
-      console.log('✅ Validation passed for:', validatedData.email);
+      log.debug({ email: validatedData.email }, 'Registration validation passed');
 
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(validatedData.email);
       if (existingUser) {
-        console.log('❌ Email already exists');
+        log.warn({ email: validatedData.email }, 'Registration failed: email already exists');
         return res.status(400).json({ error: 'Bu email adresi zaten kullanılıyor' });
       }
 
       const existingUsername = await storage.getUserByUsername(validatedData.username);
       if (existingUsername) {
-        console.log('❌ Username already exists');
+        log.warn({ username: validatedData.username }, 'Registration failed: username already exists');
         return res.status(400).json({ error: 'Bu kullanıcı adı zaten kullanılıyor' });
       }
 
       // Hash password
-      console.log('🔐 Hashing password...');
+      log.debug({ email: validatedData.email }, 'Hashing password');
       const hashedPassword = await bcrypt.hash(validatedData.password, 12);
 
       // Create user
-      console.log('👤 Creating user...');
+      log.debug({ email: validatedData.email }, 'Creating user');
       const user = await storage.createUser({
         username: validatedData.username,
         email: validatedData.email,
@@ -517,13 +875,13 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
       // Don't return password
       const { password, ...userWithoutPassword } = user;
-      console.log('✅ User created successfully:', userWithoutPassword.id);
+      log.business('auth', 'register', { userId: user.id, email: user.email });
+      log.info({ userId: user.id }, 'User created successfully');
 
       const response = {
         message: 'Kullanıcı başarıyla oluşturuldu',
         user: userWithoutPassword,
       };
-      console.log('📤 Sending response:', response);
       res.status(201).json(response);
     } catch (error) {
       console.error('❌ Register error:', error);
@@ -568,7 +926,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         isActive: user.isActive,
       };
 
-      console.log('✅ Session created for user:', user.id);
+      log.auth('login', user, req.ip);
 
       // Don't return password
       const { password, ...userWithoutPassword } = user;
@@ -588,7 +946,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
     async (req: AuthenticatedRequest, res) => {
       try {
         if (req.session.userId) {
-          console.log('🚪 Logging out user:', req.session.userId);
+          log.auth('logout', { id: req.session.userId }, req.ip);
 
           // Destroy session
           req.session.destroy((err) => {
@@ -646,7 +1004,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
       // Generate JWT tokens with rotation
       const tokenPair = await authHardeningService.generateTokenPair(user.id);
 
-      console.log('✅ JWT tokens generated for user:', user.id);
+      log.auth('jwt_generated', user, req.ip);
 
       // Don't return password
       const { password, ...userWithoutPassword } = user;
@@ -727,8 +1085,10 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
       await storage.setResetToken(validatedData.email, resetToken, resetTokenExpires);
 
-      // TODO: Send email with reset link
-      console.log(`Reset token for ${validatedData.email}: ${resetToken}`);
+      // Send email with reset link
+      const { emailService } = await import('./services/email-service.js');
+      const template = emailService.generatePasswordResetTemplate(resetToken);
+      await emailService.sendEmail(validatedData.email, template);
 
       res.json({ message: 'Eğer bu email kayıtlıysa, şifre sıfırlama linki gönderilecek' });
     } catch (error) {
@@ -742,11 +1102,19 @@ export async function registerRoutes (app: Express): Promise<Server> {
       const validatedData = resetPasswordSchema.parse(req.body);
 
       // Find user by reset token
-      const users = await storage.getUser(''); // This is a hack, we need a method to find by reset token
-      // TODO: Add findUserByResetToken method to storage
+      const user = await storage.findUserByResetToken(validatedData.token);
+      if (!user) {
+        return res.status(400).json({ error: 'Geçersiz veya süresi dolmuş şifre sıfırlama tokeni' });
+      }
 
-      // For now, we'll skip the token validation implementation
-      res.status(501).json({ error: 'Şifre sıfırlama henüz tam olarak implementasyon aşamasında' });
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(validatedData.newPassword, 12);
+
+      // Update user password and clear reset token
+      await storage.updateUserPassword(user.id, hashedPassword);
+      await storage.clearPasswordResetToken(validatedData.token);
+
+      res.json({ message: 'Şifreniz başarıyla güncellendi' });
     } catch (error) {
       console.error('Reset password error:', error);
       res.status(400).json({ error: 'Şifre sıfırlama sırasında hata oluştu' });
@@ -1856,8 +2224,13 @@ export async function registerRoutes (app: Express): Promise<Server> {
           expiresAt,
         });
 
-        // TODO: Send email invitation
-        console.log(`Team invite created: ${inviteToken} for ${validatedData.email}`);
+        // Send email invitation
+        const { emailService } = await import('./services/email-service.js');
+        const team = await storage.getTeam(validatedData.teamId);
+        if (team) {
+          const template = emailService.generateTeamInviteTemplate(team.name, inviteToken);
+          await emailService.sendEmail(validatedData.email, template);
+        }
 
         res.json({
           message: 'Davet başarıyla gönderildi',

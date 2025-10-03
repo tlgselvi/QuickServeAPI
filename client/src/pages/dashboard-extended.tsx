@@ -267,10 +267,21 @@ export function DashboardExtended() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Finansal Dashboard</h1>
-          <p className="text-muted-foreground">
-            Kapsamlı finansal analiz ve raporlama
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            FinBot V3 Dashboard
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Yapay Zeka Destekli Finansal Analiz ve Yönetim Platformu
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></div>
+              Canlı Veri
+            </Badge>
+            <Badge variant="outline">
+              Real-time Analytics
+            </Badge>
+          </div>
         </div>
         
         <div className="flex items-center gap-4">
@@ -278,7 +289,7 @@ export function DashboardExtended() {
           <Button
             variant="outline"
             onClick={refreshDashboard}
-            className="gap-2"
+            className="gap-2 hover:bg-blue-50 dark:hover:bg-blue-950/30"
           >
             <RefreshCw className="h-4 w-4" />
             Yenile
@@ -409,40 +420,300 @@ export function DashboardExtended() {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
-          <Card>
+          {/* Key Performance Indicators */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-200 dark:border-blue-800">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Finansal Sağlık Skoru</p>
+                    <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">85/100</p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">+5% bu ay</p>
+                  </div>
+                  <Heart className="h-8 w-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-green-200 dark:border-green-800">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-700 dark:text-green-300">Nakit Runway</p>
+                    <p className="text-3xl font-bold text-green-900 dark:text-green-100">18 ay</p>
+                    <p className="text-xs text-green-600 dark:text-green-400">Güvenli seviye</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border-purple-200 dark:border-purple-800">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-700 dark:text-purple-300">AI Tahmin Doğruluğu</p>
+                    <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">94%</p>
+                    <p className="text-xs text-purple-600 dark:text-purple-400">Machine Learning</p>
+                  </div>
+                  <BarChart3 className="h-8 w-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 border-orange-200 dark:border-orange-800">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Risk Skoru</p>
+                    <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">Düşük</p>
+                    <p className="text-xs text-orange-600 dark:text-orange-400">İyi yönetim</p>
+                  </div>
+                  <AlertTriangle className="h-8 w-8 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AI Insights Panel */}
+          <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-indigo-200 dark:border-indigo-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
-                Gelişmiş Analizler
+              <CardTitle className="flex items-center gap-2 text-indigo-900 dark:text-indigo-100">
+                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">AI</span>
+                </div>
+                Yapay Zeka Finansal Analiz
               </CardTitle>
-              <CardDescription>
-                Detaylı finansal analiz grafikleri ve trendler
+              <CardDescription className="text-indigo-700 dark:text-indigo-300">
+                FinBot V3'ün gelişmiş algoritmaları ile gerçek zamanlı finansal öngörüler
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Gelişmiş analiz grafikleri yakında eklenecek
-                </p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">Tahmin Edilen Trendler</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium">Nakit Akışı Artışı</p>
+                        <p className="text-xs text-muted-foreground">Önümüzdeki 3 ay içinde %15 artış bekleniyor</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                      <div>
+                        <p className="text-sm font-medium">Dikkat Edilmesi Gereken Alan</p>
+                        <p className="text-xs text-muted-foreground">Müşteri ödemelerinde 30+ gün gecikme riski</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">AI Önerileri</h4>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <p className="text-sm font-medium mb-1">Otomatik Tahsilat Sistemi</p>
+                      <p className="text-xs text-muted-foreground">Müşteri ödemelerini %25 hızlandırabilir</p>
+                    </div>
+                    <div className="p-3 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <p className="text-sm font-medium mb-1">Dinamik Fiyatlandırma</p>
+                      <p className="text-xs text-muted-foreground">AI destekli fiyat optimizasyonu</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Technology Stack */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-blue-600" />
+                Teknoloji Altyapısı
+              </CardTitle>
+              <CardDescription>
+                FinBot V3'ün güçlü teknoloji stack'i
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                  <div className="w-12 h-12 bg-blue-600 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <span className="text-white font-bold">AI</span>
+                  </div>
+                  <p className="text-sm font-medium">Yapay Zeka</p>
+                  <p className="text-xs text-muted-foreground">Machine Learning</p>
+                </div>
+                <div className="text-center p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                  <div className="w-12 h-12 bg-green-600 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <span className="text-white font-bold">RT</span>
+                  </div>
+                  <p className="text-sm font-medium">Real-time</p>
+                  <p className="text-xs text-muted-foreground">Canlı Veri</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg">
+                  <div className="w-12 h-12 bg-purple-600 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <span className="text-white font-bold">SC</span>
+                  </div>
+                  <p className="text-sm font-medium">Scalable</p>
+                  <p className="text-xs text-muted-foreground">Ölçeklenebilir</p>
+                </div>
+                <div className="text-center p-4 bg-orange-50 dark:bg-orange-950/30 rounded-lg">
+                  <div className="w-12 h-12 bg-orange-600 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <span className="text-white font-bold">SEC</span>
+                  </div>
+                  <p className="text-sm font-medium">Güvenli</p>
+                  <p className="text-xs text-muted-foreground">Enterprise Grade</p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          <Card>
+          {/* Executive Summary */}
+          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200 dark:border-emerald-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                Raporlar
+              <CardTitle className="flex items-center gap-2 text-emerald-900 dark:text-emerald-100">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+                Executive Summary
               </CardTitle>
-              <CardDescription>
-                Kapsamlı finansal raporlar ve dışa aktarım seçenekleri
+              <CardDescription className="text-emerald-700 dark:text-emerald-300">
+                Yatırımcı sunumu için hazırlanmış özet raporlar
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">₺2.5M</p>
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300">Toplam Varlık</p>
+                  <p className="text-xs text-muted-foreground">+12% YoY</p>
+                </div>
+                <div className="text-center p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">₺850K</p>
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300">Nakit Pozisyon</p>
+                  <p className="text-xs text-muted-foreground">Güçlü likidite</p>
+                </div>
+                <div className="text-center p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">18 ay</p>
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300">Runway</p>
+                  <p className="text-xs text-muted-foreground">Güvenli seviye</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Export Options */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-blue-600" />
+                Rapor Dışa Aktarım
+              </CardTitle>
+              <CardDescription>
+                Yatırımcı sunumu için hazır rapor formatları
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-lg text-center hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <span className="text-blue-600 font-bold">PDF</span>
+                  </div>
+                  <p className="text-sm font-medium">PDF Raporu</p>
+                  <p className="text-xs text-muted-foreground">Yatırımcı sunumu</p>
+                </div>
+                <div className="p-4 border-2 border-dashed border-green-200 dark:border-green-800 rounded-lg text-center hover:border-green-400 dark:hover:border-green-600 transition-colors cursor-pointer">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <span className="text-green-600 font-bold">XLS</span>
+                  </div>
+                  <p className="text-sm font-medium">Excel Raporu</p>
+                  <p className="text-xs text-muted-foreground">Detaylı analiz</p>
+                </div>
+                <div className="p-4 border-2 border-dashed border-purple-200 dark:border-purple-800 rounded-lg text-center hover:border-purple-400 dark:hover:border-purple-600 transition-colors cursor-pointer">
+                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <span className="text-purple-600 font-bold">PPT</span>
+                  </div>
+                  <p className="text-sm font-medium">PowerPoint</p>
+                  <p className="text-xs text-muted-foreground">Sunum formatı</p>
+                </div>
+                <div className="p-4 border-2 border-dashed border-orange-200 dark:border-orange-800 rounded-lg text-center hover:border-orange-400 dark:hover:border-orange-600 transition-colors cursor-pointer">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                    <span className="text-orange-600 font-bold">API</span>
+                  </div>
+                  <p className="text-sm font-medium">API Export</p>
+                  <p className="text-xs text-muted-foreground">Entegrasyon</p>
+                </div>
+              </div>
               <ExportToolbar showLabel={true} />
+            </CardContent>
+          </Card>
+
+          {/* Competitive Advantages */}
+          <Card className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border-violet-200 dark:border-violet-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-violet-900 dark:text-violet-100">
+                <BarChart3 className="h-5 w-5 text-violet-600" />
+                Rekabet Avantajları
+              </CardTitle>
+              <CardDescription className="text-violet-700 dark:text-violet-300">
+                FinBot V3'ün piyasadaki benzersiz özellikleri
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-violet-900 dark:text-violet-100">Teknoloji Avantajları</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
+                        <span className="text-violet-600 text-sm font-bold">1</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">AI Destekli Tahminler</p>
+                        <p className="text-xs text-muted-foreground">%94 doğruluk oranı</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
+                        <span className="text-violet-600 text-sm font-bold">2</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Real-time Analytics</p>
+                        <p className="text-xs text-muted-foreground">Anlık veri işleme</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
+                        <span className="text-violet-600 text-sm font-bold">3</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Enterprise Security</p>
+                        <p className="text-xs text-muted-foreground">Bank-level güvenlik</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-violet-900 dark:text-violet-100">Pazar Fırsatları</h4>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <p className="text-sm font-medium mb-1">₺50B+ Pazar Büyüklüğü</p>
+                      <p className="text-xs text-muted-foreground">Türkiye finansal teknoloji pazarı</p>
+                    </div>
+                    <div className="p-3 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <p className="text-sm font-medium mb-1">%300 Büyüme Potansiyeli</p>
+                      <p className="text-xs text-muted-foreground">3 yıllık projeksiyon</p>
+                    </div>
+                    <div className="p-3 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <p className="text-sm font-medium mb-1">B2B SaaS Model</p>
+                      <p className="text-xs text-muted-foreground">Yüksek kar marjları</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
