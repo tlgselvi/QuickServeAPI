@@ -165,43 +165,48 @@ export default function BankAccountCard ({
                     Aktif
                   </Badge>
                 </div>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-col sm:flex-row gap-1 sm:justify-end">
+                  {/* İşlem Butonu - Her zaman görünür */}
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => setSelectedProduct(selectedProduct === product.type ? null : product.type)}
-                    className="text-xs"
+                    className="text-xs px-2 py-1 h-7 w-full sm:w-auto"
                   >
                     <Plus className="w-3 h-3 mr-1" />
-                    <span className="hidden sm:inline">İşlem</span>
+                    <span>İşlem</span>
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onViewHistory(bank.id)}
-                    className="text-xs"
-                    title="Geçmiş"
-                  >
-                    <History className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onEditAccount?.(bank)}
-                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                    title="Düzenle"
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onDeleteAccount?.(bank.id)}
-                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs"
-                    title="Sil"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                  
+                  {/* Diğer Butonlar - Mobile'da 2 satır */}
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onViewHistory(bank.id)}
+                      className="text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
+                      title="Geçmiş"
+                    >
+                      <History className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onEditAccount?.(bank)}
+                      className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
+                      title="Düzenle"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onDeleteAccount?.(bank.id)}
+                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs px-2 py-1 h-7 flex-1 sm:flex-none"
+                      title="Sil"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
