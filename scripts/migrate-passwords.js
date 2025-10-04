@@ -5,7 +5,7 @@
  * Converts bcrypt passwords to Argon2id for existing users
  */
 
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import { neon, neonConfig } from '@neondatabase/serverless';
 import { drizzle as drizzlePg } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';

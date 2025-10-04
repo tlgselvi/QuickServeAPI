@@ -1,5 +1,5 @@
 import { neon, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import * as schema from '../shared/schema.ts';
 
 // Force HTTP for production - WebSocket causes issues on Render
@@ -24,5 +24,17 @@ if (!process.env.DATABASE_URL) {
   console.warn('DATABASE_URL not set - using fallback for development');
 }
 
-export const sql = neon(process.env.DATABASE_URL || 'postgresql://localhost:5432/finbot');
-export const db = drizzle(sql, { schema });
+// Temporary fallback for development without database
+let sql, db;
+
+if (process.env.DATABASE_URL) {
+  sql = neon(process.env.DATABASE_URL);
+  db = drizzle(sql, { schema });
+} else {
+  console.log('⚠️  DATABASE_URL not set - using memory storage for development');
+  // Use memory storage as fallback
+  sql = null;
+  db = null;
+}
+
+export { sql, db };

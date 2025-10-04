@@ -5,7 +5,7 @@
  * Runs migrations and seed data on startup
  */
 
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import { neon, neonConfig } from '@neondatabase/serverless';
 import { drizzle as drizzlePg } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
@@ -49,8 +49,11 @@ async function setupDatabase() {
     // Run migrations (push schema)
     console.log('🔄 Running database migrations...');
     try {
-      // Import and run migrations
-      const { migrate } = await import('drizzle-orm/neon-http/migrator');
+      // Import and run migrations with the correct driver
+      const migratorModule = DATABASE_URL.includes('neon.tech')
+        ? await import('drizzle-orm/neon-serverless/migrator')
+        : await import('drizzle-orm/postgres-js/migrator');
+      const { migrate } = migratorModule;
       await migrate(db, { migrationsFolder: './migrations' });
       console.log('✅ Database migrations completed');
     } catch (migrationError) {

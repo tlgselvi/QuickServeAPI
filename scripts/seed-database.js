@@ -5,7 +5,7 @@
  * Creates initial admin user and demo data
  */
 
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import { neon, neonConfig } from '@neondatabase/serverless';
 import { drizzle as drizzlePg } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
