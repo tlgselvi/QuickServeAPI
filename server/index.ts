@@ -130,8 +130,8 @@ app.use((req, res, next) => {
   app.use(notFoundHandler);
   app.use(errorHandler);
 
-  // Initialize production data if needed
-  if (process.env.NODE_ENV === 'production') {
+  // Initialize production data only when explicitly enabled
+  if (process.env.NODE_ENV === 'production' && process.env.ENABLE_PROD_SEED === 'true') {
     try {
       await initializeProduction();
     } catch (error) {
@@ -145,11 +145,15 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   // Setup database on startup
-  try {
-    await setupDatabase();
-  } catch (error) {
-    log('Database setup failed:', error.message);
-    log('Continuing without database setup...');
+  if (process.env.SKIP_DB_SETUP !== 'true') {
+    try {
+      await setupDatabase();
+    } catch (error) {
+      log('Database setup failed:', (error as any).message ?? String(error));
+      log('Continuing without database setup...');
+    }
+  } else {
+    log('SKIP_DB_SETUP=true, skipping database setup');
   }
 
   const port = parseInt(process.env.PORT || '5000', 10);
