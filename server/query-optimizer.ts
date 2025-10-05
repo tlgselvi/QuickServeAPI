@@ -1,5 +1,5 @@
 import { db } from './db';
-import { sql, and, or, eq, desc, asc, like, ilike, gte, lte, between, isNull } from 'drizzle-orm';
+import { and, or, eq, desc, asc, like, ilike, gte, lte, between, isNull } from 'drizzle-orm';
 import { accounts, transactions, credits, auditLogs, categories, tags } from '@shared/schema';
 
 // Query optimization utilities
@@ -49,7 +49,7 @@ export class QueryOptimizer {
         or(
           ilike(transactions.description, `%${filters.search}%`),
           ilike(transactions.category, `%${filters.search}%`),
-          sql`${transactions.amount}::text ILIKE ${`%${filters.search}%`}`
+          ilike(sql`${transactions.amount}::text`, `%${filters.search}%`)
         )
       );
     }
@@ -118,7 +118,7 @@ export class QueryOptimizer {
         or(
           ilike(transactions.description, `%${filters.search}%`),
           ilike(transactions.category, `%${filters.search}%`),
-          sql`${transactions.amount}::text ILIKE ${`%${filters.search}%`}`
+          ilike(sql`${transactions.amount}::text`, `%${filters.search}%`)
         )
       );
     }

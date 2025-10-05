@@ -1600,8 +1600,18 @@ export class PostgresStorage implements IStorage {
   }
 
   async adjustAccountBalance (id: string, amount: number): Promise<Account | undefined> {
+    // Get current balance first
+    const currentAccount = await db.select({ balance: accounts.balance })
+      .from(accounts)
+      .where(eq(accounts.id, id))
+      .limit(1);
+    
+    if (!currentAccount[0]) return undefined;
+    
+    const newBalance = Number(currentAccount[0].balance) + amount;
+    
     const result = await db.update(accounts)
-      .set({ balance: sql`${accounts.balance}::numeric + ${amount.toFixed(4)}::numeric` })
+      .set({ balance: newBalance.toFixed(4) })
       .where(eq(accounts.id, id))
       .returning();
     return result[0];
