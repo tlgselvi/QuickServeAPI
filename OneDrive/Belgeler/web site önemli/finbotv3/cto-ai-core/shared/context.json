@@ -1,0 +1,35 @@
+{
+  "organization": "CTO-AI",
+  "owner": "Tolga Selvi",
+  "version": "1.0.0",
+  "created_at": "2025-01-06T23:15:00.000Z",
+  "shared_env": {
+    "DB_URL": "postgres://user:pass@localhost:5432/core",
+    "LOG_LEVEL": "info",
+    "AI_PROVIDER": "openai",
+    "AI_MODEL": "gpt-4",
+    "CACHE_TTL": 3600
+  },
+  "active_projects": ["cto-core", "fin-bot"],
+  "project_configs": {
+    "cto-core": {
+      "type": "ai-coaching",
+      "access_level": "full",
+      "last_sync": "2025-01-06T23:15:00.000Z"
+    },
+    "fin-bot": {
+      "type": "financial-ai",
+      "access_level": "read-write", 
+      "last_sync": "2025-01-06T23:15:00.000Z"
+    }
+  },
+  "ai_context": {
+    "shared_memories": [],
+    "cross_project_insights": [],
+    "performance_metrics": {
+      "response_time": "<2s",
+      "accuracy": ">95%",
+      "user_satisfaction": ">4.5/5"
+    }
+  }
+}

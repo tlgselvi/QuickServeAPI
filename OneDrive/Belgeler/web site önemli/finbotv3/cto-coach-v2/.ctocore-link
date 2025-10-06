@@ -1,0 +1,27 @@
+{
+  "core_path": "~/cto-ai-core/shared",
+  "project_id": "cto-core",
+  "project_type": "ai-coaching",
+  "version": "2.0.0",
+  "last_sync": "2025-01-06T23:15:00.000Z",
+  "capabilities": [
+    "sprint_planning",
+    "audit",
+    "optimization",
+    "release_management"
+  ],
+  "dependencies": [
+    "typescript",
+    "node"
+  ],
+  "api_endpoints": {
+    "sprint": "/hazirla",
+    "audit": "/audit",
+    "optimize": "/optimize",
+    "release": "/release"
+  },
+  "shared_context": {
+    "ai_models": ["gpt-4"],
+    "planning_types": ["sprint", "audit", "optimization", "release"]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "finbot-v3-workspace",
+  "version": "3.0.0",
+  "description": "FinBot v3 - Advanced Financial Management System Workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "QuickServeAPI",
+    "cto-coach-v2"
+  ],
+  "scripts": {
+    "dev": "cd QuickServeAPI && npm run dev",
+    "build": "cd QuickServeAPI && npm run build",
+    "start": "cd QuickServeAPI && npm run start",
+    "test": "cd QuickServeAPI && npm run test",
+    "lint": "cd QuickServeAPI && npm run lint",
+    "format": "cd QuickServeAPI && npm run format",
+    "type-check": "cd QuickServeAPI && npm run type-check",
+    "cto:dev": "cd cto-coach-v2 && npm run dev",
+    "cto:build": "cd cto-coach-v2 && npm run build",
+    "cto:start": "cd cto-coach-v2 && npm run start",
+    "install:all": "npm install && cd QuickServeAPI && npm install && cd ../cto-coach-v2 && npm install",
+    "clean": "cd QuickServeAPI && npm run clean && cd ../cto-coach-v2 && rm -rf dist node_modules/.vite",
+    "clean:all": "rm -rf node_modules && cd QuickServeAPI && rm -rf node_modules && cd ../cto-coach-v2 && rm -rf node_modules",
+    "agent:check": "node scripts/agent-compat-check.mjs",
+    "agent:setup": "node scripts/setup-prodev.mjs",
+    "dev:full": "pnpm run dev && pnpm run agent:check"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "finbot",
+    "financial",
+    "management",
+    "workspace",
+    "monorepo"
+  ],
+  "author": "FinBot Team",
+  "license": "MIT"
+}

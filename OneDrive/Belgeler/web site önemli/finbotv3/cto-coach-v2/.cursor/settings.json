@@ -1,0 +1,11 @@
+{
+  "ctoAI.coreIntegration": true,
+  "ctoAI.sharedContext": "~/cto-ai-core/shared/context.json",
+  "ctoAI.projectId": "cto-core",
+  "ctoAI.lastSync": "2025-01-06T23:15:00.000Z",
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  }
+}

@@ -1,0 +1,24 @@
+version: 1.0.0
+created_at: "2025-01-06T23:15:00.000Z"
+
+permissions:
+  - project: cto-core
+    access: full
+    description: "AI coaching and sprint management system"
+    
+  - project: fin-bot
+    access: read-write
+    description: "Financial AI assistant with advanced analytics"
+
+rules:
+  code_style: 
+    standard: "typescript"
+    linting: "eslint"
+    
+  security:
+    scan: enabled
+    level: high
+    
+  ai_governance:
+    prompt_review: cto-ai-core
+    model_validation: required
