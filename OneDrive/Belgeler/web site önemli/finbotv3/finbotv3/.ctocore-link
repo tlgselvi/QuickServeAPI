@@ -1,0 +1,31 @@
+{
+  "core_path": "~/cto-ai-core/shared",
+  "project_id": "fin-bot",
+  "project_type": "financial-ai",
+  "version": "3.0.0",
+  "last_sync": "2025-01-06T23:00:00.000Z",
+  "capabilities": [
+    "ai_analysis",
+    "automated_reporting", 
+    "smart_notifications",
+    "scenario_analysis",
+    "real_time_dashboard"
+  ],
+  "dependencies": [
+    "openai",
+    "drizzle-orm",
+    "react",
+    "typescript"
+  ],
+  "api_endpoints": {
+    "ai_analysis": "/api/ai/analyze",
+    "notifications": "/api/ai/notifications",
+    "reports": "/api/ai/reports",
+    "scenarios": "/api/ai/scenarios"
+  },
+  "shared_context": {
+    "ai_models": ["gpt-4", "gpt-3.5-turbo"],
+    "analysis_types": ["trend", "risk", "recommendation", "health", "forecast"],
+    "notification_channels": ["dashboard", "email", "push"]
+  }
+}

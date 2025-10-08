@@ -24,7 +24,7 @@
     "clean:all": "rm -rf node_modules && cd QuickServeAPI && rm -rf node_modules && cd ../cto-coach-v2 && rm -rf node_modules",
     "agent:check": "node scripts/agent-compat-check.mjs",
     "agent:setup": "node scripts/setup-prodev.mjs",
-    "dev:full": "pnpm run dev && pnpm run agent:check"
+    "dev:full": "pnpm -r dev"
   },
   "engines": {
     "node": ">=18.0.0",

@@ -1,0 +1,23 @@
+name: AgentBridge
+description: Synchronizes Dese-ProDev-Rules with active Agents (FinBot, MuBot, SmartPool)
+version: 1.0
+
+bridge:
+  load_rules_on_start: true
+  sync_frequency: "on_project_open"
+  notify_on_conflict: true
+  apply_scope:
+    - .cursor/rules
+    - .cursor/commands
+    - src/config/*
+    - package.json
+  verify_agent_context:
+    check_ai_model: "gpt-5"
+    check_memory_enabled: true
+    check_browser_enabled: true
+    check_git_integration: true
+  actions_on_sync:
+    - run: "pnpm lint"
+    - run: "pnpm test"
+    - run: "node scripts/agent-compat-check.mjs"
+    - run: "git status"

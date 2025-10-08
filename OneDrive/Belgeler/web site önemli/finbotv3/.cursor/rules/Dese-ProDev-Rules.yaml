@@ -1,0 +1,57 @@
+name: Dese ProDev Default
+version: 1.2
+description: Unified professional ruleset compatible with all Cursor Agents
+
+rules:
+  - id: stack
+    type: preference
+    value:
+      frontend: "React 18 + TypeScript + Vite + Tailwind"
+      backend: "Node.js + Express + PostgreSQL (Drizzle ORM)"
+      testing: "Vitest + Supertest"
+      packaging: "pnpm"
+      infra: "Docker + Render"
+
+  - id: ai_behavior
+    type: control
+    value:
+      plan_before_write: true
+      confirm_before_overwrite: true
+      max_context_depth: high
+      auto_comment_code: true
+      auto_DoD_checklist: true
+      logging_level: minimal
+
+  - id: project_profiles
+    type: context
+    value:
+      FinBot:  {priority: high, modules: ["Accounts","Transactions","Budgets","Scenario","AI Personas"]}
+      MuBot:   {priority: medium, modules: ["Profit","Costs","Forecasting"]}
+      SmartPool: {priority: high, modules: ["Sensors","Dosing","WiFi","Dashboard"]}
+
+  - id: quality
+    type: enforcement
+    value:
+      test_required: true
+      coverage_min: 70
+      lint_before_commit: true
+      audit_log_required: true
+      security_scan_on_build: true
+
+  - id: git_policy
+    type: control
+    value:
+      branch_model: "main, dev, feature/*, fix/*"
+      conventional_commits: true
+      auto_worktree: true
+      cleanup_merged_branches: true
+      protect_main: true
+
+  - id: env
+    type: system
+    value:
+      node: ">=20.19"
+      database: "PostgreSQL"
+      dotenv_required: true
+      drizzle_config_required: true
+      auto_env_validation: true
