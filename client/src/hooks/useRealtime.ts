@@ -64,7 +64,7 @@ export function useRealtime(config: RealtimeConfig) {
       eventSourceRef.current = new EventSource(url);
 
       eventSourceRef.current.onopen = () => {
-        console.log('[REALTIME] Connected to event stream');
+        logger.info('[REALTIME] Connected to event stream');
         setConnection(prev => ({
           ...prev,
           isConnected: true,
@@ -88,7 +88,7 @@ export function useRealtime(config: RealtimeConfig) {
           }
 
           if (data.type === 'connection') {
-            console.log('[REALTIME] Connection established:', data.data);
+            logger.info('[REALTIME] Connection established:', data.data);
             return;
           }
 
@@ -114,17 +114,17 @@ export function useRealtime(config: RealtimeConfig) {
             try {
               handler(realtimeEvent);
             } catch (error) {
-              console.error('[REALTIME] Error in event handler:', error);
+              logger.error('[REALTIME] Error in event handler:', error);
             }
           });
 
         } catch (error) {
-          console.error('[REALTIME] Error parsing event data:', error);
+          logger.error('[REALTIME] Error parsing event data:', error);
         }
       };
 
       eventSourceRef.current.onerror = (error) => {
-        console.error('[REALTIME] EventSource error:', error);
+        logger.error('[REALTIME] EventSource error:', error);
         setConnection(prev => ({
           ...prev,
           isConnected: false,
@@ -139,7 +139,7 @@ export function useRealtime(config: RealtimeConfig) {
       };
 
     } catch (error) {
-      console.error('[REALTIME] Connection error:', error);
+      logger.error('[REALTIME] Connection error:', error);
       setConnection(prev => ({
         ...prev,
         isConnecting: false,
@@ -174,7 +174,7 @@ export function useRealtime(config: RealtimeConfig) {
       isConnecting: false,
     }));
 
-    console.log('[REALTIME] Disconnected from event stream');
+    logger.info('[REALTIME] Disconnected from event stream');
   }, []);
 
   const scheduleReconnect = useCallback(() => {
@@ -185,7 +185,7 @@ export function useRealtime(config: RealtimeConfig) {
     const attempt = connection.reconnectAttempts + 1;
     const delay = reconnectInterval * Math.pow(2, attempt - 1); // Exponential backoff
 
-    console.log(`[REALTIME] Scheduling reconnect attempt ${attempt} in ${delay}ms`);
+    logger.info(`[REALTIME] Scheduling reconnect attempt ${attempt} in ${delay}ms`);
 
     setConnection(prev => ({
       ...prev,
@@ -207,7 +207,7 @@ export function useRealtime(config: RealtimeConfig) {
     }
 
     heartbeatTimeoutRef.current = setTimeout(() => {
-      console.warn('[REALTIME] Heartbeat timeout, reconnecting...');
+      logger.warn('[REALTIME] Heartbeat timeout, reconnecting...');
       disconnect();
       connect();
     }, heartbeatInterval + 5000); // 5 seconds grace period
@@ -238,7 +238,7 @@ export function useRealtime(config: RealtimeConfig) {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('[REALTIME] Test event publish error:', error);
+      logger.error('[REALTIME] Test event publish error:', error);
       throw error;
     }
   }, []);

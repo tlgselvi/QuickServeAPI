@@ -30,7 +30,7 @@ export default function Transfers () {
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/accounts');
       const data = await response.json();
-      console.log('💸 Transfers: Fetched all accounts:', data);
+      logger.info('💸 Transfers: Fetched all accounts:', data);
       return data;
     },
     staleTime: 30000,
@@ -42,7 +42,7 @@ export default function Transfers () {
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/transactions?type=transfer&limit=20');
       const data = await response.json();
-      console.log('💸 Transfers: Fetched transfer transactions:', data);
+      logger.info('💸 Transfers: Fetched transfer transactions:', data);
       return data;
     },
     staleTime: 30000,

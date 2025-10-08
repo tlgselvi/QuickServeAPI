@@ -40,7 +40,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       setDashboardData(dashboardResponse);
       setAccounts(accountsResponse);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       Alert.alert('Hata', 'Veriler yüklenirken bir hata oluştu');
     } finally {
       setIsLoading(false);

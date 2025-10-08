@@ -1,3 +1,9 @@
+// Client-side logging utility
+const logger = {
+  info: (message: string, ...args: any[]) => console.log(`[INFO] ${message}`, ...args),
+  warn: (message: string, ...args: any[]) => console.warn(`[WARN] ${message}`, ...args),
+  error: (message: string, ...args: any[]) => console.error(`[ERROR] ${message}`, ...args),
+};
 // PWA Install Prompt Utility
 export interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -15,14 +21,14 @@ class PWAInstallManager {
   private init () {
     // Install prompt event listener
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('[PWA] beforeinstallprompt event fired');
+      logger.info('[PWA] beforeinstallprompt event fired');
       e.preventDefault();
       this.deferredPrompt = e as BeforeInstallPromptEvent;
     });
 
     // App installed event
     window.addEventListener('appinstalled', () => {
-      console.log('[PWA] App installed');
+      logger.info('[PWA] App installed');
       this.isInstalled = true;
       this.deferredPrompt = null;
     });
@@ -41,7 +47,7 @@ class PWAInstallManager {
 
   async showInstallPrompt (): Promise<boolean> {
     if (!this.deferredPrompt) {
-      console.log('[PWA] No install prompt available');
+      logger.info('[PWA] No install prompt available');
       return false;
     }
 
@@ -49,7 +55,7 @@ class PWAInstallManager {
       await this.deferredPrompt.prompt();
       const choiceResult = await this.deferredPrompt.userChoice;
 
-      console.log('[PWA] User choice:', choiceResult.outcome);
+      logger.info('[PWA] User choice:', choiceResult.outcome);
 
       if (choiceResult.outcome === 'accepted') {
         this.deferredPrompt = null;
@@ -58,7 +64,7 @@ class PWAInstallManager {
 
       return false;
     } catch (error) {
-      console.error('[PWA] Install prompt error:', error);
+      logger.error('[PWA] Install prompt error:', error);
       return false;
     }
   }
@@ -82,7 +88,7 @@ export async function registerServiceWorker (): Promise<ServiceWorkerRegistratio
         scope: '/',
       });
 
-      console.log('[PWA] SW registered successfully:', registration);
+      logger.info('[PWA] SW registered successfully:', registration);
 
       // Update service worker when available
       registration.addEventListener('updatefound', () => {
@@ -90,7 +96,7 @@ export async function registerServiceWorker (): Promise<ServiceWorkerRegistratio
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[PWA] New SW available, reload to update');
+              logger.info('[PWA] New SW available, reload to update');
               // Show update notification to user
               if (confirm('Yeni güncelleme mevcut. Uygulamayı yenileyelim mi?')) {
                 window.location.reload();
@@ -102,19 +108,19 @@ export async function registerServiceWorker (): Promise<ServiceWorkerRegistratio
 
       return registration;
     } catch (error) {
-      console.error('[PWA] SW registration failed:', error);
+      logger.error('[PWA] SW registration failed:', error);
       return null;
     }
   }
 
-  console.log('[PWA] Service Worker not supported');
+  logger.info('[PWA] Service Worker not supported');
   return null;
 }
 
 // Push Notification Utilities
 export async function requestNotificationPermission (): Promise<NotificationPermission> {
   if (!('Notification' in window)) {
-    console.log('[PWA] Notifications not supported');
+    logger.info('[PWA] Notifications not supported');
     return 'denied';
   }
 
@@ -128,7 +134,7 @@ export async function requestNotificationPermission (): Promise<NotificationPerm
 
   // Request permission
   const permission = await Notification.requestPermission();
-  console.log('[PWA] Notification permission:', permission);
+  logger.info('[PWA] Notification permission:', permission);
 
   return permission;
 }
@@ -143,10 +149,10 @@ export async function subscribeToPush (registration: ServiceWorkerRegistration):
       ),
     });
 
-    console.log('[PWA] Push subscription successful:', subscription);
+    logger.info('[PWA] Push subscription successful:', subscription);
     return subscription;
   } catch (error) {
-    console.error('[PWA] Push subscription failed:', error);
+    logger.error('[PWA] Push subscription failed:', error);
     return null;
   }
 }
@@ -182,7 +188,7 @@ export class OfflineStorage {
       });
 
       localStorage.setItem(this.OFFLINE_KEY, JSON.stringify(existing));
-      console.log('[PWA] Transaction saved offline');
+      logger.info('[PWA] Transaction saved offline');
 
       // Register for background sync if available
       if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
@@ -190,7 +196,7 @@ export class OfflineStorage {
         await (registration as any).sync.register('background-sync-transactions');
       }
     } catch (error) {
-      console.error('[PWA] Failed to save offline transaction:', error);
+      logger.error('[PWA] Failed to save offline transaction:', error);
     }
   }
 
@@ -199,7 +205,7 @@ export class OfflineStorage {
       const stored = localStorage.getItem(this.OFFLINE_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      console.error('[PWA] Failed to get offline transactions:', error);
+      logger.error('[PWA] Failed to get offline transactions:', error);
       return [];
     }
   }

@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
 import { AuthenticatedRequest, requireAuth, requirePermission } from '../middleware/auth';
-import { Permission } from '@shared/schema';
+import { Permission } from '@shared/schema-sqlite';
 import { db } from '../db';
-import { users } from '@shared/schema';
+import { users } from '@shared/schema-sqlite';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -84,10 +85,12 @@ router.get('/layout', requireAuth, async (req: AuthenticatedRequest, res) => {
         if (metadata.dashboardLayout) {
           dashboardLayout = validateDashboardLayout(metadata.dashboardLayout);
         } else {
-          throw new Error('No dashboard layout found');
+          // No dashboard layout found, use default
+          dashboardLayout = getDefaultDashboardLayout();
         }
       } else {
-        throw new Error('No metadata found');
+        // No metadata found, use default
+        dashboardLayout = getDefaultDashboardLayout();
       }
     } catch (error) {
       // Return default layout if no custom layout exists
@@ -170,7 +173,7 @@ router.get('/layout', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: dashboardLayout,
     });
   } catch (error) {
-    console.error('Dashboard layout get error:', error);
+    logger.error('Dashboard layout get error:', error);
     res.status(500).json({
       error: 'Dashboard layout alınırken hata oluştu',
     });
@@ -212,7 +215,7 @@ router.post('/layout', requireAuth, requirePermission(Permission.MANAGE_DASHBOAR
       .where(eq(users.id, userId));
 
     // Log the layout change
-    console.log(`Dashboard layout updated for user ${userId}:`, {
+    logger.info(`Dashboard layout updated for user ${userId}:`, {
       widgetsCount: validatedLayout.widgets.length,
       enabledWidgets: validatedLayout.widgets.filter(w => w.enabled).length,
       timestamp: validatedLayout.lastUpdated,
@@ -224,7 +227,7 @@ router.post('/layout', requireAuth, requirePermission(Permission.MANAGE_DASHBOAR
       message: 'Dashboard layout başarıyla kaydedildi',
     });
   } catch (error) {
-    console.error('Dashboard layout save error:', error);
+    logger.error('Dashboard layout save error:', error);
     
     if (error instanceof Error && error.message.includes('zorunludur')) {
       return res.status(400).json({
@@ -303,7 +306,7 @@ router.put('/layout/widget/:id', requireAuth, requirePermission(Permission.MANAG
       message: 'Widget başarıyla güncellendi',
     });
   } catch (error) {
-    console.error('Widget update error:', error);
+    logger.error('Widget update error:', error);
     
     if (error instanceof Error && error.message.includes('zorunludur')) {
       return res.status(400).json({
@@ -423,7 +426,7 @@ router.post('/layout/reset', requireAuth, requirePermission(Permission.MANAGE_DA
       .where(eq(users.id, userId));
 
     // Log the reset
-    console.log(`Dashboard layout reset for user ${userId}`, {
+    logger.info(`Dashboard layout reset for user ${userId}`, {
       resetCount: updatedMetadata.layoutResetCount,
       timestamp: defaultLayout.lastUpdated,
     });
@@ -434,7 +437,7 @@ router.post('/layout/reset', requireAuth, requirePermission(Permission.MANAGE_DA
       message: 'Dashboard layout varsayılan ayarlara sıfırlandı',
     });
   } catch (error) {
-    console.error('Dashboard layout reset error:', error);
+    logger.error('Dashboard layout reset error:', error);
     res.status(500).json({
       error: 'Dashboard layout sıfırlanırken hata oluştu',
     });

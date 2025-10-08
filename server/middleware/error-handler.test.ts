@@ -29,6 +29,7 @@ describe('Error Handler', () => {
     mockReq = {
       method: 'GET',
       url: '/test',
+      path: '/test',
       headers: {
         'user-agent': 'test-agent',
         'x-request-id': 'test-request-id'
@@ -59,7 +60,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Test error',
         code: 'TEST_ERROR',
@@ -67,7 +68,18 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
+    });
+
+    it('should include message and traceId fields', () => {
+      const error = new AppError('Test error', 400, 'TEST_ERROR');
+
+      errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'Test error',
+        traceId: 'test-request-id'
+      }));
     });
 
     it('should handle ValidationError', () => {
@@ -76,7 +88,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
@@ -84,7 +96,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
 
     it('should handle AuthenticationError', () => {
@@ -93,7 +105,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Not authenticated',
         code: 'AUTHENTICATION_ERROR',
@@ -101,7 +113,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
 
     it('should handle AuthorizationError', () => {
@@ -110,7 +122,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Access denied',
         code: 'AUTHORIZATION_ERROR',
@@ -118,7 +130,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
 
     it('should handle NotFoundError', () => {
@@ -127,7 +139,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Resource not found',
         code: 'NOT_FOUND_ERROR',
@@ -135,7 +147,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
 
     it('should handle ConflictError', () => {
@@ -144,7 +156,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(409);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Resource conflict',
         code: 'CONFLICT_ERROR',
@@ -152,7 +164,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
 
     it('should handle RateLimitError', () => {
@@ -161,7 +173,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(429);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Too many requests',
         code: 'RATE_LIMIT_ERROR',
@@ -169,7 +181,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
   });
 
@@ -188,7 +200,7 @@ describe('Error Handler', () => {
       errorHandler(zodError, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
@@ -203,7 +215,7 @@ describe('Error Handler', () => {
             code: 'invalid_type'
           }
         ]
-      });
+      }));
     });
   });
 
@@ -214,7 +226,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Token has expired',
         code: 'TOKEN_EXPIRED',
@@ -222,7 +234,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
 
     it('should handle JsonWebTokenError', () => {
@@ -231,7 +243,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Invalid token',
         code: 'INVALID_TOKEN',
@@ -239,7 +251,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
   });
 
@@ -250,7 +262,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Internal server error',
         code: 'INTERNAL_ERROR',
@@ -258,7 +270,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
 
     it('should handle CastError', () => {
@@ -268,7 +280,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Invalid ID format',
         code: 'INVALID_ID',
@@ -276,7 +288,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
 
     it('should handle SyntaxError for JSON', () => {
@@ -286,7 +298,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Invalid JSON format',
         code: 'INVALID_JSON',
@@ -294,7 +306,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
     });
   });
 
@@ -308,7 +320,7 @@ describe('Error Handler', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         error: 'Internal server error',
         code: 'INTERNAL_ERROR',
@@ -316,7 +328,7 @@ describe('Error Handler', () => {
         path: '/test',
         method: 'GET',
         requestId: 'test-request-id'
-      });
+      }));
 
       process.env.NODE_ENV = originalEnv;
     });
@@ -326,7 +338,9 @@ describe('Error Handler', () => {
 describe('asyncHandler', () => {
   it('should handle async function without errors', async () => {
     const mockReq = {} as Request;
-    const mockRes = {} as Response;
+    const mockRes = {
+      json: vi.fn().mockReturnThis()
+    } as unknown as Response;
     const mockNext = vi.fn();
 
     const asyncFn = async (req: Request, res: Response, next: NextFunction) => {

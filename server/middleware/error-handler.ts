@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import jwt from 'jsonwebtoken';
+import { logger } from '../utils/logger';
 
 // Custom error classes
 export class AppError extends Error {
@@ -101,10 +102,10 @@ function logError (error: Error, req: Request, statusCode: number, code?: string
 
   // Log to console with structured format
   if (process.env.NODE_ENV === 'development') {
-    console.error('🚨 Error Details:', JSON.stringify(errorLog, null, 2));
+    logger.error({ error: errorLog }, 'Error Details');
   } else {
     // In production, use structured logging
-    console.error(JSON.stringify(errorLog));
+    logger.error({ error: errorLog }, 'Error Details');
   }
 
   // TODO: Send to external logging service (e.g., Sentry, LogRocket, etc.)
@@ -224,6 +225,7 @@ export function errorHandler (
   const errorResponse: any = {
     success: false,
     error: message,
+    message,
     code,
     timestamp: new Date().toISOString(),
     path: req.path,
@@ -238,6 +240,7 @@ export function errorHandler (
   // Add request ID if available
   if (req.headers['x-request-id']) {
     errorResponse.requestId = req.headers['x-request-id'];
+    errorResponse.traceId = req.headers['x-request-id'];
   }
 
   // Don't expose internal errors in production
@@ -267,7 +270,7 @@ export function notFoundHandler (req: Request, res: Response, next: NextFunction
 export function setupGlobalErrorHandlers () {
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
-    console.error('🚨 Unhandled Promise Rejection:', {
+    logger.error('🚨 Unhandled Promise Rejection:', {
       reason: reason?.message || reason,
       stack: reason?.stack,
       promise: promise.toString(),
@@ -280,7 +283,7 @@ export function setupGlobalErrorHandlers () {
 
   // Handle uncaught exceptions
   process.on('uncaughtException', (error: Error) => {
-    console.error('🚨 Uncaught Exception:', {
+    logger.error('🚨 Uncaught Exception:', {
       message: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString(),

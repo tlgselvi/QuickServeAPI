@@ -13,6 +13,7 @@ import {
   getRecurringTransactionStats,
 } from '../modules/transactions/recurring';
 import { insertRecurringTransactionSchema } from '@shared/schema';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res) => {
       total: recurringTransactions.length,
     });
   } catch (error) {
-    console.error('Recurring transactions fetch error:', error);
+    logger.error('Recurring transactions fetch error:', error);
     res.status(500).json({
       error: 'Tekrarlayan işlemler alınırken hata oluştu',
     });
@@ -49,7 +50,7 @@ router.get('/stats', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: stats,
     });
   } catch (error) {
-    console.error('Recurring transaction stats error:', error);
+    logger.error('Recurring transaction stats error:', error);
     res.status(500).json({
       error: 'Tekrarlayan işlem istatistikleri alınırken hata oluştu',
     });
@@ -71,7 +72,7 @@ router.get('/upcoming', requireAuth, async (req: AuthenticatedRequest, res) => {
       total: upcoming.length,
     });
   } catch (error) {
-    console.error('Upcoming recurring transactions error:', error);
+    logger.error('Upcoming recurring transactions error:', error);
     res.status(500).json({
       error: 'Yaklaşan tekrarlayan işlemler alınırken hata oluştu',
     });
@@ -97,7 +98,7 @@ router.get('/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: recurringTransaction,
     });
   } catch (error) {
-    console.error('Recurring transaction fetch error:', error);
+    logger.error('Recurring transaction fetch error:', error);
     res.status(500).json({
       error: 'Tekrarlayan işlem alınırken hata oluştu',
     });
@@ -118,7 +119,7 @@ router.post('/', requireAuth, requirePermission(Permission.MANAGE_TRANSACTIONS),
       message: 'Tekrarlayan işlem başarıyla oluşturuldu',
     });
   } catch (error) {
-    console.error('Recurring transaction creation error:', error);
+    logger.error('Recurring transaction creation error:', error);
     if (error instanceof Error && error.message.includes('Invalid interval')) {
       return res.status(400).json({
         error: 'Geçersiz tekrar aralığı',
@@ -151,7 +152,7 @@ router.put('/:id', requireAuth, requirePermission(Permission.MANAGE_TRANSACTIONS
       message: 'Tekrarlayan işlem başarıyla güncellendi',
     });
   } catch (error) {
-    console.error('Recurring transaction update error:', error);
+    logger.error('Recurring transaction update error:', error);
     res.status(500).json({
       error: 'Tekrarlayan işlem güncellenirken hata oluştu',
     });
@@ -177,7 +178,7 @@ router.delete('/:id', requireAuth, requirePermission(Permission.MANAGE_TRANSACTI
       message: 'Tekrarlayan işlem başarıyla silindi',
     });
   } catch (error) {
-    console.error('Recurring transaction deletion error:', error);
+    logger.error('Recurring transaction deletion error:', error);
     res.status(500).json({
       error: 'Tekrarlayan işlem silinirken hata oluştu',
     });
@@ -204,7 +205,7 @@ router.patch('/:id/toggle', requireAuth, requirePermission(Permission.MANAGE_TRA
       message: `Tekrarlayan işlem ${toggledTransaction.isActive ? 'aktifleştirildi' : 'pasifleştirildi'}`,
     });
   } catch (error) {
-    console.error('Recurring transaction toggle error:', error);
+    logger.error('Recurring transaction toggle error:', error);
     res.status(500).json({
       error: 'Tekrarlayan işlem durumu değiştirilirken hata oluştu',
     });
@@ -222,7 +223,7 @@ router.post('/process', requireAuth, requirePermission(Permission.ADMIN), async 
       message: `Tekrarlayan işlemler işlendi. ${result.created} yeni işlem oluşturuldu.`,
     });
   } catch (error) {
-    console.error('Recurring transactions processing error:', error);
+    logger.error('Recurring transactions processing error:', error);
     res.status(500).json({
       error: 'Tekrarlayan işlemler işlenirken hata oluştu',
     });

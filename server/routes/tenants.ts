@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { insertTenantSchema, Tenant } from '../../shared/schema';
 import { requireRole } from '../middleware/auth';
 import { storage } from '../storage';
+import { logger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router.get('/', requireRole('admin'), async (req: Request, res: Response) => {
     const tenants = await storage.getTenants();
     res.json(tenants);
   } catch (error) {
-    console.error('Error fetching tenants:', error);
+    logger.error('Error fetching tenants:', error);
     res.status(500).json({ error: 'Failed to fetch tenants' });
   }
 });
@@ -29,7 +30,7 @@ router.get('/:id', requireRole('admin'), async (req: Request, res: Response) => 
 
     res.json(tenant);
   } catch (error) {
-    console.error('Error fetching tenant:', error);
+    logger.error('Error fetching tenant:', error);
     res.status(500).json({ error: 'Failed to fetch tenant' });
   }
 });
@@ -42,7 +43,7 @@ router.post('/', requireRole('admin'), async (req: Request, res: Response) => {
 
     res.status(201).json(tenant);
   } catch (error) {
-    console.error('Error creating tenant:', error);
+    logger.error('Error creating tenant:', error);
     res.status(400).json({ error: 'Failed to create tenant' });
   }
 });
@@ -61,7 +62,7 @@ router.put('/:id', requireRole('admin'), async (req: Request, res: Response) => 
 
     res.json(tenant);
   } catch (error) {
-    console.error('Error updating tenant:', error);
+    logger.error('Error updating tenant:', error);
     res.status(400).json({ error: 'Failed to update tenant' });
   }
 });
@@ -78,7 +79,7 @@ router.delete('/:id', requireRole('admin'), async (req: Request, res: Response) 
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting tenant:', error);
+    logger.error('Error deleting tenant:', error);
     res.status(500).json({ error: 'Failed to delete tenant' });
   }
 });
@@ -103,7 +104,7 @@ router.get('/domain/:domain', async (req: Request, res: Response) => {
 
     res.json(publicTenant);
   } catch (error) {
-    console.error('Error fetching tenant by domain:', error);
+    logger.error('Error fetching tenant by domain:', error);
     res.status(500).json({ error: 'Failed to fetch tenant' });
   }
 });

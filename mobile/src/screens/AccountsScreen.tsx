@@ -33,7 +33,7 @@ const AccountsScreen: React.FC<AccountsScreenProps> = ({ navigation }) => {
       const response = await accountsAPI.getAccounts();
       setAccounts(response);
     } catch (error) {
-      console.error('Error loading accounts:', error);
+      logger.error('Error loading accounts:', error);
       Alert.alert('Hata', 'Hesaplar yüklenirken bir hata oluştu');
     } finally {
       setIsLoading(false);

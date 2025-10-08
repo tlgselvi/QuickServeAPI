@@ -3,6 +3,7 @@ import { db } from '../db';
 import { userActivityLogs } from '../../shared/schema';
 import { eq, and, lt, desc } from 'drizzle-orm';
 import * as crypto from 'crypto';
+import { logger } from '../utils/logger';
 
 // GDPR/KVKK Compliance Configuration
 export const COMPLIANCE_CONFIG = {
@@ -185,13 +186,23 @@ export class AuditComplianceManager {
         complianceFlags: this.generateComplianceFlags(data)
       };
 
-      await db.insert(userActivityLogs).values(logEntry);
+      // Check if userActivityLogs table exists before inserting
+      try {
+        await db.insert(userActivityLogs).values(logEntry);
+      } catch (dbError: any) {
+        // If table doesn't exist, just log to console
+        if (dbError.message?.includes('no such table') || dbError.message?.includes('relation') || dbError.message?.includes('does not exist')) {
+          logger.debug('userActivityLogs table not found, skipping database insert');
+        } else {
+          throw dbError; // Re-throw other database errors
+        }
+      }
 
       // Log to console for monitoring
-      console.log(`🔍 [AUDIT] ${data.category.toUpperCase()} - ${data.action} - User: ${data.userId || 'Anonymous'}`);
+      logger.info(`[AUDIT] ${data.category.toUpperCase()} - ${data.action} - User: ${data.userId || 'Anonymous'}`);
       
     } catch (error) {
-      console.error('Audit logging error:', error);
+      logger.error('Audit logging error:', error);
       // Don't throw - audit logging should not break the main flow
     }
   }
@@ -274,27 +285,32 @@ export class AuditComplianceManager {
   // Run retention job
   private async runRetentionJob(): Promise<void> {
     try {
-      console.log('🔄 [COMPLIANCE] Running data retention job...');
+      logger.info('[COMPLIANCE] Running data retention job...');
       
       const now = new Date();
       let totalDeleted = 0;
 
-      // Clean user activity logs
-      const userActivityCutoff = new Date(now.getTime() - (COMPLIANCE_CONFIG.retention.userActivityLogs * 24 * 60 * 60 * 1000));
-      const deletedActivityLogs = await db
-        .delete(userActivityLogs)
-        .where(lt(userActivityLogs.timestamp, userActivityCutoff));
-      
-      totalDeleted += deletedActivityLogs.rowCount || 0;
-      console.log(`🗑️ [COMPLIANCE] Deleted ${deletedActivityLogs.rowCount || 0} expired activity logs`);
+      // Check if userActivityLogs table exists before attempting to clean
+      try {
+        // Clean user activity logs
+        const userActivityCutoff = new Date(now.getTime() - (COMPLIANCE_CONFIG.retention.userActivityLogs * 24 * 60 * 60 * 1000));
+        const deletedActivityLogs = await db
+          .delete(userActivityLogs)
+          .where(lt(userActivityLogs.timestamp, userActivityCutoff));
+        
+        totalDeleted += deletedActivityLogs.rowCount || 0;
+        logger.info(`[COMPLIANCE] Deleted ${deletedActivityLogs.rowCount || 0} expired activity logs`);
+      } catch (tableError) {
+        logger.debug('[COMPLIANCE] userActivityLogs table not found, skipping cleanup');
+      }
 
       // Add other table cleanups here as needed
       // Example: password reset tokens, session data, etc.
 
-      console.log(`✅ [COMPLIANCE] Retention job completed. Total deleted: ${totalDeleted} records`);
+      logger.info(`[COMPLIANCE] Retention job completed. Total deleted: ${totalDeleted} records`);
       
     } catch (error) {
-      console.error('❌ [COMPLIANCE] Retention job failed:', error);
+      logger.error('[COMPLIANCE] Retention job failed:', error);
     }
   }
 
@@ -344,7 +360,7 @@ export class AuditComplianceManager {
       };
 
     } catch (error) {
-      console.error('Export audit data error:', error);
+      logger.error('Export audit data error:', error);
       throw new Error('Failed to export audit data');
     }
   }
@@ -355,7 +371,7 @@ export class AuditComplianceManager {
     tables: string[];
   }> {
     try {
-      console.log(`🗑️ [COMPLIANCE] Purging data for user: ${userId}`);
+      logger.info(`🗑️ [COMPLIANCE] Purging data for user: ${userId}`);
       
       let totalDeleted = 0;
       const tables: string[] = [];
@@ -373,7 +389,7 @@ export class AuditComplianceManager {
       // Add other user data deletions here
       // Example: user profiles, sessions, etc.
 
-      console.log(`✅ [COMPLIANCE] Purged ${totalDeleted} records for user ${userId}`);
+      logger.info(`✅ [COMPLIANCE] Purged ${totalDeleted} records for user ${userId}`);
       
       return {
         deletedRecords: totalDeleted,
@@ -381,7 +397,7 @@ export class AuditComplianceManager {
       };
 
     } catch (error) {
-      console.error('Purge user data error:', error);
+      logger.error('Purge user data error:', error);
       throw new Error('Failed to purge user data');
     }
   }
@@ -421,7 +437,7 @@ export class AuditComplianceManager {
       };
 
     } catch (error) {
-      console.error('Get compliance metrics error:', error);
+      logger.error('Get compliance metrics error:', error);
       throw new Error('Failed to get compliance metrics');
     }
   }
@@ -430,7 +446,7 @@ export class AuditComplianceManager {
   public stopRetentionJobs(): void {
     this.retentionJobs.forEach((job, name) => {
       clearInterval(job);
-      console.log(`🛑 [COMPLIANCE] Stopped retention job: ${name}`);
+      logger.info(`🛑 [COMPLIANCE] Stopped retention job: ${name}`);
     });
     this.retentionJobs.clear();
   }

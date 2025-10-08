@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { investments, transactions } from '../db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.get('/', async (req, res) => {
 
     res.json(userInvestments);
   } catch (error) {
-    console.error('Investments fetch error:', error);
+    logger.error('Investments fetch error:', error);
     res.status(500).json({ error: 'Yatırımlar alınırken hata oluştu' });
   }
 });
@@ -66,7 +67,7 @@ router.get('/:id', async (req, res) => {
 
     res.json(investment[0]);
   } catch (error) {
-    console.error('Investment fetch error:', error);
+    logger.error('Investment fetch error:', error);
     res.status(500).json({ error: 'Yatırım alınırken hata oluştu' });
   }
 });
@@ -119,7 +120,7 @@ router.post('/', async (req, res) => {
         details: error.errors,
       });
     }
-    console.error('Investment creation error:', error);
+    logger.error('Investment creation error:', error);
     res.status(500).json({ error: 'Yatırım oluşturulurken hata oluştu' });
   }
 });
@@ -165,7 +166,7 @@ router.put('/:id', async (req, res) => {
         details: error.errors,
       });
     }
-    console.error('Investment update error:', error);
+    logger.error('Investment update error:', error);
     res.status(500).json({ error: 'Yatırım güncellenirken hata oluştu' });
   }
 });
@@ -191,7 +192,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Yatırım başarıyla silindi' });
   } catch (error) {
-    console.error('Investment deletion error:', error);
+    logger.error('Investment deletion error:', error);
     res.status(500).json({ error: 'Yatırım silinirken hata oluştu' });
   }
 });

@@ -931,8 +931,8 @@ export const predefinedTransactionCategories = {
 };
 
 export const getAllCategories = () => [
-  ...transactionCategories.income,
-  ...transactionCategories.expense,
+  ...predefinedTransactionCategories.income,
+  ...predefinedTransactionCategories.expense,
 ];
 
 export const getCategoryLabel = (categoryValue: string | null | undefined): string => {

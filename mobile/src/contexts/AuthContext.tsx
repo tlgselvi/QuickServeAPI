@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      logger.error('Auth check failed:', error);
       await AsyncStorage.multiRemove(['auth_token', 'user_data']);
     } finally {
       setIsLoading(false);
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser(user);
     } catch (error) {
-      console.error('Login failed:', error);
+      logger.error('Login failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser(user);
     } catch (error) {
-      console.error('Registration failed:', error);
+      logger.error('Registration failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await authAPI.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     } finally {
       setUser(null);
       await AsyncStorage.multiRemove(['auth_token', 'user_data']);

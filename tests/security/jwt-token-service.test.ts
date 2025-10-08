@@ -10,14 +10,32 @@ import { users, refreshTokens, revokedTokens } from '../../shared/schema.js';
 import { eq, and } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
-// Mock the database
+// Mock the database with proper chaining
 vi.mock('../../server/db.js', () => ({
   db: {
-    select: vi.fn(),
-    insert: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    execute: vi.fn()
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve([])),
+          orderBy: vi.fn(() => Promise.resolve([]))
+        })),
+        limit: vi.fn(() => Promise.resolve([]))
+      }))
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => Promise.resolve([])),
+      returning: vi.fn(() => Promise.resolve([]))
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => Promise.resolve([])),
+        returning: vi.fn(() => Promise.resolve([]))
+      }))
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(() => Promise.resolve([]))
+    })),
+    execute: vi.fn(() => Promise.resolve({ rowCount: 0 }))
   }
 }));
 

@@ -25,7 +25,7 @@ describe('Database Setup Integration Tests', () => {
       await db.delete(users).where(eq(users.email, 'test-admin@finbot.com'));
       await db.delete(users).where(eq(users.email, 'test-demo@finbot.com'));
     } catch (error) {
-      console.warn('Cleanup failed:', error);
+      logger.warn('Cleanup failed:', error);
     }
   });
 

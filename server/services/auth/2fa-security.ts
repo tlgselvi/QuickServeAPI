@@ -8,6 +8,7 @@ import { z } from 'zod';
 import * as crypto from 'crypto';
 import * as speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
+import { logger } from '../../utils/logger';
 
 // Enhanced 2FA Security Configuration
 export const TOTP_CONFIG = {
@@ -65,7 +66,7 @@ export class TwoFactorSecurityService {
         tag: tag.toString('hex')
       };
     } catch (error) {
-      console.error('Secret encryption error:', error);
+      logger.error('Secret encryption error:', error);
       throw new Error('Failed to encrypt 2FA secret');
     }
   }
@@ -81,7 +82,7 @@ export class TwoFactorSecurityService {
       
       return decrypted;
     } catch (error) {
-      console.error('Secret decryption error:', error);
+      logger.error('Secret decryption error:', error);
       throw new Error('Failed to decrypt 2FA secret');
     }
   }
@@ -98,7 +99,7 @@ export class TwoFactorSecurityService {
       
       return hashedCodes;
     } catch (error) {
-      console.error('Backup code hashing error:', error);
+      logger.error('Backup code hashing error:', error);
       throw new Error('Failed to hash backup codes');
     }
   }
@@ -111,7 +112,7 @@ export class TwoFactorSecurityService {
       
       return hashedCodes.includes(codeHashHex);
     } catch (error) {
-      console.error('Backup code verification error:', error);
+      logger.error('Backup code verification error:', error);
       return false;
     }
   }
@@ -141,7 +142,7 @@ export class TwoFactorSecurityService {
         backupCodes
       };
     } catch (error) {
-      console.error('Secure secret generation error:', error);
+      logger.error('Secure secret generation error:', error);
       throw new Error('Failed to generate secure 2FA secret');
     }
   }
@@ -206,7 +207,7 @@ export class TwoFactorSecurityService {
         backupCodes
       };
     } catch (error) {
-      console.error('Secure 2FA setup error:', error);
+      logger.error('Secure 2FA setup error:', error);
       throw new Error('Failed to setup secure 2FA');
     }
   }
@@ -286,7 +287,7 @@ export class TwoFactorSecurityService {
       });
 
     } catch (error) {
-      console.error('Secure 2FA enablement error:', error);
+      logger.error('Secure 2FA enablement error:', error);
       throw new Error('Failed to enable secure 2FA');
     }
   }
@@ -307,7 +308,7 @@ export class TwoFactorSecurityService {
 
       return verified;
     } catch (error) {
-      console.error('TOTP verification error:', error);
+      logger.error('TOTP verification error:', error);
       return false;
     }
   }
@@ -394,7 +395,7 @@ export class TwoFactorSecurityService {
 
       return { success: false, usedBackupCode: false };
     } catch (error) {
-      console.error('Secure 2FA verification error:', error);
+      logger.error('Secure 2FA verification error:', error);
       
       // Log verification failure
       await db.insert(userActivityLogs).values({
@@ -480,7 +481,7 @@ export class TwoFactorSecurityService {
       });
 
     } catch (error) {
-      console.error('Secure 2FA disablement error:', error);
+      logger.error('Secure 2FA disablement error:', error);
       throw new Error('Failed to disable secure 2FA');
     }
   }
@@ -512,7 +513,7 @@ export class TwoFactorSecurityService {
 
       return backupCodes;
     } catch (error) {
-      console.error('Backup code regeneration error:', error);
+      logger.error('Backup code regeneration error:', error);
       throw new Error('Failed to regenerate backup codes');
     }
   }
@@ -551,7 +552,7 @@ export class TwoFactorSecurityService {
         securityScore
       };
     } catch (error) {
-      console.error('Security status error:', error);
+      logger.error('Security status error:', error);
       throw new Error('Failed to get security status');
     }
   }
@@ -564,9 +565,9 @@ export class TwoFactorSecurityService {
       // Clean up old 2FA records for disabled accounts
       // In a real implementation, you would add proper cleanup logic
       
-      console.log('2FA cleanup completed');
+      logger.info('2FA cleanup completed');
     } catch (error) {
-      console.error('2FA cleanup error:', error);
+      logger.error('2FA cleanup error:', error);
     }
   }
 
@@ -588,7 +589,7 @@ export class TwoFactorSecurityService {
         averageSecurityScore: 0
       };
     } catch (error) {
-      console.error('2FA security metrics error:', error);
+      logger.error('2FA security metrics error:', error);
       return {
         totalUsers: 0,
         enabled2FA: 0,

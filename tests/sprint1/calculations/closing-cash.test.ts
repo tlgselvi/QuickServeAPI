@@ -1,7 +1,22 @@
-import { describe, test, expect, beforeAll, afterAll } from 'vitest';
+import { describe, test, expect, beforeAll, afterAll, vi } from 'vitest';
 import { db } from '../../../server/db';
-import { accounts, transactions } from '../../../shared/schema';
+import { accounts, transactions } from '../../../shared/schema-sqlite';
 import { eq } from 'drizzle-orm';
+
+// Mock the database for testing
+vi.mock('../../../server/db', () => {
+  const mockDb = {
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({
+        returning: vi.fn(() => Promise.resolve([{ id: 'test-account-id' }]))
+      }))
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(() => Promise.resolve())
+    }))
+  };
+  return { db: mockDb };
+});
 
 // Mock simulateCloseDay function - gerçek implementasyon yerine
 const simulateCloseDay = (accountId: string, targetDate: Date) => {

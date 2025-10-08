@@ -4,6 +4,7 @@ import { db } from '../db';
 import { auditLogs } from '@shared/schema';
 import { randomUUID } from 'crypto';
 import { eq, desc, sql } from 'drizzle-orm';
+import { logger } from '../utils/logger';
 
 export interface AuditContext {
   tableName: string;
@@ -33,11 +34,14 @@ export const createAuditMiddleware = (context: Partial<AuditContext>) => {
       if (this.statusCode >= 200 && this.statusCode < 300) {
         try {
           await logAuditEvent(req, {
+            tableName: context.tableName || 'unknown',
+            recordId: context.recordId || 'unknown',
+            operation: context.operation || 'SELECT',
             ...context,
             newValues: body,
           });
         } catch (error) {
-          console.error('Audit logging failed:', error);
+          logger.error('Audit logging failed:', error);
         }
       }
 
@@ -62,8 +66,8 @@ export const logAuditEvent = async (
       userId: req.user?.id,
       userEmail: req.user?.email,
       userRole: req.user?.role,
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
+      ipAddress: req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown',
+      userAgent: req.get('User-Agent') || 'unknown',
       oldValues: context.oldValues,
       newValues: context.newValues,
       changedFields: context.changedFields,
@@ -76,12 +80,17 @@ export const logAuditEvent = async (
         path: req.path,
         query: req.query,
         timestamp: new Date().toISOString(),
+        // Enhanced security logging
+        forwardedFor: req.headers['x-forwarded-for'],
+        realIp: req.headers['x-real-ip'],
+        referer: req.get('Referer'),
+        origin: req.get('Origin'),
       },
     };
 
     await db.insert(auditLogs).values(auditData);
   } catch (error) {
-    console.error('Failed to log audit event:', error);
+    logger.error('Failed to log audit event:', error);
     // Don't throw error to avoid breaking the main operation
   }
 };
@@ -102,7 +111,7 @@ export const auditDecorator = <T extends (...args: any[]) => any>(
           newValues: result,
         });
       } catch (error) {
-        console.error('Audit decorator failed:', error);
+        logger.error('Audit decorator failed:', error);
       }
     }
 
@@ -126,7 +135,7 @@ export const getAuditLogs = async (
       .orderBy(desc(auditLogs.timestamp))
       .limit(limit);
   } catch (error) {
-    console.error('Failed to get audit logs:', error);
+    logger.error('Failed to get audit logs:', error);
     return [];
   }
 };
@@ -144,7 +153,7 @@ export const getUserAuditLogs = async (
       .orderBy(desc(auditLogs.timestamp))
       .limit(limit);
   } catch (error) {
-    console.error('Failed to get user audit logs:', error);
+    logger.error('Failed to get user audit logs:', error);
     return [];
   }
 };
@@ -159,10 +168,10 @@ export const cleanupAuditLogs = async (daysToKeep: number = 90) => {
       .delete(auditLogs)
       .where(sql`${auditLogs.timestamp} < ${cutoffDate.toISOString()}`);
 
-    console.log(`Cleaned up ${result.rowCount} old audit logs`);
+    logger.info(`Cleaned up ${result.rowCount} old audit logs`);
     return result.rowCount;
   } catch (error) {
-    console.error('Failed to cleanup audit logs:', error);
+    logger.error('Failed to cleanup audit logs:', error);
     return 0;
   }
 };

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
 import { eventBus, REALTIME_EVENTS, REALTIME_TOPICS } from '../services/realtime/eventBus';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -26,7 +27,7 @@ router.get('/events', requireAuth, async (req: AuthenticatedRequest, res) => {
       },
     });
   } catch (error) {
-    console.error('Realtime events fetch error:', error);
+    logger.error('Realtime events fetch error:', error);
     res.status(500).json({
       error: 'Gerçek zamanlı olaylar alınırken hata oluştu',
     });
@@ -100,7 +101,7 @@ router.get('/subscribe', requireAuth, async (req: AuthenticatedRequest, res) => 
     req.on('close', () => {
       eventBus.removeListener('event', eventHandler);
       eventBus.unsubscribe(subscriptionId);
-      console.log(`[REALTIME] Client disconnected: ${userId}`);
+      logger.info(`[REALTIME] Client disconnected: ${userId}`);
     });
 
     // Keep connection alive with heartbeat
@@ -125,10 +126,10 @@ router.get('/subscribe', requireAuth, async (req: AuthenticatedRequest, res) => 
       clearInterval(heartbeat);
     });
 
-    console.log(`[REALTIME] User ${userId} subscribed to topics:`, validTopics);
+    logger.info(`[REALTIME] User ${userId} subscribed to topics:`, validTopics);
 
   } catch (error) {
-    console.error('Realtime subscription error:', error);
+    logger.error('Realtime subscription error:', error);
     res.status(500).json({
       error: 'Gerçek zamanlı abonelik hatası',
     });
@@ -166,7 +167,7 @@ router.post('/publish', requireAuth, async (req: AuthenticatedRequest, res) => {
       message: 'Olay başarıyla yayınlandı',
     });
   } catch (error) {
-    console.error('Realtime publish error:', error);
+    logger.error('Realtime publish error:', error);
     res.status(500).json({
       error: 'Olay yayınlanırken hata oluştu',
     });
@@ -190,7 +191,7 @@ router.get('/stats', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: stats,
     });
   } catch (error) {
-    console.error('Realtime stats error:', error);
+    logger.error('Realtime stats error:', error);
     res.status(500).json({
       error: 'İstatistikler alınırken hata oluştu',
     });
@@ -225,7 +226,7 @@ router.get('/history/:topic', requireAuth, async (req: AuthenticatedRequest, res
       },
     });
   } catch (error) {
-    console.error('Realtime history error:', error);
+    logger.error('Realtime history error:', error);
     res.status(500).json({
       error: 'Olay geçmişi alınırken hata oluştu',
     });
@@ -255,7 +256,7 @@ router.post('/test', requireAuth, async (req: AuthenticatedRequest, res) => {
       message: 'Test olayı yayınlandı',
     });
   } catch (error) {
-    console.error('Realtime test error:', error);
+    logger.error('Realtime test error:', error);
     res.status(500).json({
       error: 'Test olayı yayınlanırken hata oluştu',
     });

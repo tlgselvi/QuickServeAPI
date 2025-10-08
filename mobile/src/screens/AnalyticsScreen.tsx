@@ -32,7 +32,7 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
       const response = await dashboardAPI.getDashboardData();
       setDashboardData(response);
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      logger.error('Error loading dashboard data:', error);
       Alert.alert('Hata', 'Veriler yüklenirken bir hata oluştu');
     } finally {
       setIsLoading(false);

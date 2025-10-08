@@ -13,7 +13,7 @@ import * as schema from '../shared/schema.js';
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error('❌ DATABASE_URL environment variable is required');
+  logger.error('❌ DATABASE_URL environment variable is required');
   process.exit(1);
 }
 
@@ -22,7 +22,7 @@ const db = drizzle(sql, { schema });
 
 async function seedDatabase() {
   try {
-    console.log('🔄 Starting database seeding...');
+    logger.info('🔄 Starting database seeding...');
 
     // Admin user oluştur
     const adminUser = {
@@ -42,9 +42,9 @@ async function seedDatabase() {
 
     if (!existingUser) {
       await db.insert(schema.users).values(adminUser);
-      console.log('✅ Admin user created');
+      logger.info('✅ Admin user created');
     } else {
-      console.log('ℹ️ Admin user already exists');
+      logger.info('ℹ️ Admin user already exists');
     }
 
     // Demo company data
@@ -65,9 +65,9 @@ async function seedDatabase() {
 
     if (!existingCompany) {
       await db.insert(schema.companies).values(companyData);
-      console.log('✅ Demo company created');
+      logger.info('✅ Demo company created');
     } else {
-      console.log('ℹ️ Demo company already exists');
+      logger.info('ℹ️ Demo company already exists');
     }
 
     // Demo bank accounts
@@ -120,9 +120,9 @@ async function seedDatabase() {
 
       if (!existingAccount) {
         await db.insert(schema.bankAccounts).values(account);
-        console.log(`✅ Bank account created: ${account.name}`);
+        logger.info(`✅ Bank account created: ${account.name}`);
       } else {
-        console.log(`ℹ️ Bank account already exists: ${account.name}`);
+        logger.info(`ℹ️ Bank account already exists: ${account.name}`);
       }
     }
 
@@ -171,15 +171,15 @@ async function seedDatabase() {
 
     for (const transaction of transactions) {
       await db.insert(schema.transactions).values(transaction);
-      console.log(`✅ Transaction created: ${transaction.description}`);
+      logger.info(`✅ Transaction created: ${transaction.description}`);
     }
 
-    console.log('🎉 Database seeding completed successfully!');
-    console.log('📧 Admin login: admin@finbot.com');
-    console.log('🔑 Admin password: admin123');
+    logger.info('🎉 Database seeding completed successfully!');
+    logger.info('📧 Admin login: admin@finbot.com');
+    logger.info('🔑 Admin password: admin123');
 
   } catch (error) {
-    console.error('❌ Error seeding database:', error);
+    logger.error('❌ Error seeding database:', error);
     process.exit(1);
   }
 }

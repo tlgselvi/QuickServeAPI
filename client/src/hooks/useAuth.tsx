@@ -27,9 +27,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider ({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
 
-  // Query current user
+  // Query current user - only if token exists
   const { data: userResponse, isLoading, error } = useQuery({
     queryKey: ['/api/auth/me'],
+    enabled: !!localStorage.getItem('token'), // Only fetch if token exists
     retry: false, // Don't retry on 401
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

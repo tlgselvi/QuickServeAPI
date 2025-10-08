@@ -15,6 +15,7 @@ import {
   getCashboxAuditLogs,
 } from '../modules/cashbox/cashbox-service';
 import { insertCashboxSchema, updateCashboxSchema, insertCashboxTransactionSchema, transferCashboxSchema } from '@shared/schema';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get('/', requireAuth, requirePermission(Permission.VIEW_CASHBOXES), async
       data: cashboxes,
     });
   } catch (error) {
-    console.error('Get cashboxes error:', error);
+    logger.error('Get cashboxes error:', error);
     res.status(500).json({
       error: 'Kasalar alınırken hata oluştu',
     });
@@ -50,7 +51,7 @@ router.get('/summary', requireAuth, requirePermission(Permission.VIEW_CASHBOXES)
       data: summary,
     });
   } catch (error) {
-    console.error('Get cashbox summary error:', error);
+    logger.error('Get cashbox summary error:', error);
     res.status(500).json({
       error: 'Kasa özeti alınırken hata oluştu',
     });
@@ -76,7 +77,7 @@ router.get('/:id', requireAuth, requirePermission(Permission.VIEW_CASHBOXES), as
       data: cashbox,
     });
   } catch (error) {
-    console.error('Get cashbox error:', error);
+    logger.error('Get cashbox error:', error);
     res.status(500).json({
       error: 'Kasa alınırken hata oluştu',
     });
@@ -103,7 +104,7 @@ router.post('/', requireAuth, requirePermission(Permission.MANAGE_CASHBOXES), as
       message: 'Kasa başarıyla oluşturuldu',
     });
   } catch (error) {
-    console.error('Create cashbox error:', error);
+    logger.error('Create cashbox error:', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
       return res.status(400).json({
@@ -146,7 +147,7 @@ router.put('/:id', requireAuth, requirePermission(Permission.MANAGE_CASHBOXES), 
       message: 'Kasa başarıyla güncellendi',
     });
   } catch (error) {
-    console.error('Update cashbox error:', error);
+    logger.error('Update cashbox error:', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
       return res.status(400).json({
@@ -185,7 +186,7 @@ router.delete('/:id', requireAuth, requirePermission(Permission.MANAGE_CASHBOXES
       message: 'Kasa başarıyla silindi',
     });
   } catch (error) {
-    console.error('Delete cashbox error:', error);
+    logger.error('Delete cashbox error:', error);
     res.status(500).json({
       error: 'Kasa silinirken hata oluştu',
     });
@@ -216,7 +217,7 @@ router.post('/:id/restore', requireAuth, requirePermission(Permission.MANAGE_CAS
       message: 'Kasa başarıyla geri yüklendi',
     });
   } catch (error) {
-    console.error('Restore cashbox error:', error);
+    logger.error('Restore cashbox error:', error);
     res.status(500).json({
       error: 'Kasa geri yüklenirken hata oluştu',
     });
@@ -251,7 +252,7 @@ router.get('/:id/transactions', requireAuth, requirePermission(Permission.VIEW_C
       data: transactions,
     });
   } catch (error) {
-    console.error('Get cashbox transactions error:', error);
+    logger.error('Get cashbox transactions error:', error);
     res.status(500).json({
       error: 'Kasa işlemleri alınırken hata oluştu',
     });
@@ -282,7 +283,7 @@ router.post('/:id/transactions', requireAuth, requirePermission(Permission.MANAG
       message: 'İşlem başarıyla oluşturuldu',
     });
   } catch (error) {
-    console.error('Create cashbox transaction error:', error);
+    logger.error('Create cashbox transaction error:', error);
     
     if (error instanceof Error) {
       if (error.message === 'Kasa bulunamadı veya erişim yetkiniz yok') {
@@ -330,7 +331,7 @@ router.post('/transfer', requireAuth, requirePermission(Permission.TRANSFER_CASH
       message: 'Transfer başarıyla tamamlandı',
     });
   } catch (error) {
-    console.error('Transfer cashbox error:', error);
+    logger.error('Transfer cashbox error:', error);
     
     if (error instanceof Error) {
       if (error.message === 'Kasa bulunamadı veya erişim yetkiniz yok') {
@@ -391,7 +392,7 @@ router.get('/:id/audit', requireAuth, requirePermission(Permission.VIEW_CASHBOXE
       data: auditLogs,
     });
   } catch (error) {
-    console.error('Get cashbox audit logs error:', error);
+    logger.error('Get cashbox audit logs error:', error);
     res.status(500).json({
       error: 'Audit logları alınırken hata oluştu',
     });
@@ -425,7 +426,7 @@ router.get('/audit/all', requireAuth, requirePermission(Permission.VIEW_CASHBOXE
       data: auditLogs,
     });
   } catch (error) {
-    console.error('Get all audit logs error:', error);
+    logger.error('Get all audit logs error:', error);
     res.status(500).json({
       error: 'Audit logları alınırken hata oluştu',
     });

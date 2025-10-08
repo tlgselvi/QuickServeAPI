@@ -65,7 +65,7 @@ describe('JWT API Endpoints', () => {
       await db.delete(userProfiles).where(eq(userProfiles.userId, testUserId));
       await db.delete(users).where(eq(users.id, testUserId));
     } catch (error) {
-      console.warn('Cleanup failed:', error);
+      logger.warn('Cleanup failed:', error);
     }
   });
 

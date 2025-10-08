@@ -20,19 +20,48 @@ vi.mock('../../server/db', () => ({
       set: vi.fn(() => ({
         where: vi.fn(() => Promise.resolve())
       }))
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(() => Promise.resolve())
     }))
   }
 }));
 
 vi.mock('speakeasy', () => ({
-  generateSecret: vi.fn(),
+  generateSecret: vi.fn(() => ({
+    base32: 'JBSWY3DPEHPK3PXP',
+    otpauth_url: 'otpauth://totp/TestApp:test@example.com?secret=JBSWY3DPEHPK3PXP&issuer=TestApp'
+  })),
   totp: {
-    verify: vi.fn()
+    verify: vi.fn(() => true)
+  },
+  backupCodes: {
+    generate: vi.fn(() => ['12345678', '87654321', '11111111', '22222222', '33333333'])
   }
 }));
 
 vi.mock('qrcode', () => ({
   toDataURL: vi.fn(() => Promise.resolve('data:image/png;base64,mock-qr-code'))
+}));
+
+vi.mock('crypto', () => ({
+  randomBytes: vi.fn(() => Buffer.from('mock-random-bytes')),
+  createCipher: vi.fn(() => ({
+    update: vi.fn(() => 'encrypted-data'),
+    final: vi.fn(() => 'final-encrypted')
+  })),
+  createDecipher: vi.fn(() => ({
+    update: vi.fn(() => 'decrypted-data'),
+    final: vi.fn(() => 'final-decrypted')
+  })),
+  createCipheriv: vi.fn(() => ({
+    update: vi.fn(() => 'encrypted-data'),
+    final: vi.fn(() => 'final-encrypted')
+  })),
+  createDecipheriv: vi.fn(() => ({
+    update: vi.fn(() => 'decrypted-data'),
+    final: vi.fn(() => 'final-decrypted')
+  }))
 }));
 
 describe('TwoFactorAuthService', () => {

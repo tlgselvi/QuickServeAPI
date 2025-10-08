@@ -40,7 +40,7 @@ const TransferScreen: React.FC<TransferScreenProps> = ({ navigation }) => {
         setToAccount(response[1].id);
       }
     } catch (error) {
-      console.error('Error loading accounts:', error);
+      logger.error('Error loading accounts:', error);
     }
   };
 
@@ -75,7 +75,7 @@ const TransferScreen: React.FC<TransferScreenProps> = ({ navigation }) => {
         { text: 'Tamam', onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
-      console.error('Error transferring funds:', error);
+      logger.error('Error transferring funds:', error);
       Alert.alert('Hata', 'Virman işlemi sırasında bir hata oluştu');
     } finally {
       setIsLoading(false);

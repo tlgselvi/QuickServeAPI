@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
+import { logger } from '@/lib/logger';
 
 interface DashboardUpdate {
   type: 'connected' | 'dashboard_update';
@@ -20,8 +21,22 @@ export function useRealtimeDashboard () {
       return;
     }
 
-    // Create EventSource connection
-    const eventSource = new EventSource('/api/dashboard/stream', {
+    // Get token for authentication
+    const token = localStorage.getItem('token');
+    if (!token) {
+      logger.warn('No token available for real-time connection');
+      return;
+    }
+
+    // Disable real-time in development due to SSE endpoint issues
+    if (import.meta.env.DEV) {
+      logger.info('[REALTIME] Disabled in development mode');
+      setIsConnected(false);
+      return;
+    }
+
+    // Create EventSource connection with token in URL
+    const eventSource = new EventSource(`/api/dashboard/stream?token=${token}`, {
       withCredentials: true,
     });
 
@@ -37,18 +52,18 @@ export function useRealtimeDashboard () {
         const update: DashboardUpdate = JSON.parse(event.data);
 
         if (update.type === 'connected') {
-          console.log('Connected to real-time dashboard updates');
+          logger.info('Connected to real-time dashboard updates');
         } else if (update.type === 'dashboard_update' && update.data) {
           // Update the dashboard query cache with fresh data
           queryClient.setQueryData(['/api/dashboard'], update.data);
         }
       } catch (error) {
-        console.error('Error parsing real-time update:', error);
+        logger.error('Error parsing real-time update:', error);
       }
     };
 
     eventSource.onerror = (error) => {
-      console.error('Real-time connection error:', error);
+      logger.error('Real-time connection error:', error);
       setIsConnected(false);
       setConnectionError('Bağlantı hatası');
 
@@ -81,9 +96,20 @@ export function useRealtimeDashboard () {
     };
   }, []);
 
+  const reconnect = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    // Trigger reconnection by updating user dependency
+    setIsConnected(false);
+    setConnectionError(null);
+  };
+
   return {
     isConnected,
     connectionError,
+    reconnect,
   };
 }
 

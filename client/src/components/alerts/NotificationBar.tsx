@@ -99,7 +99,7 @@ export default function NotificationBar({ className }: NotificationBarProps) {
 
         return alerts;
       } catch (error) {
-        console.error('Simulation alerts error:', error);
+        logger.error('Simulation alerts error:', error);
         return [];
       }
     },
@@ -134,7 +134,7 @@ export default function NotificationBar({ className }: NotificationBarProps) {
 
         return alerts;
       } catch (error) {
-        console.error('Risk alerts error:', error);
+        logger.error('Risk alerts error:', error);
         return [];
       }
     },

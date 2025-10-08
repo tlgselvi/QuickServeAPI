@@ -8,6 +8,7 @@ import {
   transactions,
   accounts 
 } from '@shared/schema';
+import { logger } from '../../utils/logger';
 import type { 
   BankIntegration, 
   InsertBankIntegration, 
@@ -677,7 +678,7 @@ async function syncBankDataWithProvider(
 
     return allTransactions;
   } catch (error) {
-    console.error('Error syncing with real provider:', error);
+    logger.error('Error syncing with real provider:', error);
     // Fallback to mock data if real provider fails
     return mockBankApiCall(credentials);
   }

@@ -1,6 +1,45 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock bcryptjs
+vi.mock('bcryptjs', () => ({
+  default: {
+    hash: vi.fn(),
+    compare: vi.fn(),
+    genSalt: vi.fn()
+  },
+  hash: vi.fn(),
+  compare: vi.fn(),
+  genSalt: vi.fn()
+}));
+
+// Mock database
+vi.mock('../../server/db.js', () => ({
+  db: {
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve([]))
+        }))
+      }))
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => Promise.resolve([]))
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => Promise.resolve([]))
+      }))
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(() => Promise.resolve([]))
+    }))
+  }
+}));
+
+// Import after mocking
 import { PasswordService, PASSWORD_POLICY } from '../../server/services/auth/password-service.js';
 import { MockFactory } from '../utils/mock-factory.js';
+import bcrypt from 'bcryptjs';
 
 describe('PasswordService', () => {
   let service: PasswordService;
@@ -11,6 +50,7 @@ describe('PasswordService', () => {
   beforeEach(() => {
     service = new PasswordService();
     MockFactory.resetAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('validatePassword', () => {

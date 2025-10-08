@@ -48,7 +48,7 @@ const AccountDetailScreen: React.FC<AccountDetailScreenProps> = ({ navigation, r
       );
       setTransactions(accountTransactions);
     } catch (error) {
-      console.error('Error loading account details:', error);
+      logger.error('Error loading account details:', error);
       Alert.alert('Hata', 'Hesap detayları yüklenirken bir hata oluştu');
     } finally {
       setIsLoading(false);

@@ -1,3 +1,5 @@
+import { logger } from '../utils/logger';
+import { logger } from 'logger';
 // Database query optimization utilities
 
 export interface QueryOptions {
@@ -200,7 +202,7 @@ export class QueryPerformanceMonitor {
 
       // Log slow queries
       if (duration > 1000) {
-        console.warn(`🐌 Slow query detected: ${queryId} took ${duration}ms`);
+        logger.warn(`🐌 Slow query detected: ${queryId} took ${duration}ms`);
       }
     };
   }

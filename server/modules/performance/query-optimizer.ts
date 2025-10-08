@@ -1,6 +1,7 @@
 import { eq, and, gte, lte, sql, desc, asc, inArray } from 'drizzle-orm';
 import { db } from '../../db';
 import { agingReports, accounts, transactions } from '@shared/schema';
+import { logger } from '../../utils/logger';
 
 export interface QueryMetrics {
   queryId: string;
@@ -227,7 +228,7 @@ class QueryOptimizer {
     }
 
     const executionTime = performance.now() - startTime;
-    console.log(`Batch insert completed: ${data.length} rows in ${executionTime.toFixed(2)}ms`);
+    logger.info(`Batch insert completed: ${data.length} rows in ${executionTime.toFixed(2)}ms`);
   }
 
   /**
@@ -359,7 +360,7 @@ class QueryOptimizer {
   }
 
   private analyzeSlowQuery(queryId: string, executionTime: number, rowsReturned: number): void {
-    console.warn(`Slow query detected: ${queryId}`, {
+    logger.warn(`Slow query detected: ${queryId}`, {
       executionTime: `${executionTime.toFixed(2)}ms`,
       rowsReturned,
       timestamp: new Date().toISOString(),
@@ -435,7 +436,7 @@ export function createPerformanceMiddleware() {
 
       // Log slow requests
       if (executionTime > 500) {
-        console.warn(`Slow API request: ${req.method} ${req.path}`, {
+        logger.warn(`Slow API request: ${req.method} ${req.path}`, {
           executionTime: `${executionTime.toFixed(2)}ms`,
           timestamp: new Date().toISOString(),
         });

@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useFormatCurrency } from '@/contexts/CurrencyContext';
 import { TrendingUp, TrendingDown, AlertTriangle, Clock } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { ErrorDisplay } from '@/components/ui/error-display';
 
 interface AgingBucket {
   bucket: string;
@@ -94,7 +96,7 @@ export function AgingSummary({ reportType, title, description }: AgingSummaryPro
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
-      console.error('Aging summary fetch error:', err);
+      logger.error('Aging summary fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -109,10 +111,7 @@ export function AgingSummary({ reportType, title, description }: AgingSummaryPro
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-32">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              <p className="text-sm text-muted-foreground">Yükleniyor...</p>
-            </div>
+            <LoadingSpinner size="lg" text="Yükleniyor..." />
           </div>
         </CardContent>
       </Card>
@@ -127,12 +126,12 @@ export function AgingSummary({ reportType, title, description }: AgingSummaryPro
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-32">
-            <div className="text-center text-red-600">
-              <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
-              <p className="text-sm">{error}</p>
-            </div>
-          </div>
+          <ErrorDisplay
+            error={error}
+            onRetry={fetchAgingSummary}
+            variant="minimal"
+            size="sm"
+          />
         </CardContent>
       </Card>
     );

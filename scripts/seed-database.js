@@ -5,6 +5,7 @@
  * Creates initial admin user and demo data
  */
 
+import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { neon, neonConfig } from '@neondatabase/serverless';
 import { drizzle as drizzlePg } from 'drizzle-orm/postgres-js';
@@ -17,7 +18,7 @@ import * as schema from '../shared/schema.js';
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error('❌ DATABASE_URL environment variable is required');
+  logger.error('❌ DATABASE_URL environment variable is required');
   throw new Error('DATABASE_URL environment variable is required');
 }
 
@@ -25,7 +26,7 @@ async function seedDatabase() {
   let sqlClient = null;
   
   try {
-    console.log('🌱 Starting database seeding...');
+    logger.info('🌱 Starting database seeding...');
 
     // Configure Neon for HTTP connections
     neonConfig.fetchConnectionCache = true;
@@ -45,7 +46,7 @@ async function seedDatabase() {
 
     // Test connection
     await sqlClient`SELECT 1`;
-    console.log('✅ Database connection established');
+    logger.info('✅ Database connection established');
 
     // Seed admin user
     await seedAdminUser(db);
@@ -56,11 +57,11 @@ async function seedDatabase() {
     // Seed demo financial data
     await seedDemoData(db);
 
-    console.log('🎉 Database seeding completed successfully!');
+    logger.info('🎉 Database seeding completed successfully!');
 
   } catch (error) {
-    console.error('❌ Database seeding failed:', error.message);
-    console.error('📋 Error details:', error.stack);
+    logger.error('❌ Database seeding failed:', error.message);
+    logger.error('📋 Error details:', error.stack);
     // Do not exit the process on Render; allow server to continue
     throw error;
   } finally {
@@ -70,17 +71,18 @@ async function seedDatabase() {
         await sqlClient.end();
       }
     } catch (cleanupError) {
-      console.warn('⚠️  Error during cleanup:', cleanupError.message);
+      logger.warn('⚠️  Error during cleanup:', cleanupError.message);
     }
   }
 }
 
 async function seedAdminUser(db) {
-  console.log('👤 Seeding admin user...');
+  logger.info('👤 Seeding admin user...');
   
   const adminPassword = await bcrypt.hash('admin123', 10);
   const adminUser = {
     id: crypto.randomUUID(),
+    username: 'admin',
     email: 'admin@finbot.com',
     password: adminPassword,
     name: 'Admin User',
@@ -94,20 +96,21 @@ async function seedAdminUser(db) {
   
   if (existingAdmins.length === 0) {
     await db.insert(schema.users).values(adminUser);
-    console.log('✅ Admin user created');
-    console.log('📧 Email: admin@finbot.com');
-    console.log('🔑 Password: admin123');
+    logger.info('✅ Admin user created');
+    logger.info('📧 Email: admin@finbot.com');
+    logger.info('🔑 Password: admin123');
   } else {
-    console.log('ℹ️  Admin user already exists');
+    logger.info('ℹ️  Admin user already exists');
   }
 }
 
 async function seedDemoUser(db) {
-  console.log('👤 Seeding demo user...');
+  logger.info('👤 Seeding demo user...');
   
   const demoPassword = await bcrypt.hash('demo123', 10);
   const demoUser = {
     id: crypto.randomUUID(),
+    username: 'demo',
     email: 'demo@finbot.com',
     password: demoPassword,
     name: 'Demo User',
@@ -121,22 +124,22 @@ async function seedDemoUser(db) {
   
   if (existingDemos.length === 0) {
     await db.insert(schema.users).values(demoUser);
-    console.log('✅ Demo user created');
-    console.log('📧 Email: demo@finbot.com');
-    console.log('🔑 Password: demo123');
+    logger.info('✅ Demo user created');
+    logger.info('📧 Email: demo@finbot.com');
+    logger.info('🔑 Password: demo123');
   } else {
-    console.log('ℹ️  Demo user already exists');
+    logger.info('ℹ️  Demo user already exists');
   }
 }
 
 async function seedDemoData(db) {
-  console.log('💰 Seeding demo financial data...');
+  logger.info('💰 Seeding demo financial data...');
   
   // Get demo user ID
   const demoUsers = await db.select().from(schema.users).where(eq(schema.users.email, 'demo@finbot.com'));
   
   if (demoUsers.length === 0) {
-    console.log('⚠️  Demo user not found, skipping demo data');
+    logger.info('⚠️  Demo user not found, skipping demo data');
     return;
   }
   
@@ -176,7 +179,7 @@ async function seedDemoData(db) {
     }
   }
   
-  console.log('✅ Demo financial data created');
+  logger.info('✅ Demo financial data created');
 }
 
 // Export for use in other scripts

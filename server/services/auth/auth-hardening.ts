@@ -10,6 +10,7 @@ import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import * as jwt from 'jsonwebtoken';
 import { tokenService, TokenMetadata } from './token-service.js';
+import { logger } from '../../utils/logger';
 
 // Token service integration
 
@@ -63,7 +64,7 @@ export class AuthHardeningService {
       const hash = await argon2.hash(pepperedPassword, ARGON2_CONFIG);
       return hash;
     } catch (error) {
-      console.error('Password hashing error:', error);
+      logger.error('Password hashing error:', error);
       throw new Error('Failed to hash password');
     }
   }
@@ -74,7 +75,7 @@ export class AuthHardeningService {
       const pepperedPassword = password + this.pepper;
       return await argon2.verify(hashedPassword, pepperedPassword);
     } catch (error) {
-      console.error('Password verification error:', error);
+      logger.error('Password verification error:', error);
       return false;
     }
   }
@@ -106,7 +107,7 @@ export class AuthHardeningService {
 
       return token;
     } catch (error) {
-      console.error('Access token generation error:', error);
+      logger.error('Access token generation error:', error);
       throw new Error('Failed to generate access token');
     }
   }
@@ -135,7 +136,7 @@ export class AuthHardeningService {
 
       return { token, jti };
     } catch (error) {
-      console.error('Refresh token generation error:', error);
+      logger.error('Refresh token generation error:', error);
       throw new Error('Failed to generate refresh token');
     }
   }
@@ -158,7 +159,7 @@ export class AuthHardeningService {
       // Clean up old refresh tokens
       await this.cleanupOldRefreshTokens(userId);
     } catch (error) {
-      console.error('Refresh token storage error:', error);
+      logger.error('Refresh token storage error:', error);
       throw new Error('Failed to store refresh token');
     }
   }
@@ -168,9 +169,9 @@ export class AuthHardeningService {
     try {
       // In a real implementation, you would delete old tokens from refresh_tokens table
       // This is a simplified version
-      console.log(`Cleaning up old refresh tokens for user: ${userId}`);
+      logger.info(`Cleaning up old refresh tokens for user: ${userId}`);
     } catch (error) {
-      console.error('Refresh token cleanup error:', error);
+      logger.error('Refresh token cleanup error:', error);
     }
   }
 
@@ -230,7 +231,7 @@ export class AuthHardeningService {
         }
       };
     } catch (error) {
-      console.error('Refresh token verification error:', error);
+      logger.error('Refresh token verification error:', error);
       return null;
     }
   }
@@ -242,7 +243,7 @@ export class AuthHardeningService {
       // This is a simplified version
       return true;
     } catch (error) {
-      console.error('Refresh token existence check error:', error);
+      logger.error('Refresh token existence check error:', error);
       return false;
     }
   }
@@ -263,9 +264,9 @@ export class AuthHardeningService {
         }
       });
 
-      console.log(`Token revoked: ${jti} for user: ${userId}, reason: ${reason}`);
+      logger.info(`Token revoked: ${jti} for user: ${userId}, reason: ${reason}`);
     } catch (error) {
-      console.error('Token revocation error:', error);
+      logger.error('Token revocation error:', error);
       throw new Error('Failed to revoke token');
     }
   }
@@ -277,7 +278,7 @@ export class AuthHardeningService {
       // This is a simplified version that always returns false
       return false;
     } catch (error) {
-      console.error('Token revocation check error:', error);
+      logger.error('Token revocation check error:', error);
       return true; // If we can't check, assume revoked for security
     }
   }
@@ -297,9 +298,9 @@ export class AuthHardeningService {
         }
       });
 
-      console.log(`All tokens revoked for user: ${userId}, reason: ${reason}`);
+      logger.info(`All tokens revoked for user: ${userId}, reason: ${reason}`);
     } catch (error) {
-      console.error('Bulk token revocation error:', error);
+      logger.error('Bulk token revocation error:', error);
       throw new Error('Failed to revoke all user tokens');
     }
   }
@@ -321,7 +322,7 @@ export class AuthHardeningService {
         jti: decoded.jti
       };
     } catch (error) {
-      console.error('Access token verification error:', error);
+      logger.error('Access token verification error:', error);
       return null;
     }
   }
@@ -389,7 +390,7 @@ export class AuthHardeningService {
         }
       };
     } catch (error) {
-      console.error('Authentication error:', error);
+      logger.error('Authentication error:', error);
       return {
         success: false,
         error: 'Authentication failed'
@@ -409,7 +410,7 @@ export class AuthHardeningService {
         permissions: ['view_cashboxes', 'manage_cashboxes']
       };
     } catch (error) {
-      console.error('Credential verification error:', error);
+      logger.error('Credential verification error:', error);
       return null;
     }
   }
@@ -421,7 +422,7 @@ export class AuthHardeningService {
       // This is a simplified version
       return { isLocked: false };
     } catch (error) {
-      console.error('Lockout check error:', error);
+      logger.error('Lockout check error:', error);
       return { isLocked: true }; // If we can't check, assume locked for security
     }
   }
@@ -430,9 +431,9 @@ export class AuthHardeningService {
   private async incrementFailedAttempts(email: string, ipAddress: string): Promise<void> {
     try {
       // In a real implementation, you would increment failed attempts
-      console.log(`Failed login attempt for ${email} from ${ipAddress}`);
+      logger.info(`Failed login attempt for ${email} from ${ipAddress}`);
     } catch (error) {
-      console.error('Failed attempt tracking error:', error);
+      logger.error('Failed attempt tracking error:', error);
     }
   }
 
@@ -449,7 +450,7 @@ export class AuthHardeningService {
         })
         .where(eq(userProfiles.userId, userId));
     } catch (error) {
-      console.error('Failed attempts reset error:', error);
+      logger.error('Failed attempts reset error:', error);
     }
   }
 
@@ -469,9 +470,9 @@ export class AuthHardeningService {
         );
 
       // In a real implementation, you would also clean up expired refresh tokens
-      console.log('Expired tokens cleaned up');
+      logger.info('Expired tokens cleaned up');
     } catch (error) {
-      console.error('Token cleanup error:', error);
+      logger.error('Token cleanup error:', error);
     }
   }
 
@@ -491,7 +492,7 @@ export class AuthHardeningService {
         lockedAccounts: 0
       };
     } catch (error) {
-      console.error('Security metrics error:', error);
+      logger.error('Security metrics error:', error);
       return {
         activeTokens: 0,
         revokedTokens: 0,
@@ -526,7 +527,7 @@ export class AuthHardeningService {
         refreshToken: tokenPair.refreshToken
       };
     } catch (error) {
-      console.error('Token pair generation error:', error);
+      logger.error('Token pair generation error:', error);
       throw new Error('Failed to generate token pair');
     }
   }
@@ -550,7 +551,7 @@ export class AuthHardeningService {
         refreshToken: tokenPair.refreshToken
       };
     } catch (error) {
-      console.error('Refresh token rotation error:', error);
+      logger.error('Refresh token rotation error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to rotate refresh token'

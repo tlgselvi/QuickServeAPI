@@ -1,5 +1,12 @@
+// Service Worker - No ES modules allowed
 const CACHE_NAME = 'finbot-v1';
 const OFFLINE_URL = '/offline.html';
+
+// Simple logger for service worker
+const logger = {
+  info: (...args) => console.log('[SW]', ...args),
+  error: (...args) => console.error('[SW]', ...args),
+};
 
 // Öncelikli cache edilecek dosyalar
 const PRECACHE_URLS = [
@@ -12,16 +19,16 @@ const PRECACHE_URLS = [
 
 // Service Worker kurulum
 self.addEventListener('install', event => {
-  console.log('[SW] Install event');
+  logger.info('[SW] Install event');
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('[SW] Pre-caching offline page');
+        logger.info('[SW] Pre-caching offline page');
         return cache.addAll(PRECACHE_URLS);
       })
       .then(() => {
-        console.log('[SW] Skip waiting');
+        logger.info('[SW] Skip waiting');
         return self.skipWaiting();
       })
   );
@@ -29,20 +36,20 @@ self.addEventListener('install', event => {
 
 // Service Worker aktivasyonu
 self.addEventListener('activate', event => {
-  console.log('[SW] Activate event');
+  logger.info('[SW] Activate event');
   
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', cacheName);
+            logger.info('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     }).then(() => {
-      console.log('[SW] Claiming clients');
+      logger.info('[SW] Claiming clients');
       return self.clients.claim();
     })
   );
@@ -113,7 +120,7 @@ self.addEventListener('fetch', event => {
 
 // Background Sync for offline transactions
 self.addEventListener('sync', event => {
-  console.log('[SW] Background sync:', event.tag);
+  logger.info('[SW] Background sync:', event.tag);
   
   if (event.tag === 'background-sync-transactions') {
     event.waitUntil(syncOfflineTransactions());
@@ -122,7 +129,7 @@ self.addEventListener('sync', event => {
 
 // Push notification
 self.addEventListener('push', event => {
-  console.log('[SW] Push received:', event);
+  logger.info('[SW] Push received:', event);
   
   const options = {
     body: event.data ? event.data.text() : 'Yeni bildirim',
@@ -152,7 +159,7 @@ self.addEventListener('push', event => {
 
 // Notification click
 self.addEventListener('notificationclick', event => {
-  console.log('[SW] Notification click:', event);
+  logger.info('[SW] Notification click:', event);
   
   event.notification.close();
 
@@ -182,15 +189,15 @@ async function syncOfflineTransactions() {
             body: JSON.stringify(transaction)
           });
         } catch (error) {
-          console.error('[SW] Failed to sync transaction:', error);
+          logger.error('[SW] Failed to sync transaction:', error);
         }
       }
       
       // Clear offline transactions after sync
       await cache.delete('offline-transactions');
-      console.log('[SW] Offline transactions synced');
+      logger.info('[SW] Offline transactions synced');
     }
   } catch (error) {
-    console.error('[SW] Sync failed:', error);
+    logger.error('[SW] Sync failed:', error);
   }
 }

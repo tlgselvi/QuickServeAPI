@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { logger } from '../utils/logger';
 
 // Performance monitoring interface
 interface PerformanceMetrics {
@@ -45,12 +46,12 @@ export const performanceMonitor = (req: Request, res: Response, next: NextFuncti
 
     // Log slow requests (> 1 second)
     if (duration > 1000) {
-      console.warn(`🐌 Slow request detected: ${req.method} ${req.url} took ${duration}ms`);
+      logger.warn(`🐌 Slow request detected: ${req.method} ${req.url} took ${duration}ms`);
     }
 
     // Log performance metrics for API routes
     if (req.url.startsWith('/api')) {
-      console.log(`📊 Performance: ${req.method} ${req.url} - ${duration}ms - ${metrics.memoryUsage.heapUsed / 1024 / 1024}MB`);
+      logger.info(`📊 Performance: ${req.method} ${req.url} - ${duration}ms - ${metrics.memoryUsage.heapUsed / 1024 / 1024}MB`);
     }
 
     // Clean up cache (keep only last 100 entries)
@@ -97,7 +98,7 @@ export const memoryMonitor = (req: Request, res: Response, next: NextFunction) =
 
   // Warn if memory usage is high
   if (heapUsedMB > 500) { // 500MB threshold
-    console.warn(`⚠️ High memory usage: ${heapUsedMB.toFixed(2)}MB / ${heapTotalMB.toFixed(2)}MB`);
+    logger.warn(`⚠️ High memory usage: ${heapUsedMB.toFixed(2)}MB / ${heapTotalMB.toFixed(2)}MB`);
   }
 
   // Add memory info to response headers in development
@@ -183,7 +184,7 @@ export const requestDeduplication = (req: Request, res: Response, next: NextFunc
 
   // Check if same request is already pending
   if (pendingRequests.has(requestKey)) {
-    console.log(`🔄 Deduplicating request: ${requestKey}`);
+    logger.info(`🔄 Deduplicating request: ${requestKey}`);
 
     // Wait for the pending request to complete
     pendingRequests.get(requestKey)!.then((result) => {

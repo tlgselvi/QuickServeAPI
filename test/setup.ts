@@ -5,8 +5,29 @@ import * as matchers from '@testing-library/jest-dom/matchers';
 
 // TextEncoder polyfill for Node.js
 import { TextEncoder, TextDecoder } from 'util';
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder as any;
+
+// Fix TextEncoder issues
+if (typeof global.TextEncoder === 'undefined') {
+  global.TextEncoder = TextEncoder;
+}
+if (typeof global.TextDecoder === 'undefined') {
+  global.TextDecoder = TextDecoder as any;
+}
+
+// Additional polyfills for Node.js environment
+if (typeof global.Blob === 'undefined') {
+  global.Blob = class Blob {
+    constructor(public parts: any[] = [], public options: any = {}) {}
+  };
+}
+
+if (typeof global.File === 'undefined') {
+  global.File = class File extends Blob {
+    constructor(public name: string, parts: any[], options: any) {
+      super(parts, options);
+    }
+  };
+}
 
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
+import { logger } from '../utils/logger';
 import {
   calculateRunway,
   calculateCashGap,
@@ -8,6 +9,34 @@ import {
 } from '../modules/dashboard/runway-cashgap';
 
 const router = Router();
+
+// GET /api/dashboard/extended - Get extended dashboard data
+router.get('/extended', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    
+    // Get all extended dashboard data
+    const runwayData = await getDashboardRunwayCashGap(userId, 12);
+    const cashGapData = await calculateCashGap(userId, 12);
+    const cashFlowForecast = await getCashFlowForecast(userId, 12);
+    
+    const extendedData = {
+      runway: runwayData,
+      cashGap: cashGapData,
+      cashFlowForecast: cashFlowForecast,
+      timestamp: new Date().toISOString()
+    };
+    
+    logger.info(`[DASHBOARD] Extended dashboard data retrieved for user: ${userId}`);
+    res.json(extendedData);
+  } catch (error) {
+    logger.error('Extended dashboard error:', error);
+    res.status(500).json({ 
+      error: 'Extended dashboard data could not be retrieved',
+      code: 'DASHBOARD_EXTENDED_ERROR'
+    });
+  }
+});
 
 // GET /api/dashboard/runway - Get runway analysis
 router.get('/runway', requireAuth, async (req: AuthenticatedRequest, res) => {
@@ -30,7 +59,7 @@ router.get('/runway', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: runway,
     });
   } catch (error) {
-    console.error('Runway analysis error:', error);
+    logger.error('Runway analysis error:', error);
     res.status(500).json({
       error: 'Runway analizi yapılırken hata oluştu',
     });
@@ -58,7 +87,7 @@ router.get('/cashgap', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: cashGap,
     });
   } catch (error) {
-    console.error('Cash gap analysis error:', error);
+    logger.error('Cash gap analysis error:', error);
     res.status(500).json({
       error: 'Cash gap analizi yapılırken hata oluştu',
     });
@@ -76,7 +105,7 @@ router.get('/runway-cashgap', requireAuth, async (req: AuthenticatedRequest, res
       data: combinedAnalysis,
     });
   } catch (error) {
-    console.error('Combined runway cash gap analysis error:', error);
+    logger.error('Combined runway cash gap analysis error:', error);
     res.status(500).json({
       error: 'Birleşik runway ve cash gap analizi yapılırken hata oluştu',
     });
@@ -104,7 +133,7 @@ router.get('/cashflow-forecast', requireAuth, async (req: AuthenticatedRequest, 
       data: forecast,
     });
   } catch (error) {
-    console.error('Cash flow forecast error:', error);
+    logger.error('Cash flow forecast error:', error);
     res.status(500).json({
       error: 'Nakit akışı tahmini yapılırken hata oluştu',
     });
@@ -193,7 +222,7 @@ router.get('/financial-health', requireAuth, async (req: AuthenticatedRequest, r
       data: healthSummary,
     });
   } catch (error) {
-    console.error('Financial health analysis error:', error);
+    logger.error('Financial health analysis error:', error);
     res.status(500).json({
       error: 'Finansal sağlık analizi yapılırken hata oluştu',
     });

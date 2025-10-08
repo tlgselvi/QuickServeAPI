@@ -1,5 +1,6 @@
 import type { Account, SubAccount } from '@shared/schema';
 import { formatCurrency } from '../../../lib/utils/formatCurrency';
+import { logger } from '../../../utils/logger';
 
 export interface BreakdownCategory {
   bank: number;
@@ -99,7 +100,7 @@ function categorizeAccounts(accounts: Account[]): ConsolidationBreakdown {
           }
         });
       } catch (error) {
-        console.warn('Sub-account parsing error:', error);
+        logger.warn('Sub-account parsing error:', error);
       }
     }
   });

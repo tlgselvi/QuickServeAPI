@@ -110,7 +110,7 @@ export function RunwayWidget({ months = 12 }: RunwayWidgetProps) {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
-      console.error('Runway analysis fetch error:', err);
+      logger.error('Runway analysis fetch error:', err);
     } finally {
       setLoading(false);
     }

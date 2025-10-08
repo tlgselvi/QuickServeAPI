@@ -9,5 +9,7 @@ test('USD format', () => {
 });
 
 test('EUR format', () => {
-  expect(formatCurrency(1234.5, 'EUR', 'de-DE')).toBe('1.234,50 €');
+  const out = formatCurrency(1234.5, 'EUR', 'de-DE');
+  // Normalize NBSP vs regular space for cross-platform consistency
+  expect(out.replace(/\u00A0/g, ' ')).toBe('1.234,50 €');
 });

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import type { AuthenticatedRequest } from './auth';
+import { logger } from '../utils/logger';
 
 // Request logging interface
 interface RequestLog {
@@ -254,11 +255,11 @@ export const requestLoggingMiddleware = (options: {
         if (process.env.NODE_ENV === 'development') {
           const logMessage = `${requestLog.method} ${requestLog.path} - ${res.statusCode} - ${duration}ms`;
           if (res.statusCode >= 400) {
-            console.error(`❌ ${logMessage}`);
+            logger.error(`❌ ${logMessage}`);
           } else if (duration > slowThreshold) {
-            console.warn(`⚠️  ${logMessage}`);
+            logger.warn(`⚠️  ${logMessage}`);
           } else {
-            console.log(`✅ ${logMessage}`);
+            logger.info(`✅ ${logMessage}`);
           }
         }
       }
@@ -310,7 +311,7 @@ export const errorLoggingMiddleware = (req: Request, res: Response, next: NextFu
       };
 
       // Log error to console
-      console.error('🚨 API Error:', errorLog);
+      logger.error({ error: errorLog }, 'API Error');
 
       // Store error in metrics
       metricsStore.addLog({
@@ -417,13 +418,13 @@ export const logEvent = (level: 'info' | 'warn' | 'error', message: string, data
 
   switch (level) {
     case 'error':
-      console.error('🔴', JSON.stringify(logEntry, null, 2));
+      logger.error('🔴', JSON.stringify(logEntry, null, 2));
       break;
     case 'warn':
-      console.warn('🟡', JSON.stringify(logEntry, null, 2));
+      logger.warn('🟡', JSON.stringify(logEntry, null, 2));
       break;
     default:
-      console.log('🔵', JSON.stringify(logEntry, null, 2));
+      logger.info('🔵', JSON.stringify(logEntry, null, 2));
   }
 };
 

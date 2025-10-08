@@ -18,7 +18,7 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error('Error getting auth token:', error);
+      logger.error('Error getting auth token:', error);
     }
     return config;
   },

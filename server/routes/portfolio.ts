@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db';
 import { investments, accounts } from '../db/schema';
 import { eq, and, sum, sql } from 'drizzle-orm';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -84,7 +85,7 @@ router.get('/summary', async (req, res) => {
 
     res.json(summary);
   } catch (error) {
-    console.error('Portfolio summary error:', error);
+    logger.error('Portfolio summary error:', error);
     res.status(500).json({ error: 'Portföy özeti alınırken hata oluştu' });
   }
 });
@@ -121,7 +122,7 @@ router.get('/performance', async (req, res) => {
 
     res.json(performanceData);
   } catch (error) {
-    console.error('Portfolio performance error:', error);
+    logger.error('Portfolio performance error:', error);
     res.status(500).json({ error: 'Portföy performansı alınırken hata oluştu' });
   }
 });
@@ -186,7 +187,7 @@ router.get('/rebalance', async (req, res) => {
       lastCalculated: new Date(),
     });
   } catch (error) {
-    console.error('Portfolio rebalance error:', error);
+    logger.error('Portfolio rebalance error:', error);
     res.status(500).json({ error: 'Rebalancing önerileri alınırken hata oluştu' });
   }
 });

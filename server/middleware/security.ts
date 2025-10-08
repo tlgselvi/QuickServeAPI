@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
+import { logger } from '../utils/logger';
 
 // Enhanced rate limiting implementation with IP + user + route tracking
 const rateLimitStore = new Map<string, { count: number; resetTime: number; blocked: boolean }>();
@@ -374,7 +375,7 @@ export const sqlInjectionProtection = (req: Request, res: Response, next: NextFu
     if (typeof obj === 'string') {
       for (const pattern of dangerousPatterns) {
         if (pattern.test(obj)) {
-          console.warn(`Potential SQL injection detected in ${path}:`, obj);
+          logger.warn(`Potential SQL injection detected in ${path}:`, obj);
           return true;
         }
       }
@@ -432,7 +433,7 @@ export const xssProtection = (req: Request, res: Response, next: NextFunction) =
     if (typeof obj === 'string') {
       for (const pattern of xssPatterns) {
         if (pattern.test(obj)) {
-          console.warn(`Potential XSS detected in ${path}:`, obj);
+          logger.warn(`Potential XSS detected in ${path}:`, obj);
           return true;
         }
       }
@@ -524,9 +525,7 @@ export const corsOptions = {
 
     const envOrigin = process.env.CORS_ORIGIN;
     const allowedOrigins = [
-      'http://localhost:3000',
       'http://localhost:5000',
-      'https://localhost:3000',
       'https://localhost:5000',
       ...(envOrigin ? [envOrigin] : []),
     ];
@@ -535,7 +534,7 @@ export const corsOptions = {
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`CORS: Origin ${origin} not allowed`);
+      logger.warn(`CORS: Origin ${origin} not allowed`);
       callback(new Error('Not allowed by CORS'), false);
     }
   },
@@ -660,6 +659,16 @@ export const idempotencyKeyMiddleware = (req: Request, res: Response, next: Next
   };
 
   next();
+};
+
+// Endpoint-specific rate limiting
+export const endpointRateLimits = {
+  auth: createRateLimit(15 * 60 * 1000, 20), // 20 auth requests per 15 minutes
+  ai: createRateLimit(60 * 1000, 10), // 10 AI requests per minute
+  api: createRateLimit(60 * 1000, 50), // 50 API requests per minute
+  upload: createRateLimit(60 * 1000, 5), // 5 upload requests per minute
+  admin: createRateLimit(60 * 1000, 100), // 100 admin requests per minute
+  default: createRateLimit(60 * 1000, 30) // 30 requests per minute default
 };
 
 // Enhanced security middleware with all protections

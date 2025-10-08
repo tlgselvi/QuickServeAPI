@@ -337,7 +337,7 @@ export function BankIntegration() {
 
   const connectBank = async (bankId: string) => {
     // Simulate bank connection process
-    console.log(`Connecting to bank: ${bankId}`);
+    logger.info(`Connecting to bank: ${bankId}`);
   };
 
   return (

@@ -146,7 +146,7 @@ export default function EditTransactionDialog({
       await onUpdateTransaction(transaction.id, updateData);
       onOpenChange(false);
     } catch (error) {
-      console.error('Transaction update error:', error);
+      logger.error('Transaction update error:', error);
       setErrors({ submit: 'İşlem güncellenirken hata oluştu' });
     }
   };

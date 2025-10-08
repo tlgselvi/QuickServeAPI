@@ -2,13 +2,14 @@ import { db } from './db.ts';
 import { users, accounts, transactions, budgetLines } from '../shared/schema.ts';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
+import { logger } from './utils/logger.ts';
 
 /**
  * Seed production database with demo data
  */
 export async function seedProductionData() {
   try {
-    console.log('🌱 Seeding production database...');
+    logger.info('🌱 Seeding production database...');
 
     // Check if demo user already exists
     const existingDemoUser = await db
@@ -25,7 +26,7 @@ export async function seedProductionData() {
       .limit(1);
 
     if (existingDemoUser.length > 0 && existingAdminUser.length > 0) {
-      console.log('✅ Demo and admin users already exist, skipping seed');
+      logger.info('✅ Demo and admin users already exist, skipping seed');
       return;
     }
 
@@ -41,7 +42,7 @@ export async function seedProductionData() {
         isEmailVerified: true,
       }).returning();
 
-      console.log('✅ Demo user created:', demoUser.email);
+      logger.info('✅ Demo user created:', demoUser.email);
     }
 
     // Create admin user
@@ -56,7 +57,7 @@ export async function seedProductionData() {
         isEmailVerified: true,
       }).returning();
 
-      console.log('✅ Admin user created:', adminUser.email);
+      logger.info('✅ Admin user created:', adminUser.email);
     }
 
     // Create demo accounts
@@ -122,7 +123,7 @@ export async function seedProductionData() {
     ];
 
     const createdAccounts = await db.insert(accounts).values(demoAccounts).returning();
-    console.log('✅ Demo accounts created:', createdAccounts.length);
+    logger.info('✅ Demo accounts created:', createdAccounts.length);
 
     // Create demo transactions
     const demoTransactions = [
@@ -169,7 +170,7 @@ export async function seedProductionData() {
     ];
 
     const createdTransactions = await db.insert(transactions).values(demoTransactions).returning();
-    console.log('✅ Demo transactions created:', createdTransactions.length);
+    logger.info('✅ Demo transactions created:', createdTransactions.length);
 
     // Create demo budget lines
     const demoBudgetLines = [
@@ -197,14 +198,14 @@ export async function seedProductionData() {
     ];
 
     const createdBudgetLines = await db.insert(budgetLines).values(demoBudgetLines).returning();
-    console.log('✅ Demo budget lines created:', createdBudgetLines.length);
+    logger.info('✅ Demo budget lines created:', createdBudgetLines.length);
 
-    console.log('🎉 Production seed data created successfully!');
-    console.log('📧 Demo login: demo@finbot.com');
-    console.log('🔑 Demo password: demo123');
+    logger.info('🎉 Production seed data created successfully!');
+    logger.info('📧 Demo login: demo@finbot.com');
+    logger.info('🔑 Demo password: demo123');
 
   } catch (error) {
-    console.error('❌ Seed data creation failed:', error);
+    logger.error('❌ Seed data creation failed:', error);
     throw error;
   }
 }
@@ -223,16 +224,16 @@ export function validateProductionEnvironment(): boolean {
   const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
-    console.error('❌ Missing required environment variables:', missingVars);
+    logger.error('❌ Missing required environment variables:', missingVars);
     return false;
   }
 
   if (process.env.NODE_ENV !== 'production') {
-    console.error('❌ NODE_ENV must be set to "production"');
+    logger.error('❌ NODE_ENV must be set to "production"');
     return false;
   }
 
-  console.log('✅ Production environment validation passed');
+  logger.info('✅ Production environment validation passed');
   return true;
 }
 
@@ -240,7 +241,7 @@ export function validateProductionEnvironment(): boolean {
  * Initialize production database
  */
 export async function initializeProduction() {
-  console.log('🚀 Initializing production environment...');
+  logger.info('🚀 Initializing production environment...');
 
   // Validate environment
   if (!validateProductionEnvironment()) {
@@ -250,6 +251,6 @@ export async function initializeProduction() {
   // Seed demo data
   await seedProductionData();
 
-  console.log('✅ Production initialization completed');
+  logger.info('✅ Production initialization completed');
 }
 

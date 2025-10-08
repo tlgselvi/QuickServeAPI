@@ -2,6 +2,7 @@ import { openaiService } from './openaiService';
 import { db } from '../../db';
 import { investments, accounts } from '../../db/schema';
 import { eq } from 'drizzle-orm';
+import { logger } from '../../utils/logger';
 
 export interface SimulationParameter {
   name: string;
@@ -139,7 +140,7 @@ export class SimulationAgentService {
         recommendations: analysis.recommendations,
       };
     } catch (error) {
-      console.error('Simulation error:', error);
+      logger.error('Simulation error:', error);
       throw new Error('Simülasyon çalıştırılırken hata oluştu');
     }
   }
@@ -387,7 +388,7 @@ export class SimulationAgentService {
 
       return JSON.parse(response.response);
     } catch (error) {
-      console.error('Scenario analysis error:', error);
+      logger.error('Scenario analysis error:', error);
 
       // Fallback analysis
       return {

@@ -46,7 +46,7 @@ export default function Reports () {
         description: `${type.toUpperCase()} raporu başarıyla indirildi`,
       });
     } catch (error) {
-      console.error(`${type} export error:`, error);
+      logger.error(`${type} export error:`, error);
       toast({
         title: 'Hata',
         description: error instanceof Error ? error.message : `${type.toUpperCase()} raporu indirilemedi`,
@@ -96,7 +96,7 @@ export default function Reports () {
         window.open(result.url, '_blank');
       }
     } catch (error) {
-      console.error('Google Sheets export error:', error);
+      logger.error('Google Sheets export error:', error);
       toast({
         title: 'Hata',
         description: error instanceof Error ? error.message : 'Google Sheets export başarısız',

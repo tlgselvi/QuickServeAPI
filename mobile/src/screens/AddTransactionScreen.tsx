@@ -45,7 +45,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
         setSelectedAccount(response[0].id);
       }
     } catch (error) {
-      console.error('Error loading accounts:', error);
+      logger.error('Error loading accounts:', error);
     }
   };
 
@@ -70,7 +70,7 @@ const AddTransactionScreen: React.FC<AddTransactionScreenProps> = ({ navigation 
         { text: 'Tamam', onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
-      console.error('Error creating transaction:', error);
+      logger.error('Error creating transaction:', error);
       Alert.alert('Hata', 'İşlem eklenirken bir hata oluştu');
     } finally {
       setIsLoading(false);

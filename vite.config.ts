@@ -38,19 +38,44 @@ export default defineConfig(async ({ mode }) => {
         "@assets": path.resolve(import.meta.dirname, "attached_assets"),
       },
     },
+    optimizeDeps: {
+      exclude: ['drizzle-orm'],
+    },
     root: path.resolve(import.meta.dirname, "client"),
     build: {
       outDir: path.resolve(import.meta.dirname, "dist/public"),
       emptyOutDir: true,
+      // Performance optimizations
+      target: 'esnext',
+      minify: 'esbuild',
+      sourcemap: isProd ? false : true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
+            charts: ['recharts'],
+            forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1000,
     },
     server: {
+      port: Number(process.env.PORT) || 3000,
       fs: {
         strict: true,
         deny: ["**/.*"],
       },
       proxy: {
         "/api": {
-          target: "http://localhost:5000",
+          target: process.env.VITE_API_URL || "http://localhost:5000",
+          changeOrigin: true,
+          secure: false,
+        },
+        "/ws": {
+          target: process.env.VITE_WS_URL || "ws://localhost:5050",
+          ws: true,
           changeOrigin: true,
           secure: false,
         },

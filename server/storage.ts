@@ -4,6 +4,7 @@ import type { UserRoleType } from '../shared/schema.ts';
 import { db } from './db.ts';
 import { eq, desc, sql, and, isNull, or, ilike, lte, gte, gt } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { logger } from './utils/logger.ts';
 
 export interface IStorage {
   // User authentication methods
@@ -179,13 +180,25 @@ export class MemStorage implements IStorage {
 
   private initializeDemoData () {
     // Seed admin user in development only (if no users exist)
-    if (process.env.NODE_ENV === 'development' && this.users.size === 0) {
+    if (process.env.NODE_ENV === 'development') {
+      // Update existing admin user password if exists
+      const existingAdmin = Array.from(this.users.values()).find(u => u.email === 'admin@finbot.com');
+      if (existingAdmin) {
+        const newPassword = 'admin123';
+        const hashedPassword = bcrypt.hashSync(newPassword, 12);
+        existingAdmin.password = hashedPassword;
+        logger.info(`[DEV] Admin user password updated - Email: admin@finbot.com, Password: ${newPassword}`);
+        return;
+      }
+      
+      // Create new admin user if none exists
+      if (this.users.size === 0) {
       const adminId = randomUUID();
       const now = new Date();
-      // Generate secure random password for development
-      const devPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
+      // Use fixed password for development
+      const devPassword = 'admin123';
       const hashedPassword = bcrypt.hashSync(devPassword, 12);
-      console.log(`[DEV] Admin user created - Email: admin@finbot.com, Password: ${devPassword}`);
+      logger.info(`[DEV] Admin user created - Email: admin@finbot.com, Password: ${devPassword}`);
 
       const adminUser: User = {
         id: adminId,
@@ -201,6 +214,7 @@ export class MemStorage implements IStorage {
         createdAt: now,
       };
       this.users.set(adminId, adminUser);
+      }
     }
 
     // Create permanent admin user
@@ -223,7 +237,7 @@ export class MemStorage implements IStorage {
     // Check if admin already exists
     const existingAdmin = Array.from(this.users.values()).find(u => u.email === adminEmail);
     if (existingAdmin) {
-      console.log(`[DEV] Admin user already exists: ${adminEmail}`);
+      logger.info(`[DEV] Admin user already exists: ${adminEmail}`);
       return;
     }
 
@@ -246,7 +260,7 @@ export class MemStorage implements IStorage {
     };
 
     this.users.set(adminId, adminUser);
-    console.log(`[DEV] Permanent admin created - Email: ${adminEmail}, Password: ${adminPassword}`);
+    logger.info(`[DEV] Permanent admin created - Email: ${adminEmail}, Password: ${adminPassword}`);
   }
 
   private promoteUserToAdmin (email: string) {
@@ -254,9 +268,9 @@ export class MemStorage implements IStorage {
     if (user) {
       user.role = 'admin';
       this.users.set(user.id, user);
-      console.log(`[DEV] User ${email} promoted to admin`);
+      logger.info(`[DEV] User ${email} promoted to admin`);
     } else {
-      console.log(`[DEV] User ${email} not found for promotion`);
+      logger.info(`[DEV] User ${email} not found for promotion`);
     }
   }
 

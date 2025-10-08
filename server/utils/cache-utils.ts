@@ -1,3 +1,5 @@
+import { logger } from '../utils/logger';
+import { logger } from 'logger';
 // Simple in-memory cache implementation
 interface CacheItem<T> {
   value: T;
@@ -217,7 +219,7 @@ export class CacheWarmer {
       const userData = await userService.getUserById(userId);
       cache.set(`user:${userId}`, userData, 600000); // 10 minutes
     } catch (error) {
-      console.error('Failed to warm user cache:', error);
+      logger.error('Failed to warm user cache:', error);
     }
   }
 
@@ -226,7 +228,7 @@ export class CacheWarmer {
       const dashboardData = await dashboardService.getDashboardData(userId);
       cache.set(`dashboard:${userId}`, dashboardData, 300000); // 5 minutes
     } catch (error) {
-      console.error('Failed to warm dashboard cache:', error);
+      logger.error('Failed to warm dashboard cache:', error);
     }
   }
 }

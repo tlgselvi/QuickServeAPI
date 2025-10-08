@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { investmentAdvisorService } from '../services/ai/investment-advisor';
 import { simulationAgentService } from '../services/ai/simulation-agent';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get('/investment-advisor/risk-assessment', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Risk assessment error:', error);
+    logger.error('Risk assessment error:', error);
     res.status(500).json({
       error: 'Risk değerlendirmesi yapılırken hata oluştu',
       details: error instanceof Error ? error.message : 'Bilinmeyen hata',
@@ -53,7 +54,7 @@ router.get('/investment-advisor/portfolio-recommendation', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Portfolio recommendation error:', error);
+    logger.error('Portfolio recommendation error:', error);
     res.status(500).json({
       error: 'Portföy önerisi oluşturulurken hata oluştu',
       details: error instanceof Error ? error.message : 'Bilinmeyen hata',
@@ -77,7 +78,7 @@ router.get('/investment-advisor/suggestions', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Investment suggestions error:', error);
+    logger.error('Investment suggestions error:', error);
     res.status(500).json({
       error: 'Yatırım önerileri alınırken hata oluştu',
       details: error instanceof Error ? error.message : 'Bilinmeyen hata',
@@ -100,7 +101,7 @@ router.get('/simulation/parameters', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Simulation parameters error:', error);
+    logger.error('Simulation parameters error:', error);
     res.status(500).json({
       error: 'Simülasyon parametreleri alınırken hata oluştu',
       details: error instanceof Error ? error.message : 'Bilinmeyen hata',
@@ -138,7 +139,7 @@ router.post('/simulation/run', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Simulation run error:', error);
+    logger.error('Simulation run error:', error);
     res.status(500).json({
       error: 'Simülasyon çalıştırılırken hata oluştu',
       details: error instanceof Error ? error.message : 'Bilinmeyen hata',
@@ -187,7 +188,7 @@ router.get('/comprehensive-analysis', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Comprehensive analysis error:', error);
+    logger.error('Comprehensive analysis error:', error);
     res.status(500).json({
       error: 'Kapsamlı analiz yapılırken hata oluştu',
       details: error instanceof Error ? error.message : 'Bilinmeyen hata',

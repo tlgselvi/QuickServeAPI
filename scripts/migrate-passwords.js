@@ -17,7 +17,7 @@ import * as schema from '../shared/schema.js';
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error('❌ DATABASE_URL environment variable is required');
+  logger.error('❌ DATABASE_URL environment variable is required');
   throw new Error('DATABASE_URL environment variable is required');
 }
 
@@ -35,7 +35,7 @@ async function migratePasswords() {
   let sqlClient = null;
   
   try {
-    console.log('🔄 Starting password migration from bcrypt to Argon2id...');
+    logger.info('🔄 Starting password migration from bcrypt to Argon2id...');
 
     // Configure Neon for HTTP connections
     neonConfig.fetchConnectionCache = true;
@@ -55,7 +55,7 @@ async function migratePasswords() {
 
     // Test connection
     await sqlClient`SELECT 1`;
-    console.log('✅ Database connection established');
+    logger.info('✅ Database connection established');
 
     // Get all users with bcrypt passwords
     const usersWithBcrypt = await sqlClient`
@@ -64,10 +64,10 @@ async function migratePasswords() {
       WHERE password LIKE '$2b$%' OR password LIKE '$2a$%'
     `;
 
-    console.log(`📊 Found ${usersWithBcrypt.length} users with bcrypt passwords`);
+    logger.info(`📊 Found ${usersWithBcrypt.length} users with bcrypt passwords`);
 
     if (usersWithBcrypt.length === 0) {
-      console.log('✅ No bcrypt passwords found to migrate');
+      logger.info('✅ No bcrypt passwords found to migrate');
       return;
     }
 
@@ -77,7 +77,7 @@ async function migratePasswords() {
     // Migrate each user's password
     for (const user of usersWithBcrypt) {
       try {
-        console.log(`🔄 Migrating password for user: ${user.email}`);
+        logger.info(`🔄 Migrating password for user: ${user.email}`);
 
         // Generate a temporary password for migration
         // In a real migration, you would need the user's actual password
@@ -97,25 +97,25 @@ async function migratePasswords() {
           .where(eq(schema.users.id, user.id));
 
         migrated++;
-        console.log(`✅ Migrated password for user: ${user.email}`);
+        logger.info(`✅ Migrated password for user: ${user.email}`);
 
       } catch (error) {
         failed++;
-        console.error(`❌ Failed to migrate password for user ${user.email}:`, error.message);
+        logger.error(`❌ Failed to migrate password for user ${user.email}:`, error.message);
       }
     }
 
-    console.log(`🎉 Password migration completed!`);
-    console.log(`✅ Successfully migrated: ${migrated} users`);
-    console.log(`❌ Failed migrations: ${failed} users`);
+    logger.info(`🎉 Password migration completed!`);
+    logger.info(`✅ Successfully migrated: ${migrated} users`);
+    logger.info(`❌ Failed migrations: ${failed} users`);
 
     if (failed > 0) {
-      console.log('⚠️  Some migrations failed. Please check the logs above.');
+      logger.info('⚠️  Some migrations failed. Please check the logs above.');
     }
 
   } catch (error) {
-    console.error('❌ Password migration failed:', error.message);
-    console.error('📋 Error details:', error.stack);
+    logger.error('❌ Password migration failed:', error.message);
+    logger.error('📋 Error details:', error.stack);
     // Do not exit process in Render runtime; propagate error
     throw error;
   } finally {
@@ -125,7 +125,7 @@ async function migratePasswords() {
         await sqlClient.end();
       }
     } catch (cleanupError) {
-      console.warn('⚠️  Error during cleanup:', cleanupError.message);
+      logger.warn('⚠️  Error during cleanup:', cleanupError.message);
     }
   }
 }

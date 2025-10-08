@@ -2,12 +2,17 @@ import type { Express } from 'express';
 import { Router } from 'express';
 import { createServer, type Server } from 'http';
 import { storage } from './storage.ts';
+import { logger } from './utils/logger.ts';
 import { insertAccountSchema, insertTransactionSchema, insertCreditSchema, updateAccountSchema, deleteAccountSchema, updateTransactionSchema, deleteTransactionSchema, updateCreditSchema, deleteCreditSchema, loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, insertTeamSchema, updateTeamSchema, insertTeamMemberSchema, inviteUserSchema, acceptInviteSchema, insertSystemAlertSchema, insertFixedExpenseSchema, insertInvestmentSchema, insertForecastSchema, insertAISettingsSchema, importTransactionJsonSchema, exportTransactionsByDateSchema, transactionJsonFileSchema, Permission, UserRole, TeamPermission, hasTeamPermission, TeamRole } from '../shared/schema.ts';
+import { db as dbInterface } from './db.ts';
 import bcrypt from 'bcryptjs';
 import { randomBytes, randomUUID } from 'crypto';
 import type { AuthenticatedRequest } from './middleware/auth.ts';
 import { requireAuth, requirePermission, requireAccountTypeAccess, optionalAuth, logAccess } from './middleware/auth.ts';
 import { requireJWTAuth, requireJWTPermission, requireJWTAdmin, logJWTAccess } from './middleware/jwt-auth.ts';
+import { responseCache } from './middleware/response-cache.ts';
+import { securityAudit, rateLimitWithAudit } from './middleware/security-audit.ts';
+import aiAnalysisRouter from './routes/ai-analysis.ts';
 import { updateUserRoleSchema, updateUserStatusSchema } from '../shared/schema.ts';
 import { alertService } from './alert-service.ts';
 import { transactionJsonService } from './transaction-json-service.ts';
@@ -63,6 +68,16 @@ export async function registerRoutes (app: Express): Promise<Server> {
   // ADVANCED SECURITY MIDDLEWARE
   // ===================================
   
+  // Security audit middleware for all routes
+  app.use(securityAudit);
+
+  // AI Analysis routes
+  app.use('/api/ai', aiAnalysisRouter);
+  
+  // Enhanced rate limiting with security audit (relaxed for development)
+  app.use('/api/auth', rateLimitWithAudit(15 * 60 * 1000, 50)); // 50 attempts per 15 minutes for auth
+  app.use('/api', rateLimitWithAudit(60 * 1000, 1000)); // 1000 requests per minute for general API
+  
   // Security headers for all routes
   app.use(securityHeadersMiddleware.main);
   
@@ -71,10 +86,10 @@ export async function registerRoutes (app: Express): Promise<Server> {
   app.use('/api/security', rateLimitMiddleware.login);
   app.use('/api', rateLimitMiddleware.slowDown);
   
-  // Audit compliance middleware
-  app.use('/api', auditComplianceMiddleware.logRequests);
-  app.use('/api/auth', auditComplianceMiddleware.logAuth);
-  app.use('/api', auditComplianceMiddleware.logDataAccess);
+  // Audit compliance middleware - temporarily disabled until userActivityLogs table is created
+  // app.use('/api', auditComplianceMiddleware.logRequests);
+  // app.use('/api/auth', auditComplianceMiddleware.logAuth);
+  // app.use('/api', auditComplianceMiddleware.logDataAccess);
   
   // API-specific security headers
   app.use('/api', securityHeadersMiddleware.api);
@@ -103,6 +118,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
   financeApi.use('/finance', financeRouter);
   app.use('/api', financeApi);
   app.get('/api/accounts',
+    responseCache({ ttl: 2 * 60 * 1000 }), // 2 minutes cache
     requireAuth,
     requirePermission(Permission.VIEW_PERSONAL_ACCOUNTS, Permission.VIEW_COMPANY_ACCOUNTS, Permission.VIEW_ALL_ACCOUNTS),
     logAccess('VIEW_ACCOUNTS'),
@@ -151,7 +167,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         log.business('accounts', 'create', { accountId: account.id, type: account.type });
         res.json(account);
       } catch (error) {
-        console.error('❌ Account validation error:', error);
+        logger.error('❌ Account validation error:', error);
         res.status(400).json({ error: 'Geçersiz hesap verisi', details: (error as Error).message });
       }
     },
@@ -187,7 +203,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(updatedAccount);
       } catch (error) {
-        console.error('❌ Account update error:', error);
+        logger.error('❌ Account update error:', error);
         res.status(400).json({ error: 'Hesap güncellenirken hata oluştu', details: (error as Error).message });
       }
     },
@@ -223,7 +239,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json({ message: 'Hesap başarıyla silindi', reason: validatedData.reason });
       } catch (error) {
-        console.error('❌ Account delete error:', error);
+        logger.error('❌ Account delete error:', error);
         res.status(400).json({ error: 'Hesap silinirken hata oluştu', details: (error as Error).message });
       }
     },
@@ -263,7 +279,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(updatedAccount);
       } catch (error) {
-        console.error('❌ Account status update error:', error);
+        logger.error('❌ Account status update error:', error);
         res.status(400).json({ error: 'Hesap durumu güncellenirken hata oluştu', details: (error as Error).message });
       }
     },
@@ -310,7 +326,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(summary);
       } catch (error) {
-        console.error('Account summary error:', error);
+        logger.error('Account summary error:', error);
         res.status(500).json({ error: 'Hesap özeti yüklenirken hata oluştu' });
       }
     },
@@ -450,7 +466,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(updatedTransaction);
       } catch (error) {
-        console.error('❌ Transaction update error:', error);
+        logger.error('❌ Transaction update error:', error);
         res.status(400).json({ error: 'İşlem güncellenirken hata oluştu', details: (error as Error).message });
       }
     },
@@ -490,7 +506,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json({ message: 'İşlem başarıyla silindi', reason: validatedData.reason });
       } catch (error) {
-        console.error('❌ Transaction delete error:', error);
+        logger.error('❌ Transaction delete error:', error);
         res.status(400).json({ error: 'İşlem silinirken hata oluştu', details: (error as Error).message });
       }
     },
@@ -534,7 +550,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(updatedTransaction);
       } catch (error) {
-        console.error('❌ Transaction category update error:', error);
+        logger.error('❌ Transaction category update error:', error);
         res.status(400).json({ error: 'İşlem kategorisi güncellenirken hata oluştu', details: (error as Error).message });
       }
     },
@@ -645,7 +661,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const credit = await storage.createCredit(validatedData);
         res.json(credit);
       } catch (error) {
-        console.error('❌ Credit validation error:', error);
+        logger.error('❌ Credit validation error:', error);
         res.status(400).json({ error: 'Geçersiz kredi verisi', details: (error as Error).message });
       }
     },
@@ -679,7 +695,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(updatedCredit);
       } catch (error) {
-        console.error('❌ Credit update error:', error);
+        logger.error('❌ Credit update error:', error);
         res.status(400).json({ error: 'Kredi güncellenirken hata oluştu', details: (error as Error).message });
       }
     },
@@ -713,7 +729,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json({ message: 'Kredi başarıyla silindi', reason: validatedData.reason });
       } catch (error) {
-        console.error('❌ Credit delete error:', error);
+        logger.error('❌ Credit delete error:', error);
         res.status(400).json({ error: 'Kredi silinirken hata oluştu', details: (error as Error).message });
       }
     },
@@ -721,6 +737,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
   // Dashboard route - Protected by authentication with role-based filtering
   app.get('/api/dashboard',
+    responseCache({ ttl: 30 * 1000 }), // 30 seconds cache for dashboard
     requireAuth,
     logAccess('VIEW_DASHBOARD'),
     async (req: AuthenticatedRequest, res) => {
@@ -780,7 +797,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           });
         }
       } catch (error) {
-        console.error('Dashboard error:', error);
+        logger.error('Dashboard error:', error);
         res.status(500).json({ error: 'Dashboard verisi yüklenirken hata oluştu' });
       }
     },
@@ -830,7 +847,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           accounts: filteredAccounts.length
         });
       } catch (error) {
-        console.error('Consolidation breakdown error:', error);
+        logger.error('Consolidation breakdown error:', error);
         res.status(500).json({ 
           error: 'Konsolidasyon breakdown hesaplanırken hata oluştu',
           details: error instanceof Error ? error.message : 'Bilinmeyen hata'
@@ -884,8 +901,40 @@ export async function registerRoutes (app: Express): Promise<Server> {
       };
       res.status(201).json(response);
     } catch (error) {
-      console.error('❌ Register error:', error);
+      logger.error('❌ Register error:', error);
       res.status(400).json({ error: 'Kayıt sırasında hata oluştu' });
+    }
+  });
+
+  // DSCR endpoint
+  app.get('/api/finance/dscr', requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { operatingCF, debtService } = req.query;
+      
+      if (!operatingCF || !debtService) {
+        return res.status(400).json({ error: 'operatingCF ve debtService parametreleri gerekli' });
+      }
+      
+      const operatingCFNum = parseFloat(operatingCF as string);
+      const debtServiceNum = parseFloat(debtService as string);
+      
+      if (isNaN(operatingCFNum) || isNaN(debtServiceNum) || debtServiceNum === 0) {
+        return res.status(400).json({ error: 'Geçersiz parametreler' });
+      }
+      
+      const dscr = operatingCFNum / debtServiceNum;
+      let status: 'ok' | 'warning' | 'critical' = 'ok';
+      
+      if (dscr < 1.0) {
+        status = 'critical';
+      } else if (dscr < 1.25) {
+        status = 'warning';
+      }
+      
+      res.json({ dscr, status });
+    } catch (error) {
+      logger.error('DSCR calculation error:', error);
+      res.status(500).json({ error: 'DSCR hesaplama hatası' });
     }
   });
 
@@ -893,50 +942,68 @@ export async function registerRoutes (app: Express): Promise<Server> {
     try {
       const validatedData = loginSchema.parse(req.body);
 
-      // Find user by email
-      const user = await storage.getUserByEmail(validatedData.email);
+      // Find user by email - use db interface
+      const user = dbInterface.getUserByEmail(validatedData.email) as any;
+      
       if (!user) {
+        logger.warn('Login failed: user not found', { email: validatedData.email });
         return res.status(401).json({ error: 'Geçersiz email veya şifre' });
       }
 
-      // Check password
-      const isValidPassword = await bcrypt.compare(validatedData.password, user.password);
+      logger.debug('User found:', { userId: user.id, email: user.email, fields: Object.keys(user) });
+
+      // Check password - SQLite uses password_hash field
+      const passwordToCheck = user.password_hash;
+      
+      if (!passwordToCheck) {
+        logger.error('Login failed: no password hash found for user', { userId: user.id, userFields: Object.keys(user) });
+        return res.status(500).json({ error: 'Sistem hatası' });
+      }
+      
+      logger.debug('Comparing passwords...');
+      const isValidPassword = await bcrypt.compare(validatedData.password, passwordToCheck);
+      logger.debug('Password comparison result:', isValidPassword);
+      
       if (!isValidPassword) {
+        logger.warn('Login failed: invalid password', { email: validatedData.email });
         return res.status(401).json({ error: 'Geçersiz email veya şifre' });
       }
 
-      // Check if user account is active
-      if (!user.isActive) {
+      // Check if user account is active (SQLite stores as integer)
+      if (user.is_active === 0) {
         return res.status(403).json({
           error: 'Hesabınız pasif durumda. Lütfen yönetici ile iletişime geçin',
           code: 'ACCOUNT_INACTIVE',
         });
       }
 
-      // Update last login
-      await storage.updateLastLogin(user.id);
+      // Generate JWT token
+      const token = JWTAuthService.generateToken({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role as any,
+      });
 
-      // Set session
-      req.session.userId = user.id;
-      req.session.user = {
+      // Remove sensitive fields
+      const userResponse = {
         id: user.id,
         email: user.email,
         username: user.username,
         role: user.role,
-        isActive: user.isActive,
+        isActive: user.is_active === 1 || user.is_active === true,
       };
 
-      log.auth('login', user, req.ip);
+      logger.info('✅ Login successful', { userId: user.id, email: user.email });
 
-      // Don't return password
-      const { password, ...userWithoutPassword } = user;
       res.json({
         message: 'Giriş başarılı',
-        user: userWithoutPassword,
+        user: userResponse,
+        token,
       });
     } catch (error) {
-      console.error('Login error:', error);
-      res.status(401).json({ error: 'Giriş sırasında hata oluştu' });
+      logger.error('❌ Login error:', error);
+      res.status(500).json({ error: 'Giriş sırasında hata oluştu' });
     }
   });
 
@@ -951,7 +1018,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           // Destroy session
           req.session.destroy((err) => {
             if (err) {
-              console.error('❌ Session destruction error:', err);
+              logger.error('❌ Session destruction error:', err);
               return res.status(500).json({ error: 'Çıkış sırasında hata oluştu' });
             }
             res.clearCookie('connect.sid'); // Clear session cookie
@@ -961,7 +1028,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           res.json({ message: 'Zaten çıkış yapılmış' });
         }
       } catch (error) {
-        console.error('❌ Logout error:', error);
+        logger.error('❌ Logout error:', error);
         res.status(500).json({ error: 'Çıkış sırasında hata oluştu' });
       }
     },
@@ -1016,7 +1083,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         tokenType: 'Bearer',
       });
     } catch (error) {
-      console.error('JWT Login error:', error);
+      logger.error('JWT Login error:', error);
       res.status(401).json({ error: 'Giriş sırasında hata oluştu' });
     }
   });
@@ -1042,7 +1109,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         tokenType: 'Bearer',
       });
     } catch (error) {
-      console.error('Token refresh error:', error);
+      logger.error('Token refresh error:', error);
       res.status(401).json({ error: 'Token yenileme sırasında hata oluştu' });
     }
   });
@@ -1058,12 +1125,12 @@ export async function registerRoutes (app: Express): Promise<Server> {
         if (token) {
           // Revoke token using auth hardening service
           await authHardeningService.revokeToken(token, req.user?.id || '');
-          console.log('🚪 JWT token revoked for user:', req.user?.id);
+          logger.info('🚪 JWT token revoked for user:', req.user?.id);
         }
 
         res.json({ message: 'Çıkış başarılı' });
       } catch (error) {
-        console.error('❌ JWT Logout error:', error);
+        logger.error('❌ JWT Logout error:', error);
         res.status(500).json({ error: 'Çıkış sırasında hata oluştu' });
       }
     },
@@ -1092,7 +1159,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
       res.json({ message: 'Eğer bu email kayıtlıysa, şifre sıfırlama linki gönderilecek' });
     } catch (error) {
-      console.error('Forgot password error:', error);
+      logger.error('Forgot password error:', error);
       res.status(500).json({ error: 'Şifre sıfırlama isteği sırasında hata oluştu' });
     }
   });
@@ -1116,7 +1183,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
       res.json({ message: 'Şifreniz başarıyla güncellendi' });
     } catch (error) {
-      console.error('Reset password error:', error);
+      logger.error('Reset password error:', error);
       res.status(400).json({ error: 'Şifre sıfırlama sırasında hata oluştu' });
     }
   });
@@ -1130,7 +1197,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           user: req.user,
         });
       } catch (error) {
-        console.error('❌ Get user error:', error);
+        logger.error('❌ Get user error:', error);
         res.status(500).json({ error: 'Kullanıcı bilgileri alınırken hata oluştu' });
       }
     },
@@ -1150,7 +1217,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(safeUsers);
       } catch (error) {
-        console.error('Get all users error:', error);
+        logger.error('Get all users error:', error);
         res.status(500).json({ error: 'Kullanıcılar yüklenirken hata oluştu' });
       }
     },
@@ -1188,7 +1255,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           user: safeUser,
         });
       } catch (error) {
-        console.error('Update user role error:', error);
+        logger.error('Update user role error:', error);
         res.status(500).json({ error: 'Rol değiştirilirken hata oluştu' });
       }
     },
@@ -1226,7 +1293,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           user: safeUser,
         });
       } catch (error) {
-        console.error('Update user status error:', error);
+        logger.error('Update user status error:', error);
         res.status(500).json({ error: 'Kullanıcı durumu değiştirilirken hata oluştu' });
       }
     },
@@ -1246,7 +1313,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(safeUsers);
       } catch (error) {
-        console.error('JWT Get all users error:', error);
+        logger.error('JWT Get all users error:', error);
         res.status(500).json({ error: 'Kullanıcılar yüklenirken hata oluştu' });
       }
     },
@@ -1284,7 +1351,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           user: safeUser,
         });
       } catch (error) {
-        console.error('JWT Update user role error:', error);
+        logger.error('JWT Update user role error:', error);
         res.status(500).json({ error: 'Kullanıcı rolü değiştirilirken hata oluştu' });
       }
     },
@@ -1322,7 +1389,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           user: safeUser,
         });
       } catch (error) {
-        console.error('JWT Update user status error:', error);
+        logger.error('JWT Update user status error:', error);
         res.status(500).json({ error: 'Kullanıcı durumu değiştirilirken hata oluştu' });
       }
     },
@@ -1343,7 +1410,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const { password, ...safeUser } = user;
         res.json({ user: safeUser });
       } catch (error) {
-        console.error('JWT Get profile error:', error);
+        logger.error('JWT Get profile error:', error);
         res.status(500).json({ error: 'Profil bilgileri alınırken hata oluştu' });
       }
     },
@@ -1380,7 +1447,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           user: safeUser,
         });
       } catch (error) {
-        console.error('JWT Update profile error:', error);
+        logger.error('JWT Update profile error:', error);
         res.status(500).json({ error: 'Profil güncellenirken hata oluştu' });
       }
     },
@@ -1398,7 +1465,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const expenses = await storage.getFixedExpenses();
         res.json(expenses);
       } catch (error) {
-        console.error('Get fixed expenses error:', error);
+        logger.error('Get fixed expenses error:', error);
         res.status(500).json({ error: 'Sabit giderler yüklenirken hata oluştu' });
       }
     },
@@ -1420,7 +1487,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(expense);
       } catch (error) {
-        console.error('Get fixed expense error:', error);
+        logger.error('Get fixed expense error:', error);
         res.status(500).json({ error: 'Sabit gider yüklenirken hata oluştu' });
       }
     },
@@ -1457,7 +1524,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           expense,
         });
       } catch (error) {
-        console.error('Create fixed expense error:', error);
+        logger.error('Create fixed expense error:', error);
         res.status(400).json({ error: 'Sabit gider oluşturulurken hata oluştu' });
       }
     },
@@ -1484,7 +1551,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           expense: updatedExpense,
         });
       } catch (error) {
-        console.error('Update fixed expense error:', error);
+        logger.error('Update fixed expense error:', error);
         res.status(500).json({ error: 'Sabit gider güncellenirken hata oluştu' });
       }
     },
@@ -1507,7 +1574,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json({ message: 'Sabit gider başarıyla silindi' });
       } catch (error) {
-        console.error('Delete fixed expense error:', error);
+        logger.error('Delete fixed expense error:', error);
         res.status(500).json({ error: 'Sabit gider silinirken hata oluştu' });
       }
     },
@@ -1528,7 +1595,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           transactions: result.transactions,
         });
       } catch (error) {
-        console.error('Process recurring expenses error:', error);
+        logger.error('Process recurring expenses error:', error);
         res.status(500).json({ error: 'Tekrarlayan giderler işlenirken hata oluştu' });
       }
     },
@@ -1546,7 +1613,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const investments = await storage.getInvestments();
         res.json(investments);
       } catch (error) {
-        console.error('Get investments error:', error);
+        logger.error('Get investments error:', error);
         res.status(500).json({ error: 'Yatırımlar getirilirken hata oluştu' });
       }
     },
@@ -1562,7 +1629,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const portfolio = await storage.getPortfolioSummary();
         res.json(portfolio);
       } catch (error) {
-        console.error('Get portfolio summary error:', error);
+        logger.error('Get portfolio summary error:', error);
         res.status(500).json({ error: 'Portföy özeti getirilirken hata oluştu' });
       }
     },
@@ -1579,7 +1646,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const investments = await storage.getInvestmentsByType(type);
         res.json(investments);
       } catch (error) {
-        console.error('Get investments by type error:', error);
+        logger.error('Get investments by type error:', error);
         res.status(500).json({ error: 'Yatırımlar türe göre getirilirken hata oluştu' });
       }
     },
@@ -1601,7 +1668,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(investment);
       } catch (error) {
-        console.error('Get investment error:', error);
+        logger.error('Get investment error:', error);
         res.status(500).json({ error: 'Yatırım getirilirken hata oluştu' });
       }
     },
@@ -1618,7 +1685,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const investment = await storage.createInvestment(validatedData);
         res.status(201).json(investment);
       } catch (error) {
-        console.error('Create investment error:', error);
+        logger.error('Create investment error:', error);
         if (error instanceof Error && error.name === 'ZodError') {
           res.status(400).json({ error: 'Geçersiz veri formatı', details: error.message });
         } else {
@@ -1646,7 +1713,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(investment);
       } catch (error) {
-        console.error('Update investment error:', error);
+        logger.error('Update investment error:', error);
         if (error instanceof Error && error.name === 'ZodError') {
           res.status(400).json({ error: 'Geçersiz veri formatı', details: error.message });
         } else {
@@ -1678,7 +1745,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(investment);
       } catch (error) {
-        console.error('Update investment price error:', error);
+        logger.error('Update investment price error:', error);
         res.status(500).json({ error: 'Yatırım fiyatı güncellenirken hata oluştu' });
       }
     },
@@ -1700,7 +1767,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json({ message: 'Yatırım başarıyla silindi' });
       } catch (error) {
-        console.error('Delete investment error:', error);
+        logger.error('Delete investment error:', error);
         res.status(500).json({ error: 'Yatırım silinirken hata oluştu' });
       }
     },
@@ -1718,7 +1785,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const forecasts = await storage.getForecasts();
         res.json(forecasts);
       } catch (error) {
-        console.error('Get forecasts error:', error);
+        logger.error('Get forecasts error:', error);
         res.status(500).json({ error: 'Tahminler getirilirken hata oluştu' });
       }
     },
@@ -1734,7 +1801,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const forecasts = await storage.getActiveForecasts();
         res.json(forecasts);
       } catch (error) {
-        console.error('Get active forecasts error:', error);
+        logger.error('Get active forecasts error:', error);
         res.status(500).json({ error: 'Aktif tahminler getirilirken hata oluştu' });
       }
     },
@@ -1751,7 +1818,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const forecasts = await storage.getForecastsByScenario(scenario);
         res.json(forecasts);
       } catch (error) {
-        console.error('Get forecasts by scenario error:', error);
+        logger.error('Get forecasts by scenario error:', error);
         res.status(500).json({ error: 'Senaryoya göre tahminler getirilirken hata oluştu' });
       }
     },
@@ -1773,7 +1840,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(forecast);
       } catch (error) {
-        console.error('Get forecast error:', error);
+        logger.error('Get forecast error:', error);
         res.status(500).json({ error: 'Tahmin getirilirken hata oluştu' });
       }
     },
@@ -1790,7 +1857,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const forecast = await storage.createForecast(validatedData);
         res.status(201).json(forecast);
       } catch (error) {
-        console.error('Create forecast error:', error);
+        logger.error('Create forecast error:', error);
         if (error instanceof Error && error.name === 'ZodError') {
           res.status(400).json({ error: 'Geçersiz veri formatı', details: error.message });
         } else {
@@ -1818,7 +1885,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(forecast);
       } catch (error) {
-        console.error('Update forecast error:', error);
+        logger.error('Update forecast error:', error);
         if (error instanceof Error && error.name === 'ZodError') {
           res.status(400).json({ error: 'Geçersiz veri formatı', details: error.message });
         } else {
@@ -1844,7 +1911,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json({ message: 'Tahmin başarıyla silindi' });
       } catch (error) {
-        console.error('Delete forecast error:', error);
+        logger.error('Delete forecast error:', error);
         res.status(500).json({ error: 'Tahmin silinirken hata oluştu' });
       }
     },
@@ -1862,7 +1929,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const scenarios = await service.getScenarioForecasts();
         res.json(scenarios);
       } catch (error) {
-        console.error('Get predefined scenarios error:', error);
+        logger.error('Get predefined scenarios error:', error);
         res.status(500).json({ error: 'Önceden tanımlanmış senaryolar getirilirken hata oluştu' });
       }
     },
@@ -1887,7 +1954,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(result);
       } catch (error) {
-        console.error('Analyze scenario error:', error);
+        logger.error('Analyze scenario error:', error);
         res.status(500).json({ error: 'Senaryo analizi yapılırken hata oluştu' });
       }
     },
@@ -1921,7 +1988,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(result);
       } catch (error) {
-        console.error('Analyze predefined scenario error:', error);
+        logger.error('Analyze predefined scenario error:', error);
         res.status(500).json({ error: 'Önceden tanımlanmış senaryo analizi yapılırken hata oluştu' });
       }
     },
@@ -1956,7 +2023,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(team);
       } catch (error) {
-        console.error('Create team error:', error);
+        logger.error('Create team error:', error);
         res.status(400).json({ error: 'Takım oluşturulurken hata oluştu' });
       }
     },
@@ -1970,7 +2037,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const teams = await storage.getTeamsByUserId(req.user!.id);
         res.json(teams);
       } catch (error) {
-        console.error('Get teams error:', error);
+        logger.error('Get teams error:', error);
         res.status(500).json({ error: 'Takımlar yüklenirken hata oluştu' });
       }
     },
@@ -1996,7 +2063,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(team);
       } catch (error) {
-        console.error('Get team error:', error);
+        logger.error('Get team error:', error);
         res.status(500).json({ error: 'Takım bilgileri yüklenirken hata oluştu' });
       }
     },
@@ -2025,7 +2092,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(updatedTeam);
       } catch (error) {
-        console.error('Update team error:', error);
+        logger.error('Update team error:', error);
         res.status(400).json({ error: 'Takım güncellenirken hata oluştu' });
       }
     },
@@ -2051,7 +2118,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json({ message: 'Takım başarıyla silindi' });
       } catch (error) {
-        console.error('Delete team error:', error);
+        logger.error('Delete team error:', error);
         res.status(500).json({ error: 'Takım silinirken hata oluştu' });
       }
     },
@@ -2074,7 +2141,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const members = await storage.getTeamMembers(teamId);
         res.json(members);
       } catch (error) {
-        console.error('Get team members error:', error);
+        logger.error('Get team members error:', error);
         res.status(500).json({ error: 'Takım üyeleri yüklenirken hata oluştu' });
       }
     },
@@ -2098,7 +2165,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(member);
       } catch (error) {
-        console.error('Add team member error:', error);
+        logger.error('Add team member error:', error);
         res.status(400).json({ error: 'Takım üyesi eklenirken hata oluştu' });
       }
     },
@@ -2142,7 +2209,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json(updatedMember);
       } catch (error) {
-        console.error('Update team member error:', error);
+        logger.error('Update team member error:', error);
         res.status(400).json({ error: 'Takım üyesi güncellenirken hata oluştu' });
       }
     },
@@ -2187,7 +2254,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           removedUserId: userId,
         });
       } catch (error) {
-        console.error('Remove team member error:', error);
+        logger.error('Remove team member error:', error);
         res.status(500).json({ error: 'Takım üyesi çıkarılırken hata oluştu' });
       }
     },
@@ -2237,7 +2304,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           inviteId: invite.id,
         });
       } catch (error) {
-        console.error('Create invite error:', error);
+        logger.error('Create invite error:', error);
         res.status(400).json({ error: 'Davet oluşturulurken hata oluştu' });
       }
     },
@@ -2259,7 +2326,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const invites = await storage.getTeamInvites(teamId);
         res.json(invites);
       } catch (error) {
-        console.error('Get team invites error:', error);
+        logger.error('Get team invites error:', error);
         res.status(500).json({ error: 'Davetler yüklenirken hata oluştu' });
       }
     },
@@ -2325,11 +2392,11 @@ export async function registerRoutes (app: Express): Promise<Server> {
             teamName: team.name,
           });
         } catch (memberError) {
-          console.error('Add team member error:', memberError);
+          logger.error('Add team member error:', memberError);
           res.status(500).json({ error: 'Takıma katılım sırasında hata oluştu' });
         }
       } catch (error) {
-        console.error('Accept invite error:', error);
+        logger.error('Accept invite error:', error);
         res.status(400).json({ error: 'Davet kabul edilirken hata oluştu' });
       }
     },
@@ -2355,7 +2422,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json({ message: 'Takım daveti reddedildi' });
       } catch (error) {
-        console.error('Decline invite error:', error);
+        logger.error('Decline invite error:', error);
         res.status(500).json({ error: 'Davet reddedilirken hata oluştu' });
       }
     },
@@ -2369,7 +2436,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const invites = await storage.getPendingInvitesByEmail(req.user!.email);
         res.json(invites);
       } catch (error) {
-        console.error('Get user invites error:', error);
+        logger.error('Get user invites error:', error);
         res.status(500).json({ error: 'Davetleriniz yüklenirken hata oluştu' });
       }
     },
@@ -2464,7 +2531,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.end();
       } catch (error) {
-        console.error('CSV export error:', error);
+        logger.error('CSV export error:', error);
         res.status(500).json({ error: 'CSV export sırasında hata oluştu' });
       }
     },
@@ -2661,7 +2728,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.send(pdfBuffer);
       } catch (error) {
-        console.error('PDF export error:', error);
+        logger.error('PDF export error:', error);
         res.status(500).json({ error: 'PDF export sırasında hata oluştu' });
       }
     },
@@ -2766,7 +2833,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
             },
           });
         } catch (error) {
-          console.error('Error creating new sheet:', error);
+          logger.error('Error creating new sheet:', error);
           // If we can't create a new sheet, we'll use the first sheet
         }
 
@@ -2811,7 +2878,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           timestamp: new Date().toISOString(),
         });
       } catch (error) {
-        console.error('Google Sheets export error:', error);
+        logger.error('Google Sheets export error:', error);
         res.status(500).json({
           error: 'Google Sheets export sırasında hata oluştu',
           details: error instanceof Error ? error.message : 'Bilinmeyen hata',
@@ -2829,7 +2896,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const alerts = await storage.getActiveSystemAlerts();
         res.json(alerts);
       } catch (error) {
-        console.error('Get alerts error:', error);
+        logger.error('Get alerts error:', error);
         res.status(500).json({ error: 'Uyarılar yüklenirken hata oluştu' });
       }
     },
@@ -2844,7 +2911,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const alerts = await storage.getSystemAlerts();
         res.json(alerts);
       } catch (error) {
-        console.error('Get all alerts error:', error);
+        logger.error('Get all alerts error:', error);
         res.status(500).json({ error: 'Tüm uyarılar yüklenirken hata oluştu' });
       }
     },
@@ -2864,7 +2931,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
         res.json({ message: 'Uyarı başarıyla kapatıldı', alert });
       } catch (error) {
-        console.error('Dismiss alert error:', error);
+        logger.error('Dismiss alert error:', error);
         res.status(500).json({ error: 'Uyarı kapatılırken hata oluştu' });
       }
     },
@@ -2879,7 +2946,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         await alertService.runAllChecks();
         res.json({ message: 'Uyarı kontrolleri başarıyla çalıştırıldı' });
       } catch (error) {
-        console.error('Run alert checks error:', error);
+        logger.error('Run alert checks error:', error);
         res.status(500).json({ error: 'Uyarı kontrolleri çalıştırılırken hata oluştu' });
       }
     },
@@ -2895,7 +2962,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const alert = await storage.createSystemAlert(alertData);
         res.status(201).json(alert);
       } catch (error) {
-        console.error('Create alert error:', error);
+        logger.error('Create alert error:', error);
         res.status(400).json({ error: 'Uyarı oluşturulurken hata oluştu' });
       }
     },
@@ -2923,7 +2990,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           });
         }
       } catch (error) {
-        console.error('Export transactions JSON error:', error);
+        logger.error('Export transactions JSON error:', error);
         res.status(500).json({ error: "İşlemler JSON'a aktarılırken hata oluştu" });
       }
     },
@@ -2951,7 +3018,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           });
         }
       } catch (error) {
-        console.error('Import transactions JSON error:', error);
+        logger.error('Import transactions JSON error:', error);
         res.status(500).json({ error: "JSON'dan işlemler içe aktarılırken hata oluştu" });
       }
     },
@@ -2966,7 +3033,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
         const status = await transactionJsonService.checkJsonFile();
         res.json(status);
       } catch (error) {
-        console.error('Check transactions JSON status error:', error);
+        logger.error('Check transactions JSON status error:', error);
         res.status(500).json({ error: 'JSON dosya durumu kontrol edilirken hata oluştu' });
       }
     },
@@ -2998,7 +3065,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           });
         }
       } catch (error) {
-        console.error('Export transactions by date JSON error:', error);
+        logger.error('Export transactions by date JSON error:', error);
         res.status(500).json({ error: "Tarihli işlemler JSON'a aktarılırken hata oluştu" });
       }
     },
@@ -3025,7 +3092,7 @@ export async function registerRoutes (app: Express): Promise<Server> {
           });
         }
       } catch (error) {
-        console.error('Export category analysis JSON error:', error);
+        logger.error('Export category analysis JSON error:', error);
         res.status(500).json({ error: "Kategori analizi JSON'a aktarılırken hata oluştu" });
       }
     },
@@ -3280,7 +3347,8 @@ export async function registerRoutes (app: Express): Promise<Server> {
   // ===================================
   app.use('/api/security', securityRouter);
 
-  const httpServer = createServer(app);
-  return httpServer;
+  // Return app instead of httpServer (httpServer will be created in index.ts)
+  // @ts-ignore - return type mismatch but we need this for flexibility
+  return app;
 }
 

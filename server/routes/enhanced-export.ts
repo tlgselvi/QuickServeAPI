@@ -6,7 +6,9 @@ import {
   exportCashFlowBridgeToCSV,
   generateCashFlowBridgePDF 
 } from '../modules/export/cash-flow-bridge';
-import { generateEnhancedPDF, PDFTemplate, PDFStyle } from '../modules/export/enhanced-pdf';
+import { exportToPDF } from '../modules/export/pdf-export';
+import { logger } from '../utils/logger';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -105,7 +107,7 @@ router.post('/cash-flow-bridge', requireAuth, requirePermission(Permission.EXPOR
         break;
     }
   } catch (error) {
-    console.error('Cash flow bridge export error:', error);
+    logger.error('Cash flow bridge export error:', error);
     res.status(500).json({
       error: 'Cash flow bridge raporu oluşturulurken hata oluştu',
     });
@@ -169,7 +171,7 @@ router.post('/enhanced-pdf', requireAuth, requirePermission(Permission.EXPORT_DA
       });
     }
   } catch (error) {
-    console.error('Enhanced PDF export error:', error);
+    logger.error('Enhanced PDF export error:', error);
     res.status(500).json({
       error: 'Gelişmiş PDF raporu oluşturulurken hata oluştu',
     });
@@ -223,7 +225,7 @@ router.get('/templates', requireAuth, async (req: AuthenticatedRequest, res) => 
       data: templates,
     });
   } catch (error) {
-    console.error('Export templates error:', error);
+    logger.error('Export templates error:', error);
     res.status(500).json({
       error: 'Export şablonları alınırken hata oluştu',
     });
@@ -269,7 +271,7 @@ router.get('/styles', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: styles,
     });
   } catch (error) {
-    console.error('Export styles error:', error);
+    logger.error('Export styles error:', error);
     res.status(500).json({
       error: 'Export stilleri alınırken hata oluştu',
     });
@@ -352,7 +354,7 @@ router.post('/batch', requireAuth, requirePermission(Permission.EXPORT_DATA), as
       },
     });
   } catch (error) {
-    console.error('Batch export error:', error);
+    logger.error('Batch export error:', error);
     res.status(500).json({
       error: 'Toplu export işlemi sırasında hata oluştu',
     });
@@ -420,7 +422,7 @@ router.get('/validate', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: validation,
     });
   } catch (error) {
-    console.error('Export validation error:', error);
+    logger.error('Export validation error:', error);
     res.status(500).json({
       error: 'Export parametreleri doğrulanırken hata oluştu',
     });

@@ -254,7 +254,7 @@ test.describe('Dashboard Integration Tests', () => {
     // Cached request should be faster
     expect(time2).toBeLessThan(time1);
     
-    console.log(`First request: ${time1}ms, Second request (cached): ${time2}ms`);
+    logger.info(`First request: ${time1}ms, Second request (cached): ${time2}ms`);
   });
 
   test('Export Integration', async ({ page, request }) => {

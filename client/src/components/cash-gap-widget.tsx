@@ -130,7 +130,7 @@ export function CashGapWidget({ months = 6 }: CashGapWidgetProps) {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
-      console.error('Cash gap analysis fetch error:', err);
+      logger.error('Cash gap analysis fetch error:', err);
     } finally {
       setLoading(false);
     }

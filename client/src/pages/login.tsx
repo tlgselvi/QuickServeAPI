@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export default function Login () {
   const [, setLocation] = useLocation();
@@ -28,12 +29,23 @@ export default function Login () {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginRequest) => {
-      console.log('🔐 Attempting login with:', data.email);
+      logger.info('🔐 Attempting login with:', data.email);
       const response = await apiRequest('POST', '/api/auth/login', data);
-      return response;
+      return response.json();
     },
-    onSuccess: (data) => {
-      console.log('✅ Login successful:', data);
+    onSuccess: (data: any) => {
+      logger.info('✅ Login successful:', data);
+
+      // Save token to localStorage
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        logger.info('✅ Token saved to localStorage');
+      }
+
+      // Save user info
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
 
       // Invalidate auth queries to refresh user state
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
@@ -44,10 +56,13 @@ export default function Login () {
       });
 
       // Redirect to dashboard after successful login
-      setTimeout(() => setLocation('/'), 1000);
+      setTimeout(() => {
+        logger.info('🔄 Redirecting to dashboard...');
+        setLocation('/');
+      }, 1000);
     },
     onError: (error: any) => {
-      console.error('❌ Login error:', error);
+      logger.error('❌ Login error:', error);
       toast({
         variant: 'destructive',
         title: 'Giriş Hatası',

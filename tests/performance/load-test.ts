@@ -28,7 +28,7 @@ test.describe('Performance Tests', () => {
     expect(response.ok()).toBeTruthy();
     expect(responseTime).toBeLessThan(PERFORMANCE_THRESHOLDS.apiResponseTime);
     
-    console.log(`Dashboard API response time: ${responseTime}ms`);
+    logger.info(`Dashboard API response time: ${responseTime}ms`);
   });
 
   test('API Response Time - Aging Reports', async ({ request }) => {
@@ -41,7 +41,7 @@ test.describe('Performance Tests', () => {
     expect(response.ok()).toBeTruthy();
     expect(responseTime).toBeLessThan(PERFORMANCE_THRESHOLDS.apiResponseTime);
     
-    console.log(`Aging Reports API response time: ${responseTime}ms`);
+    logger.info(`Aging Reports API response time: ${responseTime}ms`);
   });
 
   test('API Response Time - Analytics', async ({ request }) => {
@@ -54,7 +54,7 @@ test.describe('Performance Tests', () => {
     expect(response.ok()).toBeTruthy();
     expect(responseTime).toBeLessThan(PERFORMANCE_THRESHOLDS.apiResponseTime);
     
-    console.log(`Analytics API response time: ${responseTime}ms`);
+    logger.info(`Analytics API response time: ${responseTime}ms`);
   });
 
   test('Page Load Performance - Dashboard', async ({ page }) => {
@@ -67,7 +67,7 @@ test.describe('Performance Tests', () => {
     
     expect(loadTime).toBeLessThan(PERFORMANCE_THRESHOLDS.pageLoadTime);
     
-    console.log(`Dashboard page load time: ${loadTime}ms`);
+    logger.info(`Dashboard page load time: ${loadTime}ms`);
   });
 
   test('Page Load Performance - Extended Dashboard', async ({ page }) => {
@@ -80,7 +80,7 @@ test.describe('Performance Tests', () => {
     
     expect(loadTime).toBeLessThan(PERFORMANCE_THRESHOLDS.pageLoadTime);
     
-    console.log(`Extended Dashboard page load time: ${loadTime}ms`);
+    logger.info(`Extended Dashboard page load time: ${loadTime}ms`);
   });
 
   test('Virtual Scroll Performance - Large Dataset', async ({ page }) => {
@@ -118,7 +118,7 @@ test.describe('Performance Tests', () => {
     
     expect(renderTime).toBeLessThan(PERFORMANCE_THRESHOLDS.dashboardRenderTime);
     
-    console.log(`Virtual scroll with ${PERFORMANCE_THRESHOLDS.largeDataSetSize} items render time: ${renderTime}ms`);
+    logger.info(`Virtual scroll with ${PERFORMANCE_THRESHOLDS.largeDataSetSize} items render time: ${renderTime}ms`);
   });
 
   test('Realtime Performance - Event Handling', async ({ page }) => {
@@ -153,7 +153,7 @@ test.describe('Performance Tests', () => {
     
     expect(processingTime).toBeLessThan(2000); // Should handle 100 events in under 2 seconds
     
-    console.log(`Processed ${eventCount} realtime events in ${processingTime}ms`);
+    logger.info(`Processed ${eventCount} realtime events in ${processingTime}ms`);
   });
 
   test('Memory Usage - Long Session', async ({ page }) => {
@@ -182,7 +182,7 @@ test.describe('Performance Tests', () => {
       };
     });
     
-    console.log(`Memory usage after long session:`, memoryInfo);
+    logger.info(`Memory usage after long session:`, memoryInfo);
     
     // Memory usage should not be excessive (basic check)
     if (memoryInfo.usedJSHeapSize > 0) {
@@ -214,7 +214,7 @@ test.describe('Performance Tests', () => {
     // Total time should be reasonable for concurrent requests
     expect(totalTime).toBeLessThan(2000); // 2 seconds for all requests
     
-    console.log(`Concurrent API requests completed in ${totalTime}ms`);
+    logger.info(`Concurrent API requests completed in ${totalTime}ms`);
   });
 
   test('Export Performance - Large Report', async ({ request }) => {
@@ -234,7 +234,7 @@ test.describe('Performance Tests', () => {
     expect(response.ok()).toBeTruthy();
     expect(exportTime).toBeLessThan(5000); // 5 seconds for large export
     
-    console.log(`Large report export time: ${exportTime}ms`);
+    logger.info(`Large report export time: ${exportTime}ms`);
   });
 
   test('Database Query Performance', async ({ request }) => {
@@ -256,7 +256,7 @@ test.describe('Performance Tests', () => {
     const data = await response.json();
     expect(data.data.results.averageTime).toBeLessThan(100); // Average query under 100ms
     
-    console.log(`Database query performance test: ${queryTime}ms total, ${data.data.results.averageTime}ms average`);
+    logger.info(`Database query performance test: ${queryTime}ms total, ${data.data.results.averageTime}ms average`);
   });
 });
 
@@ -274,7 +274,7 @@ test.describe('Performance Monitoring', () => {
     const metrics = await metricsResponse.json();
     expect(metrics.data.metrics).toBeDefined();
     
-    console.log('Performance metrics collected:', Object.keys(metrics.data.metrics));
+    logger.info('Performance metrics collected:', Object.keys(metrics.data.metrics));
   });
 
   test('Optimization Suggestions', async ({ request }) => {
@@ -285,7 +285,7 @@ test.describe('Performance Monitoring', () => {
     expect(suggestions.data.suggestions).toBeDefined();
     expect(Array.isArray(suggestions.data.suggestions)).toBeTruthy();
     
-    console.log(`Found ${suggestions.data.suggestions.length} optimization suggestions`);
+    logger.info(`Found ${suggestions.data.suggestions.length} optimization suggestions`);
   });
 
   test('Cache Performance', async ({ request }) => {
@@ -297,6 +297,6 @@ test.describe('Performance Monitoring', () => {
     expect(stats.data.hitRate).toBeDefined();
     expect(stats.data.totalRequests).toBeDefined();
     
-    console.log(`Cache hit rate: ${stats.data.hitRate.toFixed(2)}%`);
+    logger.info(`Cache hit rate: ${stats.data.hitRate.toFixed(2)}%`);
   });
 });

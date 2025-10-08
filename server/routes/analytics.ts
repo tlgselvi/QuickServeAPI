@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
+import { logger } from '../utils/logger';
 import {
   getARTrends,
   getAPTrends,
@@ -31,7 +32,7 @@ router.get('/trends/ar', requireAuth, async (req: AuthenticatedRequest, res) => 
       data: trends,
     });
   } catch (error) {
-    console.error('AR trends error:', error);
+    logger.error('AR trends error:', error);
     res.status(500).json({
       error: 'AR trend analizi yapılırken hata oluştu',
     });
@@ -60,7 +61,7 @@ router.get('/trends/ap', requireAuth, async (req: AuthenticatedRequest, res) => 
       data: trends,
     });
   } catch (error) {
-    console.error('AP trends error:', error);
+    logger.error('AP trends error:', error);
     res.status(500).json({
       error: 'AP trend analizi yapılırken hata oluştu',
     });
@@ -88,7 +89,7 @@ router.get('/cashflow-projection', requireAuth, async (req: AuthenticatedRequest
       data: projection,
     });
   } catch (error) {
-    console.error('Cash flow projection error:', error);
+    logger.error('Cash flow projection error:', error);
     res.status(500).json({
       error: 'Nakit akışı projeksiyonu yapılırken hata oluştu',
     });
@@ -116,7 +117,7 @@ router.get('/financial-health-trends', requireAuth, async (req: AuthenticatedReq
       data: trends,
     });
   } catch (error) {
-    console.error('Financial health trends error:', error);
+    logger.error('Financial health trends error:', error);
     res.status(500).json({
       error: 'Finansal sağlık trend analizi yapılırken hata oluştu',
     });
@@ -156,7 +157,7 @@ router.get('/combined', requireAuth, async (req: AuthenticatedRequest, res) => {
       },
     });
   } catch (error) {
-    console.error('Combined analytics error:', error);
+    logger.error('Combined analytics error:', error);
     res.status(500).json({
       error: 'Birleşik analiz yapılırken hata oluştu',
     });
@@ -229,7 +230,7 @@ router.get('/export/:type', requireAuth, async (req: AuthenticatedRequest, res) 
       });
     }
   } catch (error) {
-    console.error('Analytics export error:', error);
+    logger.error('Analytics export error:', error);
     res.status(500).json({
       error: 'Analiz verileri dışa aktarılırken hata oluştu',
     });

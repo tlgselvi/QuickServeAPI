@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch (error: Error, errorInfo: ErrorInfo) {
     // Log error to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
+      logger.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
     // Log error to external service in production
@@ -73,7 +73,7 @@ export class ErrorBoundary extends Component<Props, State> {
         // });
 
         // For now, just log to console with structured data
-        console.error('Production Error:', {
+        logger.error('Production Error:', {
           message: error.message,
           stack: error.stack,
           componentStack: errorInfo.componentStack,
@@ -83,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
           url: window.location.href,
         });
       } catch (loggingError) {
-        console.error('Failed to log error:', loggingError);
+        logger.error('Failed to log error:', loggingError);
       }
     }
   };
@@ -234,7 +234,7 @@ export function withErrorBoundary<P extends object> (
 // Hook for programmatic error handling
 export function useErrorHandler () {
   return (error: Error, errorInfo?: { componentStack?: string }) => {
-    console.error('Manual error report:', error, errorInfo);
+    logger.error('Manual error report:', error, errorInfo);
 
     // In production, send to error reporting service
     if (process.env.NODE_ENV === 'production') {

@@ -72,7 +72,7 @@ const AIScreen: React.FC<AIScreenProps> = ({ navigation }) => {
       const response: AIResponse = await aiAPI.generateResponse(userMessage, selectedPersona);
       addMessage(response.response, false, response.persona || selectedPersona);
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       addMessage('Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.', false);
     } finally {
       setIsLoading(false);

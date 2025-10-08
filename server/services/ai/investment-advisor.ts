@@ -2,6 +2,7 @@ import { openaiService } from './openaiService';
 import { db } from '../../db';
 import { investments, accounts } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
+import { logger } from '../../utils/logger';
 
 export interface RiskAssessment {
   riskScore: number; // 1-10
@@ -87,7 +88,7 @@ export class InvestmentAdvisorService {
         recommendations: riskAssessment.recommendations || [],
       };
     } catch (error) {
-      console.error('Risk assessment error:', error);
+      logger.error('Risk assessment error:', error);
 
       // Fallback to basic calculation
       return this.calculateBasicRiskScore([]);
@@ -164,7 +165,7 @@ export class InvestmentAdvisorService {
         expectedVolatility: recommendation.expectedVolatility || 0,
       };
     } catch (error) {
-      console.error('Portfolio recommendation error:', error);
+      logger.error('Portfolio recommendation error:', error);
 
       // Fallback to predefined allocations
       return this.getFallbackRecommendation('balanced');
@@ -219,7 +220,7 @@ export class InvestmentAdvisorService {
 
       return JSON.parse(response.response);
     } catch (error) {
-      console.error('Investment suggestions error:', error);
+      logger.error('Investment suggestions error:', error);
 
       return {
         suggestions: this.getFallbackSuggestions('medium'),

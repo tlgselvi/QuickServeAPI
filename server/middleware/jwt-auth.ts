@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { JWTAuthService, TokenBlacklist } from '../jwt-auth.ts';
 import type { UserRoleType, PermissionType } from '../../shared/schema.ts';
 import { hasPermission, hasAnyPermission } from '../../shared/schema.ts';
+import { logger } from '../utils/logger';
 
 // Extend Request type to include user info
 export interface AuthenticatedRequest extends Request {
@@ -72,7 +73,7 @@ export const requireJWTAuth = async (req: AuthenticatedRequest, res: Response, n
 
     next();
   } catch (error) {
-    console.error('JWT Auth middleware error:', error);
+    logger.error('JWT Auth middleware error:', error);
     return res.status(500).json({
       error: 'Authentication error',
       code: 'AUTH_ERROR',
@@ -185,7 +186,7 @@ export const optionalJWTAuth = async (req: AuthenticatedRequest, res: Response, 
     }
   } catch (error) {
     // Silently fail for optional auth
-    console.log('Optional JWT auth failed:', error);
+    logger.info('Optional JWT auth failed:', error);
   }
 
   next();
@@ -197,7 +198,7 @@ export const requireJWTAdmin = requireJWTRole('admin');
 // Log access attempts for security audit
 export const logJWTAccess = (action: string) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    console.log(`🔐 [JWT-AUTH] ${action} - User: ${req.user?.username || 'anonymous'} (${req.user?.role || 'no-role'}) - IP: ${req.ip}`);
+    logger.info(`🔐 [JWT-AUTH] ${action} - User: ${req.user?.username || 'anonymous'} (${req.user?.role || 'no-role'}) - IP: ${req.ip}`);
     next();
   };
 };

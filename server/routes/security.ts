@@ -21,6 +21,7 @@ import { twoFactorAuthService } from '../services/auth/two-factor-auth';
 import { passwordService } from '../services/auth/password-service';
 import { auditComplianceManager } from '../middleware/audit-compliance';
 import { z } from 'zod';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -49,7 +50,7 @@ router.get('/profile',
         profile: profile[0]
       });
     } catch (error) {
-      console.error('Error getting user profile:', error);
+      logger.error('Error getting user profile:', error);
       res.status(500).json({ error: 'Failed to get user profile' });
     }
   }
@@ -80,7 +81,7 @@ router.put('/profile',
 
       res.json({ success: true, message: 'Profile updated successfully' });
     } catch (error) {
-      console.error('Error updating user profile:', error);
+      logger.error('Error updating user profile:', error);
       res.status(500).json({ error: 'Failed to update user profile' });
     }
   }
@@ -104,7 +105,7 @@ router.post('/change-password',
 
       res.json({ success: true, message: 'Password changed successfully' });
     } catch (error) {
-      console.error('Error changing password:', error);
+      logger.error('Error changing password:', error);
       res.status(400).json({ error: error.message || 'Failed to change password' });
     }
   }
@@ -127,7 +128,7 @@ router.post('/request-password-reset',
         message: 'Password reset email sent if account exists' 
       });
     } catch (error) {
-      console.error('Error requesting password reset:', error);
+      logger.error('Error requesting password reset:', error);
       res.status(400).json({ error: error.message || 'Failed to request password reset' });
     }
   }
@@ -143,7 +144,7 @@ router.post('/reset-password',
 
       res.json({ success: true, message: 'Password reset successfully' });
     } catch (error) {
-      console.error('Error resetting password:', error);
+      logger.error('Error resetting password:', error);
       res.status(400).json({ error: error.message || 'Failed to reset password' });
     }
   }
@@ -176,7 +177,7 @@ router.post('/2fa/setup',
         backupCodes: result.backupCodes
       });
     } catch (error) {
-      console.error('Error setting up 2FA:', error);
+      logger.error('Error setting up 2FA:', error);
       res.status(500).json({ error: 'Failed to setup 2FA' });
     }
   }
@@ -200,7 +201,7 @@ router.post('/2fa/enable',
 
       res.json({ success: true, message: '2FA enabled successfully' });
     } catch (error) {
-      console.error('Error enabling 2FA:', error);
+      logger.error('Error enabling 2FA:', error);
       res.status(400).json({ error: error.message || 'Failed to enable 2FA' });
     }
   }
@@ -224,7 +225,7 @@ router.post('/2fa/disable',
 
       res.json({ success: true, message: '2FA disabled successfully' });
     } catch (error) {
-      console.error('Error disabling 2FA:', error);
+      logger.error('Error disabling 2FA:', error);
       res.status(400).json({ error: error.message || 'Failed to disable 2FA' });
     }
   }
@@ -252,7 +253,7 @@ router.post('/2fa/verify',
         res.status(400).json({ error: 'Invalid 2FA token' });
       }
     } catch (error) {
-      console.error('Error verifying 2FA:', error);
+      logger.error('Error verifying 2FA:', error);
       res.status(400).json({ error: 'Failed to verify 2FA' });
     }
   }
@@ -270,7 +271,7 @@ router.get('/2fa/status',
         status
       });
     } catch (error) {
-      console.error('Error getting 2FA status:', error);
+      logger.error('Error getting 2FA status:', error);
       res.status(500).json({ error: 'Failed to get 2FA status' });
     }
   }
@@ -295,7 +296,7 @@ router.post('/2fa/regenerate-backup-codes',
         backupCodes
       });
     } catch (error) {
-      console.error('Error regenerating backup codes:', error);
+      logger.error('Error regenerating backup codes:', error);
       res.status(500).json({ error: 'Failed to regenerate backup codes' });
     }
   }
@@ -321,7 +322,7 @@ router.post('/check-permission',
         userRole: req.user.role
       });
     } catch (error) {
-      console.error('Error checking permission:', error);
+      logger.error('Error checking permission:', error);
       res.status(400).json({ error: 'Failed to check permission' });
     }
   }
@@ -354,7 +355,7 @@ router.get('/permissions',
         customPermissions: profile[0].permissions || []
       });
     } catch (error) {
-      console.error('Error getting user permissions:', error);
+      logger.error('Error getting user permissions:', error);
       res.status(500).json({ error: 'Failed to get user permissions' });
     }
   }
@@ -401,7 +402,7 @@ router.get('/activity-logs',
         }
       });
     } catch (error) {
-      console.error('Error getting activity logs:', error);
+      logger.error('Error getting activity logs:', error);
       res.status(500).json({ error: 'Failed to get activity logs' });
     }
   }
@@ -457,7 +458,7 @@ router.get('/activity-logs/all',
         }
       });
     } catch (error) {
-      console.error('Error getting all activity logs:', error);
+      logger.error('Error getting all activity logs:', error);
       res.status(500).json({ error: 'Failed to get activity logs' });
     }
   }
@@ -498,7 +499,7 @@ router.get('/status',
         }
       });
     } catch (error) {
-      console.error('Error getting security status:', error);
+      logger.error('Error getting security status:', error);
       res.status(500).json({ error: 'Failed to get security status' });
     }
   }
@@ -524,7 +525,7 @@ router.get('/audit-data/:userId',
         data: auditData
       });
     } catch (error) {
-      console.error('Error exporting audit data:', error);
+      logger.error('Error exporting audit data:', error);
       res.status(500).json({ error: 'Failed to export audit data' });
     }
   }
@@ -561,7 +562,7 @@ router.delete('/purge-user-data/:userId',
         tables: result.tables
       });
     } catch (error) {
-      console.error('Error purging user data:', error);
+      logger.error('Error purging user data:', error);
       res.status(500).json({ error: 'Failed to purge user data' });
     }
   }
@@ -579,7 +580,7 @@ router.get('/compliance-metrics',
         metrics
       });
     } catch (error) {
-      console.error('Error getting compliance metrics:', error);
+      logger.error('Error getting compliance metrics:', error);
       res.status(500).json({ error: 'Failed to get compliance metrics' });
     }
   }
@@ -597,7 +598,7 @@ router.post('/trigger-retention',
         message: 'Retention job triggered successfully'
       });
     } catch (error) {
-      console.error('Error triggering retention job:', error);
+      logger.error('Error triggering retention job:', error);
       res.status(500).json({ error: 'Failed to trigger retention job' });
     }
   }
@@ -620,7 +621,7 @@ router.get('/security-headers-status',
         }
       });
     } catch (error) {
-      console.error('Error getting security headers status:', error);
+      logger.error('Error getting security headers status:', error);
       res.status(500).json({ error: 'Failed to get security headers status' });
     }
   }

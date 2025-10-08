@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { logger } from 'logger';
 
 const ALGORITHM = 'aes-256-gcm';
 const SECRET_KEY = process.env.ENCRYPTION_KEY || 'your-32-character-secret-key-here!'; // 32 chars
@@ -50,7 +51,7 @@ export function decrypt (encryptedText: string): string {
 
     return decrypted;
   } catch (error) {
-    console.error('Decryption error:', error);
+    logger.error('Decryption error:', error);
     throw new Error('Failed to decrypt data');
   }
 }

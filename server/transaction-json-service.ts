@@ -3,6 +3,7 @@ import path from 'path';
 import { storage } from './storage';
 import { transactionJsonFileSchema } from '@shared/schema';
 import type { Transaction, InsertTransaction } from '@shared/schema';
+import { logger } from './utils/logger.ts';
 
 export class TransactionJsonService {
   private readonly transactionsFilePath = path.join(process.cwd(), 'transactions.json');
@@ -51,7 +52,7 @@ export class TransactionJsonService {
         'utf8',
       );
 
-      console.log(`${transactions.length} işlem transactions.json dosyasına aktarıldı`);
+      logger.info(`${transactions.length} işlem transactions.json dosyasına aktarıldı`);
 
       return {
         success: true,
@@ -59,7 +60,7 @@ export class TransactionJsonService {
         filePath: this.transactionsFilePath,
       };
     } catch (error) {
-      console.error('JSON dışa aktarma hatası:', error);
+      logger.error('JSON dışa aktarma hatası:', error);
       return {
         success: false,
         message: `JSON dışa aktarma hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`,
@@ -162,7 +163,7 @@ export class TransactionJsonService {
           if (overwriteExisting && existingIds.has(cleanTransaction.id)) {
             // Mevcut işlemi güncelle (sadece balance adjustment olmadan transaction record güncelle)
             // TODO: Implement transaction update method in storage
-            console.log(`İşlem güncelleniyor: ${cleanTransaction.id}`);
+            logger.info(`İşlem güncelleniyor: ${cleanTransaction.id}`);
             updatedCount++;
           } else {
             // Yeni işlem oluştur ve bakiye ayarlaması yap
@@ -224,7 +225,7 @@ export class TransactionJsonService {
       }
       if (errors.length > 0) {
         message += `, ${errors.length} hata oluştu`;
-        console.warn('İçe aktarma hataları:', errors);
+        logger.warn('İçe aktarma hataları:', errors);
       }
 
       return {
@@ -233,7 +234,7 @@ export class TransactionJsonService {
         importedCount,
       };
     } catch (error) {
-      console.error('JSON içe aktarma hatası:', error);
+      logger.error('JSON içe aktarma hatası:', error);
       return {
         success: false,
         message: `JSON içe aktarma hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`,
@@ -331,7 +332,7 @@ export class TransactionJsonService {
         filePath,
       };
     } catch (error) {
-      console.error('Tarihli JSON dışa aktarma hatası:', error);
+      logger.error('Tarihli JSON dışa aktarma hatası:', error);
       return {
         success: false,
         message: `JSON dışa aktarma hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`,
@@ -408,7 +409,7 @@ export class TransactionJsonService {
         filePath,
       };
     } catch (error) {
-      console.error('Kategori analizi JSON dışa aktarma hatası:', error);
+      logger.error('Kategori analizi JSON dışa aktarma hatası:', error);
       return {
         success: false,
         message: `JSON dışa aktarma hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`,

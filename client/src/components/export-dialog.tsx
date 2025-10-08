@@ -159,7 +159,7 @@ export function ExportDialog({
     } catch (error) {
       setExportStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'Bilinmeyen hata');
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
     } finally {
       setExporting(false);
     }

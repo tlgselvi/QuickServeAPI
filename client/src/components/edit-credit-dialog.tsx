@@ -172,7 +172,7 @@ export default function EditCreditDialog({
       await onUpdateCredit(credit.id, updateData);
       onOpenChange(false);
     } catch (error) {
-      console.error('Credit update error:', error);
+      logger.error('Credit update error:', error);
       setErrors({ submit: 'Kredi güncellenirken hata oluştu' });
     }
   };

@@ -66,7 +66,7 @@ export default function BankAccountDialog ({ open, onOpenChange, onAddBankAccoun
       return;
     }
 
-    console.log('🔍 BankAccountDialog: Sending account data:', {
+    logger.info('🔍 BankAccountDialog: Sending account data:', {
       name: accountName,
       type: accountType,
       bankName,

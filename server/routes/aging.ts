@@ -12,6 +12,7 @@ import {
   recalculateAging,
 } from '../modules/finance/aging-analysis';
 import { insertAgingReportSchema } from '@shared/schema';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -43,7 +44,7 @@ router.get('/ar', requireAuth, async (req: AuthenticatedRequest, res) => {
       total: reports.length,
     });
   } catch (error) {
-    console.error('AR aging reports error:', error);
+    logger.error('AR aging reports error:', error);
     res.status(500).json({
       error: 'Alacak yaşlandırma raporları alınırken hata oluştu',
     });
@@ -78,7 +79,7 @@ router.get('/ap', requireAuth, async (req: AuthenticatedRequest, res) => {
       total: reports.length,
     });
   } catch (error) {
-    console.error('AP aging reports error:', error);
+    logger.error('AP aging reports error:', error);
     res.status(500).json({
       error: 'Borç yaşlandırma raporları alınırken hata oluştu',
     });
@@ -104,7 +105,7 @@ router.get('/summary/:type', requireAuth, async (req: AuthenticatedRequest, res)
       data: summary,
     });
   } catch (error) {
-    console.error('Aging summary error:', error);
+    logger.error('Aging summary error:', error);
     res.status(500).json({
       error: 'Yaşlandırma özeti alınırken hata oluştu',
     });
@@ -131,7 +132,7 @@ router.get('/customer/:type', requireAuth, async (req: AuthenticatedRequest, res
       total: customerAging.length,
     });
   } catch (error) {
-    console.error('Customer aging error:', error);
+    logger.error('Customer aging error:', error);
     res.status(500).json({
       error: 'Müşteri/tedarikçi yaşlandırması alınırken hata oluştu',
     });
@@ -152,7 +153,7 @@ router.get('/statistics', requireAuth, async (req: AuthenticatedRequest, res) =>
       data: statistics,
     });
   } catch (error) {
-    console.error('Aging statistics error:', error);
+    logger.error('Aging statistics error:', error);
     res.status(500).json({
       error: 'Yaşlandırma istatistikleri alınırken hata oluştu',
     });
@@ -173,7 +174,7 @@ router.post('/', requireAuth, requirePermission(Permission.MANAGE_TRANSACTIONS),
       message: 'Yaşlandırma raporu başarıyla oluşturuldu',
     });
   } catch (error) {
-    console.error('Aging report creation error:', error);
+    logger.error('Aging report creation error:', error);
     res.status(500).json({
       error: 'Yaşlandırma raporu oluşturulurken hata oluştu',
     });
@@ -201,7 +202,7 @@ router.put('/:id', requireAuth, requirePermission(Permission.MANAGE_TRANSACTIONS
       message: 'Yaşlandırma raporu başarıyla güncellendi',
     });
   } catch (error) {
-    console.error('Aging report update error:', error);
+    logger.error('Aging report update error:', error);
     res.status(500).json({
       error: 'Yaşlandırma raporu güncellenirken hata oluştu',
     });
@@ -227,7 +228,7 @@ router.delete('/:id', requireAuth, requirePermission(Permission.MANAGE_TRANSACTI
       message: 'Yaşlandırma raporu başarıyla silindi',
     });
   } catch (error) {
-    console.error('Aging report deletion error:', error);
+    logger.error('Aging report deletion error:', error);
     res.status(500).json({
       error: 'Yaşlandırma raporu silinirken hata oluştu',
     });
@@ -246,7 +247,7 @@ router.post('/recalculate', requireAuth, requirePermission(Permission.ADMIN), as
       message: `Yaşlandırma raporları güncellendi. ${result.updated} rapor güncellendi.`,
     });
   } catch (error) {
-    console.error('Aging recalculation error:', error);
+    logger.error('Aging recalculation error:', error);
     res.status(500).json({
       error: 'Yaşlandırma raporları güncellenirken hata oluştu',
     });

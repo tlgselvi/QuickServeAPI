@@ -59,7 +59,7 @@ export function JWTAuthProvider ({ children }: { children: ReactNode }) {
           }
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        logger.error('Auth initialization error:', error);
         clearAuthState();
       } finally {
         setIsLoading(false);
@@ -100,7 +100,7 @@ export function JWTAuthProvider ({ children }: { children: ReactNode }) {
         return { success: false, error: errorData.error || 'Login failed' };
       }
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       return { success: false, error: 'Network error occurred' };
     } finally {
       setIsLoading(false);
@@ -116,7 +116,7 @@ export function JWTAuthProvider ({ children }: { children: ReactNode }) {
         });
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     } finally {
       clearAuthState();
     }
@@ -146,7 +146,7 @@ export function JWTAuthProvider ({ children }: { children: ReactNode }) {
         return false;
       }
     } catch (error) {
-      console.error('Token refresh error:', error);
+      logger.error('Token refresh error:', error);
       return false;
     }
   };

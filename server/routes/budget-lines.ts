@@ -4,6 +4,7 @@ import { db } from '../db';
 import { budgetLines, insertBudgetLineSchema } from '@shared/schema';
 import { AuthenticatedRequest, requireAuth, requirePermission } from '../middleware/auth';
 import { Permission } from '@shared/schema';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res) => {
       total: budgetLineList.length,
     });
   } catch (error) {
-    console.error('Budget lines fetch error:', error);
+    logger.error('Budget lines fetch error:', error);
     res.status(500).json({
       error: 'Bütçe satırları alınırken hata oluştu',
     });
@@ -70,7 +71,7 @@ router.post('/', requireAuth, requirePermission(Permission.MANAGE_BUDGET), async
       message: 'Bütçe satırı başarıyla oluşturuldu',
     });
   } catch (error) {
-    console.error('Budget line creation error:', error);
+    logger.error('Budget line creation error:', error);
     res.status(500).json({
       error: 'Bütçe satırı oluşturulurken hata oluştu',
     });
@@ -102,7 +103,7 @@ router.put('/:id', requireAuth, requirePermission(Permission.MANAGE_BUDGET), asy
       message: 'Bütçe satırı başarıyla güncellendi',
     });
   } catch (error) {
-    console.error('Budget line update error:', error);
+    logger.error('Budget line update error:', error);
     res.status(500).json({
       error: 'Bütçe satırı güncellenirken hata oluştu',
     });
@@ -131,7 +132,7 @@ router.delete('/:id', requireAuth, requirePermission(Permission.MANAGE_BUDGET), 
       message: 'Bütçe satırı başarıyla silindi',
     });
   } catch (error) {
-    console.error('Budget line deletion error:', error);
+    logger.error('Budget line deletion error:', error);
     res.status(500).json({
       error: 'Bütçe satırı silinirken hata oluştu',
     });
@@ -186,7 +187,7 @@ router.get('/summary', requireAuth, async (req: AuthenticatedRequest, res) => {
       },
     });
   } catch (error) {
-    console.error('Budget summary error:', error);
+    logger.error('Budget summary error:', error);
     res.status(500).json({
       error: 'Bütçe özeti alınırken hata oluştu',
     });

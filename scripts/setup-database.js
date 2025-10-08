@@ -15,8 +15,15 @@ import * as schema from '../shared/schema.ts';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
+// Simple logger for this script
+const logger = {
+  info: (msg, ...args) => console.log(`[INFO] ${msg}`, ...args),
+  error: (msg, ...args) => console.error(`[ERROR] ${msg}`, ...args),
+  warn: (msg, ...args) => console.warn(`[WARN] ${msg}`, ...args)
+};
+
 if (!DATABASE_URL) {
-  console.log('⚠️  DATABASE_URL not found, skipping database setup');
+  logger.info('⚠️  DATABASE_URL not found, skipping database setup');
   process.exit(0);
 }
 
@@ -24,7 +31,7 @@ async function setupDatabase() {
   let sqlClient = null;
   
   try {
-    console.log('🔄 Setting up database...');
+    logger.info('🔄 Setting up database...');
 
     // Configure Neon for HTTP connections (avoid WebSocket issues)
     neonConfig.fetchConnectionCache = true;
@@ -44,10 +51,10 @@ async function setupDatabase() {
 
     // Test connection
     await sqlClient`SELECT 1`;
-    console.log('✅ Database connection established');
+    logger.info('✅ Database connection established');
 
     // Run migrations (push schema)
-    console.log('🔄 Running database migrations...');
+    logger.info('🔄 Running database migrations...');
     try {
       // Import and run migrations with the correct driver
       const migratorModule = DATABASE_URL.includes('neon.tech')
@@ -55,30 +62,30 @@ async function setupDatabase() {
         : await import('drizzle-orm/postgres-js/migrator');
       const { migrate } = migratorModule;
       await migrate(db, { migrationsFolder: './migrations' });
-      console.log('✅ Database migrations completed');
+      logger.info('✅ Database migrations completed');
     } catch (migrationError) {
-      console.log('⚠️  Migration failed, using schema push instead:', migrationError.message);
+      logger.info('⚠️  Migration failed, using schema push instead:', migrationError.message);
       // Fallback: schema will be pushed by drizzle-kit push during build
-      console.log('✅ Schema will be pushed during build');
+      logger.info('✅ Schema will be pushed during build');
     }
 
     // Seed data
-    console.log('🔄 Seeding database...');
+    logger.info('🔄 Seeding database...');
     try {
       // Import and run seed script
       const { seedDatabase } = await import('./seed-database.js');
       await seedDatabase();
-      console.log('✅ Database seeding completed');
+      logger.info('✅ Database seeding completed');
     } catch (seedError) {
-      console.log('⚠️  Seeding failed, continuing without seed data:', seedError.message);
+      logger.info('⚠️  Seeding failed, continuing without seed data:', seedError.message);
     }
 
-    console.log('🎉 Database setup completed successfully!');
+    logger.info('🎉 Database setup completed successfully!');
 
   } catch (error) {
-    console.error('❌ Database setup failed:', error.message);
-    console.error('📋 Error details:', error.stack);
-    console.log('⚠️  Continuing without database setup...');
+    logger.error('❌ Database setup failed:', error.message);
+    logger.error('📋 Error details:', error.stack);
+    logger.info('⚠️  Continuing without database setup...');
     throw error; // Re-throw for server startup handling
   } finally {
     // Cleanup connections
@@ -87,7 +94,7 @@ async function setupDatabase() {
         await sqlClient.end();
       }
     } catch (cleanupError) {
-      console.warn('⚠️  Error during cleanup:', cleanupError.message);
+      logger.warn('⚠️  Error during cleanup:', cleanupError.message);
     }
   }
 }

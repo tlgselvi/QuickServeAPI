@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import { storage } from './storage';
+import { logger } from './utils/logger.ts';
 
 interface ClientConnection {
   userId: string;
@@ -93,7 +94,7 @@ class RealtimeService {
         });
       }
     } catch (error) {
-      console.error('Error sending dashboard update:', error);
+      logger.error('Error sending dashboard update:', error);
     }
   }
 

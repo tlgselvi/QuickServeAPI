@@ -1,6 +1,7 @@
 import { db } from './db';
 import { and, or, eq, desc, asc, like, ilike, gte, lte, between, isNull } from 'drizzle-orm';
 import { accounts, transactions, credits, auditLogs, categories, tags } from '@shared/schema';
+import { logger } from './utils/logger.ts';
 
 // Query optimization utilities
 export class QueryOptimizer {
@@ -340,7 +341,7 @@ export class QueryOptimizer {
           .returning();
         results.push(result[0]);
       } catch (error) {
-        console.error(`Failed to update account ${update.id}:`, error);
+        logger.error(`Failed to update account ${update.id}:`, error);
       }
     }
     

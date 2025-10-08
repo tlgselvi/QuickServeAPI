@@ -33,7 +33,7 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ navigation }) =
       const response = await transactionsAPI.getTransactions();
       setTransactions(response.transactions);
     } catch (error) {
-      console.error('Error loading transactions:', error);
+      logger.error('Error loading transactions:', error);
       Alert.alert('Hata', 'İşlemler yüklenirken bir hata oluştu');
     } finally {
       setIsLoading(false);

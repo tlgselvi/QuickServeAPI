@@ -1,5 +1,6 @@
 import { eq, and, gt } from 'drizzle-orm';
 import { db } from '../../db';
+import { logger } from '../../utils/logger';
 import { 
   userProfiles,
   passwordResetTokens,
@@ -7,11 +8,12 @@ import {
   requestPasswordResetSchema,
   resetPasswordV2Schema,
   changePasswordSchema
-} from '../../../shared/schema';
+} from '../../../shared/schema-sqlite';
 import { z } from 'zod';
 import * as crypto from 'crypto';
 import * as argon2 from 'argon2';
 import nodemailer from 'nodemailer';
+import { logger } from '../../utils/logger';
 
 // Password Policy Configuration
 export const PASSWORD_POLICY = {
@@ -104,7 +106,7 @@ export class PasswordService {
       
       return new Date() > expiryDate;
     } catch (error) {
-      console.error('Error checking password expiry:', error);
+      logger.error('Error checking password expiry:', error);
       return true;
     }
   }
@@ -116,7 +118,7 @@ export class PasswordService {
       // For now, we'll just return false
       return false;
     } catch (error) {
-      console.error('Error checking password history:', error);
+      logger.error('Error checking password history:', error);
       return false;
     }
   }
@@ -133,7 +135,7 @@ export class PasswordService {
         saltLength: ARGON2_CONFIG.saltLength
       });
     } catch (error) {
-      console.error('Error hashing password:', error);
+      logger.error('Error hashing password:', error);
       throw new Error('Şifre hash\'lenemedi');
     }
   }
@@ -151,7 +153,7 @@ export class PasswordService {
         return await argon2.verify(hashedPassword, password);
       }
     } catch (error) {
-      console.error('Error verifying password:', error);
+      logger.error('Error verifying password:', error);
       return false;
     }
   }
@@ -181,7 +183,7 @@ export class PasswordService {
 
       return argon2Hash;
     } catch (error) {
-      console.error('Error migrating password:', error);
+      logger.error('Error migrating password:', error);
       throw new Error('Şifre migrasyonu başarısız');
     }
   }
@@ -220,7 +222,7 @@ export class PasswordService {
         .where(eq(userProfiles.userId, userId));
 
     } catch (error) {
-      console.error('Error changing password:', error);
+      logger.error('Error changing password:', error);
       throw new Error('Şifre değiştirilemedi');
     }
   }
@@ -228,13 +230,37 @@ export class PasswordService {
   // Request password reset
   async requestPasswordReset(requestData: z.infer<typeof requestPasswordResetSchema>): Promise<void> {
     try {
+      // Find user by email
+      const user = await db
+        .select({ userId: userProfiles.userId, email: userProfiles.email })
+        .from(userProfiles)
+        .where(eq(userProfiles.email, requestData.email))
+        .limit(1);
+
+      if (user.length === 0) {
+        // Don't reveal if email exists or not for security
+        logger.info(`Password reset requested for non-existent email: ${requestData.email}`);
+        return; // Silently succeed to prevent email enumeration
+      }
+
+      // Check if user account is locked
+      const profile = await db
+        .select({ lockedUntil: userProfiles.lockedUntil })
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, user[0].userId))
+        .limit(1);
+
+      if (profile.length > 0 && profile[0].lockedUntil && new Date(profile[0].lockedUntil) > new Date()) {
+        throw new Error('Hesabınız geçici olarak kilitlenmiştir. Lütfen daha sonra tekrar deneyin.');
+      }
+
       // Generate reset token
       const token = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      // Store reset token (in a real implementation, you would find user by email)
+      // Store reset token
       const resetTokenData = insertPasswordResetTokenSchema.parse({
-        userId: 'temp-user-id', // This should be the actual user ID from email lookup
+        userId: user[0].userId,
         token,
         expiresAt
       });
@@ -244,8 +270,10 @@ export class PasswordService {
       // Send reset email
       await this.sendPasswordResetEmail(requestData.email, token);
 
+      logger.info(`Password reset token created for user: ${user[0].userId}`);
+
     } catch (error) {
-      console.error('Error requesting password reset:', error);
+      logger.error('Error requesting password reset:', error);
       throw new Error('Şifre sıfırlama talebi oluşturulamadı');
     }
   }
@@ -306,7 +334,7 @@ export class PasswordService {
         .where(eq(passwordResetTokens.id, resetToken[0].id));
 
     } catch (error) {
-      console.error('Error resetting password:', error);
+      logger.error('Error resetting password:', error);
       throw new Error('Şifre sıfırlanamadı');
     }
   }
@@ -349,7 +377,7 @@ export class PasswordService {
           .where(eq(userProfiles.userId, userId));
       }
     } catch (error) {
-      console.error('Error handling failed login:', error);
+      logger.error('Error handling failed login:', error);
     }
   }
 
@@ -366,43 +394,132 @@ export class PasswordService {
         })
         .where(eq(userProfiles.userId, userId));
     } catch (error) {
-      console.error('Error resetting failed login attempts:', error);
+      logger.error('Error resetting failed login attempts:', error);
     }
   }
 
   // Send password reset email
   private async sendPasswordResetEmail(email: string, token: string): Promise<void> {
     try {
-      // In production, use proper email service
+      // Check if we're in production or test environment
+      const isProduction = process.env.NODE_ENV === 'production';
+      const isTest = process.env.NODE_ENV === 'test';
+      
+      if (isTest) {
+        // In test environment, just log the email
+        logger.info(`[TEST] Password reset email would be sent to ${email} with token: ${token}`);
+        return;
+      }
+
+      // Configure email transporter based on environment
       const transporter = nodemailer.createTransporter({
-        // Configure with your email service
-        host: process.env.SMTP_HOST || 'localhost',
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: false,
+        secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
+        },
+        tls: {
+          rejectUnauthorized: false // For development/testing
         }
       });
 
-      const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+      // Verify transporter configuration
+      if (isProduction) {
+        await transporter.verify();
+      }
 
-      await transporter.sendMail({
-        from: process.env.FROM_EMAIL || 'noreply@finbot.com',
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@finbot.com',
         to: email,
-        subject: 'FinBot - Şifre Sıfırlama',
+        subject: 'FinBot - Şifre Sıfırlama Talebi',
         html: `
-          <h2>Şifre Sıfırlama</h2>
-          <p>Aşağıdaki linke tıklayarak şifrenizi sıfırlayabilirsiniz:</p>
-          <p><a href="${resetUrl}">Şifre Sıfırla</a></p>
-          <p>Bu link 1 saat geçerlidir.</p>
-          <p>Eğer bu talebi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Şifre Sıfırlama</title>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
+              .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+              .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+              .warning { background: #fef3cd; border: 1px solid #fde68a; padding: 15px; border-radius: 6px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🔐 FinBot Şifre Sıfırlama</h1>
+              </div>
+              <div class="content">
+                <h2>Merhaba!</h2>
+                <p>FinBot hesabınız için şifre sıfırlama talebinde bulundunuz.</p>
+                
+                <p>Aşağıdaki butona tıklayarak şifrenizi sıfırlayabilirsiniz:</p>
+                
+                <div style="text-align: center;">
+                  <a href="${resetUrl}" class="button">Şifremi Sıfırla</a>
+                </div>
+                
+                <div class="warning">
+                  <strong>⚠️ Önemli:</strong>
+                  <ul>
+                    <li>Bu link <strong>1 saat</strong> geçerlidir</li>
+                    <li>Güvenlik için sadece bir kez kullanılabilir</li>
+                    <li>Bu talebi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz</li>
+                  </ul>
+                </div>
+                
+                <p>Eğer buton çalışmıyorsa, aşağıdaki linki kopyalayıp tarayıcınıza yapıştırın:</p>
+                <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 4px; font-family: monospace;">
+                  ${resetUrl}
+                </p>
+              </div>
+              <div class="footer">
+                <p>Bu e-posta FinBot sistemi tarafından otomatik olarak gönderilmiştir.</p>
+                <p>© 2024 FinBot. Tüm hakları saklıdır.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `
+          FinBot Şifre Sıfırlama
+          
+          Merhaba!
+          
+          FinBot hesabınız için şifre sıfırlama talebinde bulundunuz.
+          
+          Aşağıdaki linke tıklayarak şifrenizi sıfırlayabilirsiniz:
+          ${resetUrl}
+          
+          Bu link 1 saat geçerlidir ve sadece bir kez kullanılabilir.
+          
+          Eğer bu talebi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.
+          
+          © 2024 FinBot
         `
-      });
+      };
 
-      console.log(`Password reset email sent to ${email}`);
+      await transporter.sendMail(mailOptions);
+
+      logger.info(`✅ Password reset email sent to ${email}`);
     } catch (error) {
-      console.error('Error sending password reset email:', error);
+      logger.error('❌ Error sending password reset email:', error);
+      
+      // In development, don't throw error, just log
+      if (process.env.NODE_ENV === 'development') {
+        logger.info(`[DEV] Would send password reset email to ${email} with token: ${token}`);
+        return;
+      }
+      
       throw new Error('Şifre sıfırlama e-postası gönderilemedi');
     }
   }
@@ -419,7 +536,7 @@ export class PasswordService {
           )
         );
     } catch (error) {
-      console.error('Error cleaning up expired tokens:', error);
+      logger.error('Error cleaning up expired tokens:', error);
     }
   }
 }

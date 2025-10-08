@@ -7,6 +7,7 @@ import {
   SCENARIO_HORIZONS,
 } from '../modules/scenario/engine';
 import type { ScenarioParameters } from '../modules/scenario/engine';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.get('/horizons', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: SCENARIO_HORIZONS,
     });
   } catch (error) {
-    console.error('Scenario horizons error:', error);
+    logger.error('Scenario horizons error:', error);
     res.status(500).json({
       error: 'Senaryo dönemleri alınırken hata oluştu',
     });
@@ -54,7 +55,7 @@ router.post('/run', requireAuth, async (req: AuthenticatedRequest, res) => {
       message: 'Senaryo analizi başarıyla tamamlandı',
     });
   } catch (error) {
-    console.error('Scenario run error:', error);
+    logger.error('Scenario run error:', error);
     res.status(500).json({
       error: 'Senaryo analizi çalıştırılırken hata oluştu',
     });
@@ -105,7 +106,7 @@ router.post('/compare', requireAuth, async (req: AuthenticatedRequest, res) => {
       message: `${validScenarios.length} senaryo başarıyla karşılaştırıldı`,
     });
   } catch (error) {
-    console.error('Scenario comparison error:', error);
+    logger.error('Scenario comparison error:', error);
     if (error instanceof Error) {
       return res.status(400).json({
         error: error.message,
@@ -142,7 +143,7 @@ router.get('/recommendations', requireAuth, async (req: AuthenticatedRequest, re
       data: recommendations,
     });
   } catch (error) {
-    console.error('Scenario recommendations error:', error);
+    logger.error('Scenario recommendations error:', error);
     res.status(500).json({
       error: 'Senaryo önerileri alınırken hata oluştu',
     });
@@ -217,7 +218,7 @@ router.post('/quick', requireAuth, async (req: AuthenticatedRequest, res) => {
       message: `${scenarioType} senaryo analizi tamamlandı`,
     });
   } catch (error) {
-    console.error('Quick scenario error:', error);
+    logger.error('Quick scenario error:', error);
     res.status(500).json({
       error: 'Hızlı senaryo analizi çalıştırılırken hata oluştu',
     });
@@ -290,7 +291,7 @@ router.get('/presets', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: presets,
     });
   } catch (error) {
-    console.error('Scenario presets error:', error);
+    logger.error('Scenario presets error:', error);
     res.status(500).json({
       error: 'Senaryo şablonları alınırken hata oluştu',
     });

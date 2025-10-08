@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { logger } from '../../utils/logger';
 
 interface AISettings {
   provider: 'openai' | 'mock';
@@ -28,7 +29,7 @@ class OpenAIService {
    */
   async updateSettings (settings: Partial<AISettings>): Promise<void> {
     this.settings = { ...this.settings, ...settings };
-    console.log('✅ AI settings updated:', this.settings.provider);
+    logger.info('✅ AI settings updated:', this.settings.provider);
   }
 
   /**
@@ -95,7 +96,7 @@ class OpenAIService {
       try {
         response = await this.callOpenAI(prompt, context);
       } catch (error: any) {
-        console.error('OpenAI API error:', error);
+        logger.error('OpenAI API error:', error);
         response = this.generateMockResponse(prompt, context);
       }
     }
@@ -202,7 +203,7 @@ class OpenAIService {
    */
   clearCache (): void {
     this.responseCache.clear();
-    console.log('AI cache cleared');
+    logger.info('AI cache cleared');
   }
 }
 

@@ -158,7 +158,7 @@ export default function EditAccountDialog({
       await onUpdateAccount(account.id, updateData);
       onOpenChange(false);
     } catch (error) {
-      console.error('Account update error:', error);
+      logger.error('Account update error:', error);
       setErrors({ submit: 'Hesap güncellenirken hata oluştu' });
     }
   };

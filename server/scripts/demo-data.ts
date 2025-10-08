@@ -10,10 +10,11 @@ import {
 } from '../db/schema';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
+import { logger } from '../utils/logger';
 
 export async function createDemoData () {
   try {
-    console.log('🚀 Demo data oluşturuluyor...');
+    logger.info('🚀 Demo data oluşturuluyor...');
 
     // Create demo user
     const hashedPassword = await bcrypt.hash('demo123', 10);
@@ -31,7 +32,7 @@ export async function createDemoData () {
       updatedAt: new Date(),
     }).returning();
 
-    console.log('✅ Demo kullanıcı oluşturuldu:', demoUser.email);
+    logger.info('✅ Demo kullanıcı oluşturuldu:', demoUser.email);
 
     // Create demo accounts
     const accountsData = [
@@ -78,7 +79,7 @@ export async function createDemoData () {
     ];
 
     const createdAccounts = await db.insert(accounts).values(accountsData).returning();
-    console.log('✅ Demo hesaplar oluşturuldu:', createdAccounts.length);
+    logger.info('✅ Demo hesaplar oluşturuldu:', createdAccounts.length);
 
     // Create demo transactions
     const transactionsData = [
@@ -145,7 +146,7 @@ export async function createDemoData () {
     ];
 
     const createdTransactions = await db.insert(transactions).values(transactionsData).returning();
-    console.log('✅ Demo işlemler oluşturuldu:', createdTransactions.length);
+    logger.info('✅ Demo işlemler oluşturuldu:', createdTransactions.length);
 
     // Create demo investments
     const investmentsData = [
@@ -216,7 +217,7 @@ export async function createDemoData () {
     ];
 
     const createdInvestments = await db.insert(investments).values(investmentsData).returning();
-    console.log('✅ Demo yatırımlar oluşturuldu:', createdInvestments.length);
+    logger.info('✅ Demo yatırımlar oluşturuldu:', createdInvestments.length);
 
     // Create demo fixed expenses
     const fixedExpensesData = [
@@ -262,7 +263,7 @@ export async function createDemoData () {
     ];
 
     const createdFixedExpenses = await db.insert(fixedExpenses).values(fixedExpensesData).returning();
-    console.log('✅ Demo sabit giderler oluşturuldu:', createdFixedExpenses.length);
+    logger.info('✅ Demo sabit giderler oluşturuldu:', createdFixedExpenses.length);
 
     // Create demo credits
     const creditsData = [
@@ -297,7 +298,7 @@ export async function createDemoData () {
     ];
 
     const createdCredits = await db.insert(credits).values(creditsData).returning();
-    console.log('✅ Demo krediler oluşturuldu:', createdCredits.length);
+    logger.info('✅ Demo krediler oluşturuldu:', createdCredits.length);
 
     // Create demo system alerts
     const alertsData = [
@@ -328,17 +329,17 @@ export async function createDemoData () {
     ];
 
     const createdAlerts = await db.insert(systemAlerts).values(alertsData).returning();
-    console.log('✅ Demo uyarılar oluşturuldu:', createdAlerts.length);
+    logger.info('✅ Demo uyarılar oluşturuldu:', createdAlerts.length);
 
-    console.log('🎉 Demo data başarıyla oluşturuldu!');
-    console.log('\n📊 Demo Data Özeti:');
-    console.log('- Kullanıcı: demo@finbot.com (şifre: demo123)');
-    console.log('- Hesaplar: 4 adet');
-    console.log('- İşlemler: 5 adet');
-    console.log('- Yatırımlar: 4 adet');
-    console.log('- Sabit Giderler: 3 adet');
-    console.log('- Krediler: 2 adet');
-    console.log('- Uyarılar: 2 adet');
+    logger.info('🎉 Demo data başarıyla oluşturuldu!');
+    logger.info('\n📊 Demo Data Özeti:');
+    logger.info('- Kullanıcı: demo@finbot.com (şifre: demo123)');
+    logger.info('- Hesaplar: 4 adet');
+    logger.info('- İşlemler: 5 adet');
+    logger.info('- Yatırımlar: 4 adet');
+    logger.info('- Sabit Giderler: 3 adet');
+    logger.info('- Krediler: 2 adet');
+    logger.info('- Uyarılar: 2 adet');
 
     return {
       success: true,
@@ -351,7 +352,7 @@ export async function createDemoData () {
       alerts: createdAlerts.length,
     };
   } catch (error) {
-    console.error('❌ Demo data oluşturma hatası:', error);
+    logger.error('❌ Demo data oluşturma hatası:', error);
     throw error;
   }
 }
@@ -360,11 +361,11 @@ export async function createDemoData () {
 if (import.meta.url === `file://${process.argv[1]}`) {
   createDemoData()
     .then(() => {
-      console.log('✅ Demo data script tamamlandı');
+      logger.info('✅ Demo data script tamamlandı');
       process.exit(0);
     })
     .catch((error) => {
-      console.error('❌ Demo data script hatası:', error);
+      logger.error('❌ Demo data script hatası:', error);
       process.exit(1);
     });
 }

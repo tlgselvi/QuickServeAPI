@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
 import { emailService } from '../services/email-service';
 import { randomBytes } from 'crypto';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -33,7 +34,7 @@ router.post('/send-verification', requireAuth, async (req: AuthenticatedRequest,
       });
     }
   } catch (error) {
-    console.error('Email verification error:', error);
+    logger.error('Email verification error:', error);
     res.status(500).json({
       error: 'E-posta doğrulama gönderilirken hata oluştu',
     });
@@ -54,7 +55,7 @@ router.post('/confirm-verification', requireAuth, async (req: AuthenticatedReque
     }
 
     // Mock successful verification
-    console.log(`✅ Mock email verification confirmed for user ${userId} with code ${verificationCode}`);
+    logger.info(`✅ Mock email verification confirmed for user ${userId} with code ${verificationCode}`);
 
     res.json({
       success: true,
@@ -62,7 +63,7 @@ router.post('/confirm-verification', requireAuth, async (req: AuthenticatedReque
       verifiedAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Email verification confirmation error:', error);
+    logger.error('Email verification confirmation error:', error);
     res.status(500).json({
       error: 'E-posta doğrulama onaylanırken hata oluştu',
     });
@@ -81,7 +82,7 @@ router.get('/status', requireAuth, async (req: AuthenticatedRequest, res) => {
       canResend: true,
     });
   } catch (error) {
-    console.error('Email verification status error:', error);
+    logger.error('Email verification status error:', error);
     res.status(500).json({
       error: 'Doğrulama durumu alınırken hata oluştu',
     });

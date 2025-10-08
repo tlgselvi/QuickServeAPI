@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from './auth';
+import { logger } from '../utils/logger';
 
 // Sentry integration with fallback for development
 class SentryIntegration {
@@ -30,7 +31,7 @@ class SentryIntegration {
           beforeSend(event) {
             // Filter out development errors
             if (process.env.NODE_ENV === 'development') {
-              console.log('Sentry event (development):', event);
+              logger.info('Sentry event (development):', event);
               return null; // Don't send in development
             }
             return event;
@@ -48,12 +49,12 @@ class SentryIntegration {
 
         this.sentry = Sentry;
         this.isInitialized = true;
-        console.log('✅ Sentry initialized successfully');
+        logger.info('✅ Sentry initialized successfully');
       } else {
-        console.log('⚠️  Sentry DSN not configured, using fallback logging');
+        logger.info('⚠️  Sentry DSN not configured, using fallback logging');
       }
     } catch (error) {
-      console.warn('⚠️  Sentry not available:', error);
+      logger.warn('⚠️  Sentry not available:', error);
       this.sentry = null;
       this.isInitialized = false;
     }
@@ -65,7 +66,7 @@ class SentryIntegration {
       this.sentry.captureException(error, context);
     } else {
       // Fallback logging
-      console.error('🚨 Exception (Sentry fallback):', {
+      logger.error('🚨 Exception (Sentry fallback):', {
         error: error.message,
         stack: error.stack,
         context
@@ -80,7 +81,7 @@ class SentryIntegration {
     } else {
       // Fallback logging
       const emoji = level === 'error' ? '🚨' : level === 'warning' ? '⚠️' : 'ℹ️';
-      console.log(`${emoji} Message (Sentry fallback):`, {
+      logger.info(`${emoji} Message (Sentry fallback):`, {
         message,
         level,
         context
@@ -228,7 +229,7 @@ export const errorHandlerWithSentry = (error: Error, req: Request, res: Response
 
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    console.error('🚨 Unhandled Error:', {
+    logger.error('🚨 Unhandled Error:', {
       message: error.message,
       stack: error.stack,
       request: {
@@ -376,7 +377,7 @@ export const captureError = (error: Error, context?: any) => {
 
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    console.error('🚨 Captured Error:', {
+    logger.error('🚨 Captured Error:', {
       name: error.name,
       message: error.message,
       stack: error.stack,
@@ -402,13 +403,13 @@ export const capturePerformanceIssue = (operation: string, duration: number, thr
 
 // Graceful shutdown handler
 export const gracefulShutdown = async () => {
-  console.log('🔄 Gracefully shutting down...');
+  logger.info('🔄 Gracefully shutting down...');
   
   try {
     await sentry.close();
-    console.log('✅ Sentry closed successfully');
+    logger.info('✅ Sentry closed successfully');
   } catch (error) {
-    console.error('❌ Error closing Sentry:', error);
+    logger.error('❌ Error closing Sentry:', error);
   }
 
   process.exit(0);
@@ -416,13 +417,13 @@ export const gracefulShutdown = async () => {
 
 // Handle uncaught exceptions and unhandled rejections
 process.on('uncaughtException', (error) => {
-  console.error('🚨 Uncaught Exception:', error);
+  logger.error('🚨 Uncaught Exception:', error);
   sentry.captureException(error);
   gracefulShutdown();
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
   sentry.captureException(new Error(`Unhandled Rejection: ${reason}`));
 });
 

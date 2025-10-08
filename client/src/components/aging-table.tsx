@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import {
   Table,
   TableBody,
@@ -105,7 +105,7 @@ const getRiskBadgeColor = (riskLevel: string): string => {
   }
 };
 
-export function AgingTable({ reportType, title, description }: AgingTableProps) {
+export const AgingTable = memo(function AgingTable({ reportType, title, description }: AgingTableProps) {
   const [reports, setReports] = useState<AgingReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -143,7 +143,7 @@ export function AgingTable({ reportType, title, description }: AgingTableProps) 
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
-      console.error('Aging reports fetch error:', err);
+      logger.error('Aging reports fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -369,4 +369,4 @@ export function AgingTable({ reportType, title, description }: AgingTableProps) 
       </CardContent>
     </Card>
   );
-}
+});

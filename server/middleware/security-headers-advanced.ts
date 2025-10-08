@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as crypto from 'crypto';
+import { logger } from '../utils/logger';
 
 // Security Headers Configuration
 export const SECURITY_HEADERS_CONFIG = {
@@ -284,7 +285,7 @@ export class AdvancedSecurityHeaders {
         const violation = req.body;
         
         // Log CSP violation
-        console.warn('CSP Violation:', {
+        logger.warn('CSP Violation:', {
           documentUri: violation['document-uri'],
           violatedDirective: violation['violated-directive'],
           blockedUri: violation['blocked-uri'],
@@ -299,12 +300,12 @@ export class AdvancedSecurityHeaders {
         // In production, you might want to send this to a monitoring service
         if (process.env.NODE_ENV === 'production') {
           // Send to monitoring service (e.g., Sentry, DataDog, etc.)
-          console.log('CSP violation logged to monitoring service');
+          logger.info('CSP violation logged to monitoring service');
         }
 
         res.status(204).end();
       } catch (error) {
-        console.error('CSP report handling error:', error);
+        logger.error('CSP report handling error:', error);
         res.status(400).json({ error: 'Invalid CSP report' });
       }
     };
@@ -323,7 +324,7 @@ export class AdvancedSecurityHeaders {
     const missingHeaders = requiredHeaders.filter(header => !res.getHeader(header));
     
     if (missingHeaders.length > 0) {
-      console.warn('Missing security headers:', missingHeaders);
+      logger.warn('Missing security headers:', missingHeaders);
       return false;
     }
 

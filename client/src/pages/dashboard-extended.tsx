@@ -23,6 +23,11 @@ import {
   Clock,
   AlertTriangle
 } from 'lucide-react';
+import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
+import { ConnectionStatus } from '@/components/ui/error-display';
+import { AIAnalysisWidget } from '@/components/ai/ai-analysis-widget';
+import { SmartNotificationsWidget } from '@/components/ai/smart-notifications-widget';
+import { logger } from '@/lib/logger';
 
 interface WidgetConfig {
   id: string;
@@ -167,6 +172,9 @@ export function DashboardExtended() {
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  
+  // Realtime connection status
+  const { isConnected, connectionError, reconnect } = useRealtimeDashboard();
 
   useEffect(() => {
     loadDashboardLayout();
@@ -175,20 +183,29 @@ export function DashboardExtended() {
   const loadDashboardLayout = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/dashboard/layout');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/dashboard/layout', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+      });
       
       if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setLayout(data.data);
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          if (data.success) {
+            setLayout(data.data);
+          }
         }
       } else {
         // Use default layout if API fails
-        console.warn('Dashboard layout API failed, using default layout');
+        logger.warn('Dashboard layout API failed, using default layout');
       }
     } catch (err) {
-      console.error('Dashboard layout load error:', err);
-      setError('Dashboard yüklenirken hata oluştu');
+      logger.error('Dashboard layout load error:', err);
+      // Silently fail and use default layout instead of showing error
+      logger.info('Using default dashboard layout');
     } finally {
       setLoading(false);
     }
@@ -196,22 +213,27 @@ export function DashboardExtended() {
 
   const saveDashboardLayout = async (newLayout: DashboardLayout) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch('/api/dashboard/layout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(newLayout),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setLayout(newLayout);
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          if (data.success) {
+            setLayout(newLayout);
+          }
         }
       }
     } catch (err) {
-      console.error('Dashboard layout save error:', err);
+      logger.error('Dashboard layout save error:', err);
     }
   };
 
@@ -270,9 +292,16 @@ export function DashboardExtended() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             FinBot V3 Dashboard
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Yapay Zeka Destekli Finansal Analiz ve Yönetim Platformu
-          </p>
+          <div className="flex items-center gap-4 mt-2">
+            <p className="text-muted-foreground text-lg">
+              Yapay Zeka Destekli Finansal Analiz ve Yönetim Platformu
+            </p>
+            <ConnectionStatus 
+              isConnected={isConnected} 
+              error={connectionError}
+              onReconnect={reconnect}
+            />
+          </div>
           <div className="flex items-center gap-2 mt-2">
             <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></div>

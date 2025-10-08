@@ -4,6 +4,7 @@ import slowDown from 'express-slow-down';
 import { eq, and, gt, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { userActivityLogs, userProfiles } from '../../shared/schema';
+import { logger } from '../utils/logger';
 
 // Rate Limiting Configuration
 export const RATE_LIMIT_CONFIG = {
@@ -217,7 +218,7 @@ export class AdvancedRateLimiter {
 
         next();
       } catch (error) {
-        console.error('Account lockout check error:', error);
+        logger.error('Account lockout check error:', error);
         next(); // Continue on error
       }
     };
@@ -249,7 +250,7 @@ export class AdvancedRateLimiter {
         failedAttempts: userProfile.failedLoginAttempts
       };
     } catch (error) {
-      console.error('User lockout check error:', error);
+      logger.error('User lockout check error:', error);
       return { isLocked: false, failedAttempts: 0 };
     }
   }
@@ -264,7 +265,7 @@ export class AdvancedRateLimiter {
       // This is a simplified version
       return { isLocked: false };
     } catch (error) {
-      console.error('IP lockout check error:', error);
+      logger.error('IP lockout check error:', error);
       return { isLocked: false };
     }
   }
@@ -283,7 +284,7 @@ export class AdvancedRateLimiter {
         }
       });
     } catch (error) {
-      console.error('Failed attempt logging error:', error);
+      logger.error('Failed attempt logging error:', error);
     }
   }
 
@@ -329,7 +330,7 @@ export class AdvancedRateLimiter {
       });
 
     } catch (error) {
-      console.error('Failed auth handling error:', error);
+      logger.error('Failed auth handling error:', error);
     }
   }
 
@@ -358,7 +359,7 @@ export class AdvancedRateLimiter {
       });
 
     } catch (error) {
-      console.error('Failed attempts reset error:', error);
+      logger.error('Failed attempts reset error:', error);
     }
   }
 
@@ -387,7 +388,7 @@ export class AdvancedRateLimiter {
       });
 
     } catch (error) {
-      console.error('Admin unlock error:', error);
+      logger.error('Admin unlock error:', error);
       throw new Error('Failed to unlock user account');
     }
   }
@@ -434,11 +435,11 @@ export class AdvancedRateLimiter {
         unlockedCount++;
       }
 
-      console.log(`Auto-unlocked ${unlockedCount} expired accounts`);
+      logger.info(`Auto-unlocked ${unlockedCount} expired accounts`);
       return unlockedCount;
 
     } catch (error) {
-      console.error('Auto-unlock error:', error);
+      logger.error('Auto-unlock error:', error);
       return 0;
     }
   }
@@ -480,7 +481,7 @@ export class AdvancedRateLimiter {
       };
 
     } catch (error) {
-      console.error('Rate limit metrics error:', error);
+      logger.error('Rate limit metrics error:', error);
       return {
         lockedAccounts: 0,
         failedAttempts24h: 0,

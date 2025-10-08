@@ -6,6 +6,7 @@ import { type Server } from 'http';
 import viteConfig from '../vite.config.ts';
 import { nanoid } from 'nanoid';
 import { fileURLToPath } from 'url';
+import { logger } from './utils/logger.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,7 +21,7 @@ export function log (message: string, source = 'express') {
     hour12: true,
   });
 
-  console.log(`${formattedTime} [${source}] ${message}`);
+  logger.info(`${formattedTime} [${source}] ${message}`);
 }
 
 export async function setupVite (app: Express, server: Server) {
@@ -72,13 +73,13 @@ export async function setupVite (app: Express, server: Server) {
 
 export function serveStatic (app: Express) {
   const distPath = path.resolve(process.cwd(), 'dist', 'public');
-  console.log('serveStatic - distPath:', distPath);
-  console.log('serveStatic - process.cwd():', process.cwd());
-  console.log('serveStatic - fs.existsSync(distPath):', fs.existsSync(distPath));
+  logger.info('serveStatic - distPath:', distPath);
+  logger.info('serveStatic - process.cwd():', process.cwd());
+  logger.info('serveStatic - fs.existsSync(distPath):', fs.existsSync(distPath));
 
   if (!fs.existsSync(distPath)) {
-    console.error('Build directory not found:', distPath);
-    console.log('Available files in process.cwd():', fs.readdirSync(process.cwd()));
+    logger.error('Build directory not found:', distPath);
+    logger.info('Available files in process.cwd():', fs.readdirSync(process.cwd()));
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
     );

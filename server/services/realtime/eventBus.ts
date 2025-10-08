@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { AuthenticatedRequest } from '../../middleware/auth';
+import { logger } from '../../utils/logger';
 
 export interface RealtimeEvent {
   id: string;
@@ -68,7 +69,7 @@ export class RealtimeEventBus extends EventEmitter {
     }
 
     // Log the event
-    console.log(`[REALTIME] Event published:`, {
+    logger.info(`[REALTIME] Event published:`, {
       id: realtimeEvent.id,
       type: realtimeEvent.type,
       topic: realtimeEvent.topic,
@@ -98,7 +99,7 @@ export class RealtimeEventBus extends EventEmitter {
 
     this.subscriptions.set(subscriptionId, subscription);
 
-    console.log(`[REALTIME] User ${userId} subscribed to topics:`, topics);
+    logger.info(`[REALTIME] User ${userId} subscribed to topics:`, topics);
 
     return subscriptionId;
   }
@@ -112,7 +113,7 @@ export class RealtimeEventBus extends EventEmitter {
       subscription.isActive = false;
       this.subscriptions.delete(subscriptionId);
       
-      console.log(`[REALTIME] Unsubscribed:`, subscriptionId);
+      logger.info(`[REALTIME] Unsubscribed:`, subscriptionId);
       return true;
     }
     return false;
@@ -186,7 +187,7 @@ export class RealtimeEventBus extends EventEmitter {
         subscription.isActive = false;
         this.subscriptions.delete(subscriptionId);
         
-        console.log(`[REALTIME] Cleaned up inactive subscription:`, subscriptionId);
+        logger.info(`[REALTIME] Cleaned up inactive subscription:`, subscriptionId);
       }
     }
   }

@@ -1,5 +1,6 @@
 import { storage } from './storage';
 import type { InsertSystemAlert, Transaction } from '@shared/schema';
+import { logger } from './utils/logger.ts';
 
 export class AlertService {
   /**
@@ -30,7 +31,7 @@ export class AlertService {
           };
 
           await storage.createSystemAlert(alertData);
-          console.log(`Low balance alert created for account ${account.accountName}`);
+          logger.info(`Low balance alert created for account ${account.accountName}`);
         }
 
         // Dismiss alerts if balance is now sufficient
@@ -40,12 +41,12 @@ export class AlertService {
           );
           if (activeAlert) {
             await storage.dismissSystemAlert(activeAlert.id);
-            console.log(`Low balance alert dismissed for account ${account.accountName}`);
+            logger.info(`Low balance alert dismissed for account ${account.accountName}`);
           }
         }
       }
     } catch (error) {
-      console.error('Error checking low balance alerts:', error);
+      logger.error('Error checking low balance alerts:', error);
     }
   }
 
@@ -117,13 +118,13 @@ export class AlertService {
               };
 
               await storage.createSystemAlert(alertData);
-              console.log(`Recurring payment reminder created for: ${lastTransaction.description}`);
+              logger.info(`Recurring payment reminder created for: ${lastTransaction.description}`);
             }
           }
         }
       }
     } catch (error) {
-      console.error('Error checking recurring payment reminders:', error);
+      logger.error('Error checking recurring payment reminders:', error);
     }
   }
 
@@ -196,12 +197,12 @@ export class AlertService {
             };
 
             await storage.createSystemAlert(alertData);
-            console.log(`Budget alert created for category: ${category}`);
+            logger.info(`Budget alert created for category: ${category}`);
           }
         }
       }
     } catch (error) {
-      console.error('Error checking budget alerts:', error);
+      logger.error('Error checking budget alerts:', error);
     }
   }
 
@@ -259,11 +260,11 @@ export class AlertService {
           };
 
           await storage.createSystemAlert(alertData);
-          console.log('Monthly financial summary alert created');
+          logger.info('Monthly financial summary alert created');
         }
       }
     } catch (error) {
-      console.error('Error creating monthly financial summary:', error);
+      logger.error('Error creating monthly financial summary:', error);
     }
   }
 
@@ -271,7 +272,7 @@ export class AlertService {
    * Run all alert checks
    */
   async runAllChecks (): Promise<void> {
-    console.log('Running system alert checks...');
+    logger.info('Running system alert checks...');
 
     await Promise.all([
       this.checkLowBalanceAlerts(),
@@ -280,7 +281,7 @@ export class AlertService {
       this.createMonthlyFinancialSummary(),
     ]);
 
-    console.log('System alert checks completed');
+    logger.info('System alert checks completed');
   }
 }
 

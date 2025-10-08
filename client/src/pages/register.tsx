@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export default function Register () {
   const [, setLocation] = useLocation();
@@ -31,12 +32,12 @@ export default function Register () {
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterRequest) => {
-      console.log('📝 Attempting registration for:', data.email);
+      logger.info('📝 Attempting registration for:', data.email);
       const response = await apiRequest('POST', '/api/auth/register', data);
-      return response;
+      return response.json();
     },
     onSuccess: (data) => {
-      console.log('✅ Registration successful:', data);
+      logger.info('✅ Registration successful:', data);
       toast({
         title: 'Kayıt Başarılı',
         description: 'Hesabınız oluşturuldu! Giriş sayfasına yönlendiriliyorsunuz...',
@@ -45,7 +46,7 @@ export default function Register () {
       setTimeout(() => setLocation('/login'), 1500);
     },
     onError: (error: any) => {
-      console.error('❌ Registration error:', error);
+      logger.error('❌ Registration error:', error);
       toast({
         variant: 'destructive',
         title: 'Kayıt Hatası',

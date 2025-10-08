@@ -12,10 +12,14 @@ import { toast } from '@/components/ui/use-toast';
 import BankAccountDialog from '@/components/bank-account-dialog';
 import BankAccountCard from '@/components/bank-account-card';
 import AccountTransactionForm from '@/components/account-transaction-form';
+import EditAccountDialog from '@/components/edit-account-dialog';
+import EditTransactionDialog from '@/components/edit-transaction-dialog';
 import { apiRequest } from '@/lib/queryClient';
+import { logger } from '@/lib/utils/logger';
 import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 import type { Account, Transaction } from '@shared/schema';
-import { Plus } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
+import { memo, useMemo } from 'react';
 
 export default function Company () {
   const formatCurrency = useFormatCurrency();
@@ -29,9 +33,13 @@ export default function Company () {
   // Dialog states
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editTransactionDialogOpen, setEditTransactionDialogOpen] = useState(false);
+  const [deleteTransactionDialogOpen, setDeleteTransactionDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
   const [newAccountName, setNewAccountName] = useState('');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
 
 
   // Fetch company accounts
@@ -40,9 +48,9 @@ export default function Company () {
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/accounts');
       const data = await response.json();
-      console.log('🏢 Company: Fetched all accounts:', data);
+      logger.info('🏢 Company: Fetched all accounts:', data);
       const companyAccounts = data.filter((account: Account) => account.type === 'company');
-      console.log('🏢 Company: Filtered company accounts:', companyAccounts);
+      logger.info('🏢 Company: Filtered company accounts:', companyAccounts);
       return companyAccounts;
     },
     staleTime: 30000,
@@ -65,9 +73,11 @@ export default function Company () {
     staleTime: 30000,
   });
 
-  const filteredAccounts = accounts.filter((account: Account) =>
-    account.accountName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    account.bankName?.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredAccounts = useMemo(() => 
+    accounts.filter((account: Account) =>
+      account.accountName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      account.bankName?.toLowerCase().includes(searchTerm.toLowerCase()),
+    ), [accounts, searchTerm]
   );
 
   const totalCompanyBalance = accounts.reduce((sum: number, account: Account) =>
@@ -85,7 +95,7 @@ export default function Company () {
         await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       }
     } catch (error) {
-      console.error('Error adding transaction:', error);
+      logger.error('Error adding transaction:', error);
     }
   };
 
@@ -99,25 +109,25 @@ export default function Company () {
 
     setIsAddingAccount(true);
     try {
-      console.log('Sending account data:', accountData);
+      logger.info('Sending account data:', accountData);
       const response = await apiRequest('POST', '/api/accounts', accountData);
-      console.log('Account response:', response);
+      logger.info('Account response:', response);
       
       if (response.ok) {
-        console.log('✅ Company: Account added successfully');
+        logger.info('✅ Company: Account added successfully');
         setShowAddAccountDialog(false);
         // Invalidate and refetch accounts data instead of reloading page
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'company'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/accounts', 'personal'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
-        console.log('🔄 Company: Cache invalidated, data will refresh');
+        logger.info('🔄 Company: Cache invalidated, data will refresh');
       } else {
         const errorData = await response.json();
-        console.error('❌ Company: API error:', errorData);
+        logger.error('❌ Company: API error:', errorData);
         alert(`❌ Hesap eklenirken hata: ${errorData.error || errorData.message || 'Bilinmeyen hata'}`);
       }
     } catch (error) {
-      console.error('Error adding account:', error);
+      logger.error('Error adding account:', error);
       alert('Hesap eklenirken hata oluştu!');
     } finally {
       setIsAddingAccount(false);
@@ -129,7 +139,7 @@ export default function Company () {
     try {
       const response = await apiRequest('PUT', `/api/accounts/${accountId}`, updatedData);
       if (response.ok) {
-        console.log('✅ Company: Account updated successfully');
+        logger.info('✅ Company: Account updated successfully');
         toast({
           title: "✅ Başarılı",
           description: "Hesap başarıyla güncellendi!",
@@ -143,7 +153,7 @@ export default function Company () {
         setNewAccountName('');
       } else {
         const errorData = await response.json();
-        console.error('❌ Company: API error:', errorData);
+        logger.error('❌ Company: API error:', errorData);
         toast({
           title: "❌ Hata",
           description: `Hesap güncellenirken hata: ${errorData.error || 'Bilinmeyen hata'}`,
@@ -151,7 +161,7 @@ export default function Company () {
         });
       }
     } catch (error) {
-      console.error('❌ Company: Error updating account:', error);
+      logger.error('❌ Company: Error updating account:', error);
       toast({
         title: "❌ Hata",
         description: "Hesap güncellenirken hata oluştu!",
@@ -165,7 +175,7 @@ export default function Company () {
     try {
       const response = await apiRequest('DELETE', `/api/accounts/${accountId}`);
       if (response.ok) {
-        console.log('✅ Company: Account deleted successfully');
+        logger.info('✅ Company: Account deleted successfully');
         toast({
           title: "✅ Başarılı",
           description: "Hesap başarıyla silindi!",
@@ -178,7 +188,7 @@ export default function Company () {
         setDeletingAccountId(null);
       } else {
         const errorData = await response.json();
-        console.error('❌ Company: API error:', errorData);
+        logger.error('❌ Company: API error:', errorData);
         toast({
           title: "❌ Hata",
           description: `Hesap silinirken hata: ${errorData.error || 'Bilinmeyen hata'}`,
@@ -186,10 +196,76 @@ export default function Company () {
         });
       }
     } catch (error) {
-      console.error('❌ Company: Error deleting account:', error);
+      logger.error('❌ Company: Error deleting account:', error);
       toast({
         title: "❌ Hata",
         description: "Hesap silinirken hata oluştu!",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Edit transaction function
+  const handleEditTransaction = async (transactionId: string, updatedData: any) => {
+    try {
+      const response = await apiRequest('PUT', `/api/transactions/${transactionId}`, updatedData);
+      if (response.ok) {
+        logger.info('✅ Company: Transaction updated successfully');
+        toast({
+          title: "✅ Başarılı",
+          description: "İşlem başarıyla güncellendi!",
+        });
+        // Invalidate and refetch transactions data
+        await queryClient.invalidateQueries({ queryKey: ['/api/transactions', selectedAccount] });
+        setEditTransactionDialogOpen(false);
+        setEditingTransaction(null);
+      } else {
+        const errorData = await response.json();
+        logger.error('❌ Company: API error:', errorData);
+        toast({
+          title: "❌ Hata",
+          description: `İşlem güncellenirken hata: ${errorData.error || 'Bilinmeyen hata'}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      logger.error('❌ Company: Error updating transaction:', error);
+      toast({
+        title: "❌ Hata",
+        description: "İşlem güncellenirken hata oluştu!",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Delete transaction function
+  const handleDeleteTransaction = async (transactionId: string) => {
+    try {
+      const response = await apiRequest('DELETE', `/api/transactions/${transactionId}`);
+      if (response.ok) {
+        logger.info('✅ Company: Transaction deleted successfully');
+        toast({
+          title: "✅ Başarılı",
+          description: "İşlem başarıyla silindi!",
+        });
+        // Invalidate and refetch transactions data
+        await queryClient.invalidateQueries({ queryKey: ['/api/transactions', selectedAccount] });
+        setDeleteTransactionDialogOpen(false);
+        setDeletingTransactionId(null);
+      } else {
+        const errorData = await response.json();
+        logger.error('❌ Company: API error:', errorData);
+        toast({
+          title: "❌ Hata",
+          description: `İşlem silinirken hata: ${errorData.error || 'Bilinmeyen hata'}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      logger.error('❌ Company: Error deleting transaction:', error);
+      toast({
+        title: "❌ Hata",
+        description: "İşlem silinirken hata oluştu!",
         variant: "destructive",
       });
     }
@@ -246,7 +322,7 @@ export default function Company () {
               subAccounts = JSON.parse(account.subAccounts);
             }
           } catch (e) {
-            console.error('Error parsing subAccounts:', e);
+            logger.error('Error parsing subAccounts:', e);
           }
 
           // Convert account to BankProduct format
@@ -331,6 +407,7 @@ export default function Company () {
                     <TableHead>Tür</TableHead>
                     <TableHead>Tutar</TableHead>
                     <TableHead>Kategori</TableHead>
+                    <TableHead>İşlemler</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -351,6 +428,32 @@ export default function Company () {
                         {formatCurrency(parseFloat(transaction.amount))}
                       </TableCell>
                       <TableCell>{transaction.category}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingTransaction(transaction);
+                              setEditTransactionDialogOpen(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setDeletingTransactionId(transaction.id);
+                              setDeleteTransactionDialogOpen(true);
+                            }}
+                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -417,49 +520,13 @@ export default function Company () {
       )}
 
       {/* Edit Account Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Hesap Düzenle</DialogTitle>
-            <DialogDescription>
-              {editingAccount?.bankName} hesabının adını güncelleyin.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Hesap Adı</label>
-              <Input
-                value={newAccountName}
-                onChange={(e) => setNewAccountName(e.target.value)}
-                placeholder="Hesap adını girin"
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setEditDialogOpen(false);
-                setEditingAccount(null);
-                setNewAccountName('');
-              }}
-            >
-              İptal
-            </Button>
-            <Button
-              onClick={() => {
-                if (editingAccount && newAccountName && newAccountName !== editingAccount.accountName) {
-                  handleEditAccount(editingAccount.id, { accountName: newAccountName });
-                }
-              }}
-              disabled={!newAccountName || newAccountName === editingAccount?.accountName}
-            >
-              Güncelle
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditAccountDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onUpdateAccount={handleEditAccount}
+        account={editingAccount}
+        isLoading={false}
+      />
 
       {/* Delete Account Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -483,6 +550,48 @@ export default function Company () {
               onClick={() => {
                 if (deletingAccountId) {
                   handleDeleteAccount(deletingAccountId);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Sil
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Transaction Dialog */}
+      <EditTransactionDialog
+        open={editTransactionDialogOpen}
+        onOpenChange={setEditTransactionDialogOpen}
+        onUpdateTransaction={handleEditTransaction}
+        transaction={editingTransaction}
+        accounts={accounts}
+        isLoading={false}
+      />
+
+      {/* Delete Transaction Dialog */}
+      <AlertDialog open={deleteTransactionDialogOpen} onOpenChange={setDeleteTransactionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>İşlemi Sil</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu işlemi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setDeleteTransactionDialogOpen(false);
+                setDeletingTransactionId(null);
+              }}
+            >
+              İptal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deletingTransactionId) {
+                  handleDeleteTransaction(deletingTransactionId);
                 }
               }}
               className="bg-red-600 hover:bg-red-700"

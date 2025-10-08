@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type { UserRoleType, PermissionType } from '../../shared/schema.ts';
 import { hasPermission, hasAnyPermission } from '../../shared/schema.ts';
 import jwt from 'jsonwebtoken';
+import { logger } from '../utils/logger';
 
 // Extend Request type to include user info
 export interface AuthenticatedRequest extends Request {
@@ -57,8 +58,49 @@ export const requireJWTAuth = async (req: AuthenticatedRequest, res: Response, n
   }
 };
 
-// Authentication middleware - ensures user is logged in and active (authoritative check)
+// Authentication middleware - ensures user is logged in and active (supports both JWT and session)
 export const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  // Try JWT token from header or query parameter (for EventSource)
+  let token = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.substring(7)
+    : null;
+  
+  // Fallback to query parameter for EventSource connections
+  if (!token && req.query.token) {
+    token = req.query.token as string;
+  }
+
+  if (token) {
+    // Use JWT authentication
+    try {
+      const { JWTAuthService } = await import('../jwt-auth');
+      const decoded = JWTAuthService.verifyToken(token);
+
+      if (!decoded) {
+        return res.status(401).json({
+          error: 'Geçersiz token',
+          code: 'INVALID_TOKEN',
+        });
+      }
+
+      // Attach user to request
+      req.user = {
+        id: decoded.id,
+        email: decoded.email,
+        username: decoded.username,
+        role: decoded.role,
+      };
+
+      return next();
+    } catch (error) {
+      return res.status(401).json({
+        error: 'Geçersiz token',
+        code: 'INVALID_TOKEN',
+      });
+    }
+  }
+
+  // Fallback to session authentication
   if (!req.session?.user) {
     return res.status(401).json({
       error: 'Oturum açmanız gerekiyor',
@@ -100,7 +142,7 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
     req.user = req.session.user as any;
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    logger.error('Auth middleware error:', error);
     return res.status(500).json({
       error: 'Kimlik doğrulama hatası',
       code: 'AUTH_ERROR',
@@ -212,7 +254,7 @@ export const requireAdmin = requireRole('admin');
 // Log access attempts for security audit
 export const logAccess = (action: string) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    console.log(`🔐 [AUTH] ${action} - User: ${req.user?.username || 'anonymous'} (${req.user?.role || 'no-role'}) - IP: ${req.ip}`);
+    logger.info(`🔐 [AUTH] ${action} - User: ${req.user?.username || 'anonymous'} (${req.user?.role || 'no-role'}) - IP: ${req.ip}`);
     next();
   };
 };
@@ -244,7 +286,7 @@ export const lastAdminCheck = async (req: AuthenticatedRequest, res: Response, n
 
     next();
   } catch (error) {
-    console.error('Last admin check error:', error);
+    logger.error('Last admin check error:', error);
     return res.status(500).json({
       error: 'Admin kontrolü sırasında hata oluştu',
       code: 'ADMIN_CHECK_ERROR',
@@ -299,7 +341,7 @@ export const adminRoleChangeGuard = async (req: AuthenticatedRequest, res: Respo
 
     next();
   } catch (error) {
-    console.error('Admin role change guard error:', error);
+    logger.error('Admin role change guard error:', error);
     return res.status(500).json({
       error: 'Rol değişikliği kontrolü sırasında hata oluştu',
       code: 'ROLE_CHANGE_CHECK_ERROR',
@@ -346,7 +388,7 @@ export const systemAccountGuard = async (req: AuthenticatedRequest, res: Respons
 
     next();
   } catch (error) {
-    console.error('System account guard error:', error);
+    logger.error('System account guard error:', error);
     return res.status(500).json({
       error: 'Sistem hesabı kontrolü sırasında hata oluştu',
       code: 'SYSTEM_ACCOUNT_CHECK_ERROR',

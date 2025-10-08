@@ -15,6 +15,7 @@ import {
   getReconciliationSummary,
   getImportBatches,
 } from '../modules/bank/bank-integration-service';
+import { logger } from '../utils/logger';
 import { 
   insertBankIntegrationSchema, 
   updateBankIntegrationSchema,
@@ -53,7 +54,7 @@ router.get('/', requireAuth, requirePermission(Permission.VIEW_BANK_INTEGRATIONS
       data: integrations,
     });
   } catch (error) {
-    console.error('Get bank integrations error:', error);
+    logger.error('Get bank integrations error:', error);
     res.status(500).json({
       error: 'Banka entegrasyonları alınırken hata oluştu',
     });
@@ -79,7 +80,7 @@ router.get('/:id', requireAuth, requirePermission(Permission.VIEW_BANK_INTEGRATI
       data: integration,
     });
   } catch (error) {
-    console.error('Get bank integration error:', error);
+    logger.error('Get bank integration error:', error);
     res.status(500).json({
       error: 'Banka entegrasyonu alınırken hata oluştu',
     });
@@ -103,7 +104,7 @@ router.post('/', requireAuth, requirePermission(Permission.MANAGE_BANK_INTEGRATI
       message: 'Banka entegrasyonu başarıyla oluşturuldu',
     });
   } catch (error) {
-    console.error('Create bank integration error:', error);
+    logger.error('Create bank integration error:', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
       return res.status(400).json({
@@ -142,7 +143,7 @@ router.put('/:id', requireAuth, requirePermission(Permission.MANAGE_BANK_INTEGRA
       message: 'Banka entegrasyonu başarıyla güncellendi',
     });
   } catch (error) {
-    console.error('Update bank integration error:', error);
+    logger.error('Update bank integration error:', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
       return res.status(400).json({
@@ -176,7 +177,7 @@ router.delete('/:id', requireAuth, requirePermission(Permission.MANAGE_BANK_INTE
       message: 'Banka entegrasyonu başarıyla silindi',
     });
   } catch (error) {
-    console.error('Delete bank integration error:', error);
+    logger.error('Delete bank integration error:', error);
     res.status(500).json({
       error: 'Banka entegrasyonu silinirken hata oluştu',
     });
@@ -203,7 +204,7 @@ router.post('/:id/sync', requireAuth, requirePermission(Permission.IMPORT_BANK_D
       error: result.error,
     });
   } catch (error) {
-    console.error('Sync bank data error:', error);
+    logger.error('Sync bank data error:', error);
     res.status(500).json({
       error: 'Banka verileri senkronize edilirken hata oluştu',
     });
@@ -257,7 +258,7 @@ router.post('/:id/import', requireAuth, requirePermission(Permission.IMPORT_BANK
       message: `İçe aktarma tamamlandı: ${result.successfulRecords}/${result.totalRecords} başarılı`,
     });
   } catch (error) {
-    console.error('Import transactions error:', error);
+    logger.error('Import transactions error:', error);
     res.status(500).json({
       error: 'İşlemler içe aktarılırken hata oluştu',
     });
@@ -296,7 +297,7 @@ router.get('/:id/transactions', requireAuth, requirePermission(Permission.VIEW_B
       data: transactions,
     });
   } catch (error) {
-    console.error('Get bank transactions error:', error);
+    logger.error('Get bank transactions error:', error);
     res.status(500).json({
       error: 'Banka işlemleri alınırken hata oluştu',
     });
@@ -321,7 +322,7 @@ router.post('/:id/reconcile', requireAuth, requirePermission(Permission.RECONCIL
       message: 'İşlem başarıyla eşleştirildi',
     });
   } catch (error) {
-    console.error('Reconcile transactions error:', error);
+    logger.error('Reconcile transactions error:', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
       return res.status(400).json({
@@ -349,7 +350,7 @@ router.get('/:id/reconciliation-summary', requireAuth, requirePermission(Permiss
       data: summary,
     });
   } catch (error) {
-    console.error('Get reconciliation summary error:', error);
+    logger.error('Get reconciliation summary error:', error);
     res.status(500).json({
       error: 'Eşleştirme özeti alınırken hata oluştu',
     });
@@ -380,7 +381,7 @@ router.get('/:id/import-batches', requireAuth, requirePermission(Permission.VIEW
       data: batches,
     });
   } catch (error) {
-    console.error('Get import batches error:', error);
+    logger.error('Get import batches error:', error);
     res.status(500).json({
       error: 'İçe aktarma toplu işlemleri alınırken hata oluştu',
     });
@@ -410,7 +411,7 @@ router.get('/import-batches/all', requireAuth, requirePermission(Permission.VIEW
       data: batches,
     });
   } catch (error) {
-    console.error('Get all import batches error:', error);
+    logger.error('Get all import batches error:', error);
     res.status(500).json({
       error: 'Tüm içe aktarma toplu işlemleri alınırken hata oluştu',
     });
@@ -429,7 +430,7 @@ router.get('/reconciliation-summary/all', requireAuth, requirePermission(Permiss
       data: summary,
     });
   } catch (error) {
-    console.error('Get all reconciliation summary error:', error);
+    logger.error('Get all reconciliation summary error:', error);
     res.status(500).json({
       error: 'Tüm eşleştirme özeti alınırken hata oluştu',
     });

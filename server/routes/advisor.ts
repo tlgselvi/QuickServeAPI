@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth, requirePermission, AuthenticatedRequest } from '../middleware/auth';
 import { Permission } from '@shared/schema';
 import { storage } from '../storage';
+import { logger } from '../utils/logger';
 import { 
   analyzePortfolio, 
   validatePortfolioInput,
@@ -76,7 +77,7 @@ const advisorRouter = (router: Router) => {
         res.json(response);
 
       } catch (error) {
-        console.error('Portfolio analysis error:', error);
+        logger.error('Portfolio analysis error:', error);
         res.status(500).json({
           error: 'Portföy analizi yapılırken hata oluştu',
           details: error instanceof Error ? error.message : 'Bilinmeyen hata'
@@ -173,7 +174,7 @@ const advisorRouter = (router: Router) => {
         res.json({ profiles });
 
       } catch (error) {
-        console.error('Risk profiles error:', error);
+        logger.error('Risk profiles error:', error);
         res.status(500).json({
           error: 'Risk profilleri alınırken hata oluştu',
           details: error instanceof Error ? error.message : 'Bilinmeyen hata'
@@ -259,7 +260,7 @@ const advisorRouter = (router: Router) => {
         res.json({ assetClasses });
 
       } catch (error) {
-        console.error('Asset classes error:', error);
+        logger.error('Asset classes error:', error);
         res.status(500).json({
           error: 'Varlık sınıfları alınırken hata oluştu',
           details: error instanceof Error ? error.message : 'Bilinmeyen hata'

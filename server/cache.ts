@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
+import { logger } from './utils/logger.ts';
 
 // In-memory cache implementation (fallback when Redis is not available)
 class MemoryCache {
@@ -114,7 +115,7 @@ class RedisCacheAdapter implements CacheInterface {
         url: process.env.REDIS_URL || 'redis://localhost:6379',
         retry_strategy: (options: any) => {
           if (options.error && options.error.code === 'ECONNREFUSED') {
-            console.warn('Redis connection refused, falling back to memory cache');
+            logger.warn('Redis connection refused, falling back to memory cache');
             return null;
           }
           return Math.min(options.attempt * 100, 3000);
@@ -122,12 +123,12 @@ class RedisCacheAdapter implements CacheInterface {
       });
 
       this.redis.on('error', (err: Error) => {
-        console.warn('Redis error:', err.message);
+        logger.warn('Redis error:', err.message);
       });
 
       this.redis.connect();
     } catch (error) {
-      console.warn('Redis not available, using memory cache');
+      logger.warn('Redis not available, using memory cache');
       this.redis = null;
     }
   }
@@ -139,7 +140,7 @@ class RedisCacheAdapter implements CacheInterface {
       const data = await this.redis.get(key);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error('Redis get error:', error);
+      logger.error('Redis get error:', error);
       return null;
     }
   }
@@ -158,7 +159,7 @@ class RedisCacheAdapter implements CacheInterface {
         }
       }
     } catch (error) {
-      console.error('Redis set error:', error);
+      logger.error('Redis set error:', error);
     }
   }
 
@@ -169,7 +170,7 @@ class RedisCacheAdapter implements CacheInterface {
       const result = await this.redis.del(key);
       return result > 0;
     } catch (error) {
-      console.error('Redis delete error:', error);
+      logger.error('Redis delete error:', error);
       return false;
     }
   }
@@ -184,7 +185,7 @@ class RedisCacheAdapter implements CacheInterface {
         await this.redis.del(`tag:${tag}`);
       }
     } catch (error) {
-      console.error('Redis invalidateByTag error:', error);
+      logger.error('Redis invalidateByTag error:', error);
     }
   }
 
@@ -194,7 +195,7 @@ class RedisCacheAdapter implements CacheInterface {
     try {
       await this.redis.flushDb();
     } catch (error) {
-      console.error('Redis clear error:', error);
+      logger.error('Redis clear error:', error);
     }
   }
 }
@@ -328,7 +329,7 @@ export const cacheMiddleware = (options: {
       res.json = function(body: any) {
         // Cache the response
         cache.set(cacheKey, body, ttl, tags).catch(error => {
-          console.error('Cache set error:', error);
+          logger.error('Cache set error:', error);
         });
 
         res.setHeader('X-Cache', 'MISS');
@@ -338,7 +339,7 @@ export const cacheMiddleware = (options: {
 
       next();
     } catch (error) {
-      console.error('Cache middleware error:', error);
+      logger.error('Cache middleware error:', error);
       next();
     }
   };
@@ -406,9 +407,9 @@ export const warmCache = async (userId: string) => {
     const accountsData = await storage.getAccounts();
     await cache.set(accountsKey, accountsData, 300, [`user:accounts`]);
 
-    console.log(`Cache warmed for user ${userId}`);
+    logger.info(`Cache warmed for user ${userId}`);
   } catch (error) {
-    console.error('Cache warming error:', error);
+    logger.error('Cache warming error:', error);
   }
 };
 

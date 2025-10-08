@@ -1,5 +1,7 @@
 import type { Account, Transaction } from '@shared/schema';
 import puppeteer from 'puppeteer';
+import { logger } from '../../utils/logger';
+import { logger } from '../../utils/logger';
 
 export interface PDFExportOptions {
   locale: 'tr-TR' | 'en-US';
@@ -62,7 +64,7 @@ export async function exportToPDF(
     await browser.close();
     return pdfBuffer;
   } catch (error) {
-    console.error('PDF generation failed:', error);
+    logger.error('PDF generation failed:', error);
     // Fallback to mock PDF
   const mockPDFContent = generateMockPDFContent(data, options);
   return Buffer.from(mockPDFContent, 'utf-8');

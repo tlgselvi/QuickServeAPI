@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AuthenticatedRequest, requireAuth, requirePermission } from '../middleware/auth';
 import { Permission } from '@shared/schema';
 import { queryOptimizer, createPerformanceMiddleware } from '../modules/performance/query-optimizer';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -23,7 +24,7 @@ router.get('/metrics', requireAuth, requirePermission(Permission.VIEW_SETTINGS),
       },
     });
   } catch (error) {
-    console.error('Performance metrics error:', error);
+    logger.error('Performance metrics error:', error);
     res.status(500).json({
       error: 'Performans metrikleri alınırken hata oluştu',
     });
@@ -43,7 +44,7 @@ router.get('/suggestions', requireAuth, requirePermission(Permission.MANAGE_SETT
       },
     });
   } catch (error) {
-    console.error('Performance suggestions error:', error);
+    logger.error('Performance suggestions error:', error);
     res.status(500).json({
       error: 'Optimizasyon önerileri alınırken hata oluştu',
     });
@@ -60,7 +61,7 @@ router.get('/cache/stats', requireAuth, requirePermission(Permission.VIEW_SETTIN
       data: stats,
     });
   } catch (error) {
-    console.error('Cache stats error:', error);
+    logger.error('Cache stats error:', error);
     res.status(500).json({
       error: 'Cache istatistikleri alınırken hata oluştu',
     });
@@ -79,7 +80,7 @@ router.post('/cache/clear', requireAuth, requirePermission(Permission.MANAGE_SET
       message: pattern ? `Cache cleared for pattern: ${pattern}` : 'Cache cleared',
     });
   } catch (error) {
-    console.error('Cache clear error:', error);
+    logger.error('Cache clear error:', error);
     res.status(500).json({
       error: 'Cache temizlenirken hata oluştu',
     });
@@ -117,7 +118,7 @@ router.get('/health', requireAuth, async (req: AuthenticatedRequest, res) => {
       },
     });
   } catch (error) {
-    console.error('Performance health error:', error);
+    logger.error('Performance health error:', error);
     res.status(500).json({
       error: 'Performans sağlık kontrolü yapılırken hata oluştu',
     });
@@ -178,7 +179,7 @@ router.post('/test', requireAuth, requirePermission(Permission.MANAGE_SETTINGS),
       },
     });
   } catch (error) {
-    console.error('Performance test error:', error);
+    logger.error('Performance test error:', error);
     res.status(500).json({
       error: 'Performans testi yapılırken hata oluştu',
     });

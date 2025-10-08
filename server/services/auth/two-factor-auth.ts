@@ -13,6 +13,7 @@ import { z } from 'zod';
 import * as crypto from 'crypto';
 import * as speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
+import { logger } from '../../utils/logger';
 
 // Two-Factor Authentication Service
 export class TwoFactorAuthService {
@@ -38,7 +39,7 @@ export class TwoFactorAuthService {
         backupCodes
       };
     } catch (error) {
-      console.error('Error generating 2FA secret:', error);
+      logger.error('Error generating 2FA secret:', error);
       throw new Error('Failed to generate 2FA secret');
     }
   }
@@ -73,7 +74,7 @@ export class TwoFactorAuthService {
         backupCodes
       };
     } catch (error) {
-      console.error('Error setting up 2FA:', error);
+      logger.error('Error setting up 2FA:', error);
       throw new Error('Failed to setup 2FA');
     }
   }
@@ -107,7 +108,7 @@ export class TwoFactorAuthService {
         .where(eq(userProfiles.userId, userId));
 
     } catch (error) {
-      console.error('Error enabling 2FA:', error);
+      logger.error('Error enabling 2FA:', error);
       throw new Error('Failed to enable 2FA');
     }
   }
@@ -156,7 +157,7 @@ export class TwoFactorAuthService {
         .where(eq(userProfiles.userId, userId));
 
     } catch (error) {
-      console.error('Error disabling 2FA:', error);
+      logger.error('Error disabling 2FA:', error);
       throw new Error('Failed to disable 2FA');
     }
   }
@@ -203,7 +204,7 @@ export class TwoFactorAuthService {
 
       return isValid;
     } catch (error) {
-      console.error('Error verifying 2FA:', error);
+      logger.error('Error verifying 2FA:', error);
       return false;
     }
   }
@@ -219,7 +220,7 @@ export class TwoFactorAuthService {
 
       return profile.length > 0 && profile[0].twoFactorEnabled;
     } catch (error) {
-      console.error('Error checking 2FA status:', error);
+      logger.error('Error checking 2FA status:', error);
       return false;
     }
   }
@@ -246,7 +247,7 @@ export class TwoFactorAuthService {
         smsEnabled: twoFactorRecord[0]?.smsEnabled || false
       };
     } catch (error) {
-      console.error('Error getting 2FA status:', error);
+      logger.error('Error getting 2FA status:', error);
       throw new Error('Failed to get 2FA status');
     }
   }
@@ -267,7 +268,7 @@ export class TwoFactorAuthService {
 
       return backupCodes;
     } catch (error) {
-      console.error('Error regenerating backup codes:', error);
+      logger.error('Error regenerating backup codes:', error);
       throw new Error('Failed to regenerate backup codes');
     }
   }
@@ -284,7 +285,7 @@ export class TwoFactorAuthService {
 
       return verified;
     } catch (error) {
-      console.error('Token verification error:', error);
+      logger.error('Token verification error:', error);
       return false;
     }
   }
@@ -317,7 +318,7 @@ export class TwoFactorAuthService {
         return decrypted === code;
       });
     } catch (error) {
-      console.error('Backup code verification error:', error);
+      logger.error('Backup code verification error:', error);
       return false;
     }
   }
@@ -334,7 +335,7 @@ export class TwoFactorAuthService {
       
       return decrypted;
     } catch (error) {
-      console.error('Backup code decryption error:', error);
+      logger.error('Backup code decryption error:', error);
       throw new Error('Invalid backup code format');
     }
   }
@@ -343,13 +344,13 @@ export class TwoFactorAuthService {
   async sendSMSCode(phoneNumber: string): Promise<string> {
     // In production, integrate with SMS service like Twilio
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log(`SMS Code for ${phoneNumber}: ${code}`); // For development
+    logger.info(`SMS Code for ${phoneNumber}: ${code}`); // For development
     return code;
   }
 
   async verifySMSCode(phoneNumber: string, code: string): Promise<boolean> {
     // In production, verify with SMS service
-    console.log(`Verifying SMS Code ${code} for ${phoneNumber}`); // For development
+    logger.info(`Verifying SMS Code ${code} for ${phoneNumber}`); // For development
     return true;
   }
 }

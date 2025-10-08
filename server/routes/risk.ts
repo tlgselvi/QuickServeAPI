@@ -3,6 +3,7 @@ import { requireAuth, requirePermission, logAccess } from '../middleware/auth';
 import type { AuthenticatedRequest } from '../middleware/auth';
 import { Permission } from '@shared/schema';
 import { formatCurrency } from '../lib/utils/formatCurrency';
+import { logger } from '../utils/logger';
 
 export default function riskRouter(router: Router) {
   // Risk analysis endpoint
@@ -74,7 +75,7 @@ export default function riskRouter(router: Router) {
           }
         });
       } catch (error) {
-        console.error('Risk analysis error:', error);
+        logger.error('Risk analysis error:', error);
         res.status(500).json({ 
           error: 'Risk analizi hesaplanırken hata oluştu',
           details: error instanceof Error ? error.message : 'Bilinmeyen hata',
@@ -149,7 +150,7 @@ export default function riskRouter(router: Router) {
           }
         });
       } catch (error) {
-        console.error('Risk parameters validation error:', error);
+        logger.error('Risk parameters validation error:', error);
         res.status(500).json({
           error: 'Parametre doğrulaması sırasında hata oluştu',
           details: error instanceof Error ? error.message : 'Bilinmeyen hata'
@@ -250,7 +251,7 @@ export default function riskRouter(router: Router) {
           }
         });
       } catch (error) {
-        console.error('Risk scenarios comparison error:', error);
+        logger.error('Risk scenarios comparison error:', error);
         res.status(500).json({
           error: 'Senaryo karşılaştırması sırasında hata oluştu',
           details: error instanceof Error ? error.message : 'Bilinmeyen hata'

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
+import { logger } from '../utils/logger';
 import {
   compareBudgetVsActual,
   getBudgetComparisonTrends,
@@ -37,7 +38,7 @@ router.get('/compare', requireAuth, async (req: AuthenticatedRequest, res) => {
       data: comparison,
     });
   } catch (error) {
-    console.error('Budget comparison error:', error);
+    logger.error('Budget comparison error:', error);
     res.status(500).json({
       error: 'Bütçe karşılaştırması yapılırken hata oluştu',
     });
@@ -65,7 +66,7 @@ router.get('/compare/trends', requireAuth, async (req: AuthenticatedRequest, res
       data: trends,
     });
   } catch (error) {
-    console.error('Budget trends error:', error);
+    logger.error('Budget trends error:', error);
     res.status(500).json({
       error: 'Bütçe trendleri alınırken hata oluştu',
     });
@@ -98,7 +99,7 @@ router.get('/compare/insights', requireAuth, async (req: AuthenticatedRequest, r
       data: insights,
     });
   } catch (error) {
-    console.error('Budget insights error:', error);
+    logger.error('Budget insights error:', error);
     res.status(500).json({
       error: 'Bütçe öngörüleri alınırken hata oluştu',
     });
@@ -139,7 +140,7 @@ router.get('/compare/variance', requireAuth, async (req: AuthenticatedRequest, r
       data: varianceAnalysis,
     });
   } catch (error) {
-    console.error('Budget variance analysis error:', error);
+    logger.error('Budget variance analysis error:', error);
     res.status(500).json({
       error: 'Bütçe varyans analizi yapılırken hata oluştu',
     });
@@ -172,7 +173,7 @@ router.get('/compare/score', requireAuth, async (req: AuthenticatedRequest, res)
       data: efficiencyScore,
     });
   } catch (error) {
-    console.error('Budget efficiency score error:', error);
+    logger.error('Budget efficiency score error:', error);
     res.status(500).json({
       error: 'Bütçe verimlilik skoru hesaplanırken hata oluştu',
     });
@@ -220,7 +221,7 @@ router.get('/compare/summary', requireAuth, async (req: AuthenticatedRequest, re
       data: summary,
     });
   } catch (error) {
-    console.error('Budget comparison summary error:', error);
+    logger.error('Budget comparison summary error:', error);
     res.status(500).json({
       error: 'Bütçe karşılaştırma özeti oluşturulurken hata oluştu',
     });

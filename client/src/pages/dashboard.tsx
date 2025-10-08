@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,7 +14,7 @@ import { AIChat } from '@/components/ai-chat';
 import { useFormatCurrency } from '@/lib/utils/formatCurrency';
 import CurrencySwitcher from '@/components/CurrencySwitcher';
 import NotificationBar from '@/components/alerts/NotificationBar';
-import { getAllCategories } from '@shared/schema';
+import { getAllCategories } from '@shared/client-schema';
 import BreakdownTable from '@/components/breakdown-table';
 import BreakdownChart from '@/components/breakdown-chart';
 import RiskAnalysis from '@/components/risk-analysis';
@@ -36,8 +36,8 @@ export default function Dashboard () {
   const [selectedAccountTypeFilter, setSelectedAccountTypeFilter] = useState<string>('all');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
 
-  // Calculate total assets and debts
-  const calculateFinancialSummary = (accounts: Account[]) => {
+  // Calculate total assets and debts - memoized for performance
+  const calculateFinancialSummary = useCallback((accounts: Account[]) => {
     let totalAssets = 0;
     let totalDebts = 0;
     let totalCreditCardDebt = 0;
@@ -87,7 +87,7 @@ export default function Dashboard () {
       netWorth: totalAssets - totalDebts - totalCreditCardDebt - totalLoanDebt - totalOverdraftDebt,
       totalMonthlyPayments: totalCreditCardMinPayment + totalLoanMinPayment
     };
-  };
+  }, []);
 
   // Loading states
   const { isLoading: isRefreshing, startLoading: startRefresh, stopLoading: stopRefresh } = useLoadingState();
@@ -107,6 +107,7 @@ export default function Dashboard () {
     totalTransactions: number;
   }>({
     queryKey: ['/api/dashboard'],
+    enabled: !!user && !!localStorage.getItem('token'), // Only fetch if user is logged in and token exists
     staleTime: 60000, // 1 minute - data is fresh for 1 minute
     gcTime: 300000, // 5 minutes - cache for 5 minutes
     refetchOnWindowFocus: false, // Don't refetch on window focus
@@ -122,6 +123,7 @@ export default function Dashboard () {
     accounts: number;
   }>({
     queryKey: ['/api/consolidation/breakdown'],
+    enabled: !!user && !!localStorage.getItem('token'), // Only fetch if user is logged in and token exists
     staleTime: 60000,
     gcTime: 300000,
     refetchOnWindowFocus: false,
@@ -131,6 +133,7 @@ export default function Dashboard () {
   // DSCR query (basic smoke: sample params)
   const { data: dscrData } = useQuery<{ dscr: number; status: 'ok' | 'warning' | 'critical' }>({
     queryKey: ['/api/finance/dscr', { operatingCF: 200, debtService: 100 }],
+    enabled: !!user && !!localStorage.getItem('token'), // Only fetch if user is logged in and token exists
     queryFn: async () => {
       const params = new URLSearchParams({ operatingCF: '200', debtService: '100' });
       const res = await fetch(`/api/finance/dscr?${params}`);
@@ -161,6 +164,7 @@ export default function Dashboard () {
     parameters: any;
   }>({
     queryKey: ['/api/risk/analysis', riskParameters],
+    enabled: !!user && !!localStorage.getItem('token'), // Only fetch if user is logged in and token exists
     queryFn: async () => {
       const params = new URLSearchParams({
         fxDelta: riskParameters.fxDelta.toString(),
@@ -179,15 +183,15 @@ export default function Dashboard () {
     retry: 2,
   });
 
-  // Handle manual refresh
-  const handleRefresh = async () => {
+  // Handle manual refresh - memoized for performance
+  const handleRefresh = useCallback(async () => {
     startRefresh();
     try {
       await refetch();
     } finally {
       stopRefresh();
     }
-  };
+  }, [refetch, startRefresh, stopRefresh]);
 
   const isLoading = dashboardLoading;
   const accounts = dashboardData?.accounts || [];
@@ -196,24 +200,78 @@ export default function Dashboard () {
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
 
-  // Filter accounts by type (for admin)
-  const filteredAccounts = accounts.filter(account => {
-    if (selectedAccountTypeFilter === 'all') {
-      return true;
-    }
-    return account.type === selectedAccountTypeFilter;
-  });
+  // Filter accounts by type (for admin) - memoized for performance
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(account => {
+      if (selectedAccountTypeFilter === 'all') {
+        return true;
+      }
+      return account.type === selectedAccountTypeFilter;
+    });
+  }, [accounts, selectedAccountTypeFilter]);
 
-  // Filter transactions by account and category (for admin)
-  const filteredTransactions = transactions.filter(transaction => {
-    const accountMatch = selectedAccountFilter === 'all' || transaction.accountId === selectedAccountFilter;
-    const categoryMatch = selectedCategoryFilter === 'all' || transaction.category === selectedCategoryFilter;
-    return accountMatch && categoryMatch;
-  });
+  // Filter transactions by account and category (for admin) - memoized for performance
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(transaction => {
+      const accountMatch = selectedAccountFilter === 'all' || transaction.accountId === selectedAccountFilter;
+      const categoryMatch = selectedCategoryFilter === 'all' || transaction.category === selectedCategoryFilter;
+      return accountMatch && categoryMatch;
+    });
+  }, [transactions, selectedAccountFilter, selectedCategoryFilter]);
 
   // Show loading skeleton if data is loading
   if (isLoading) {
-    return <DashboardSkeleton />;
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+          </div>
+        </div>
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Finansal Yönetim Panosu</h1>
+          <div className="flex items-center gap-3">
+            <CurrencySwitcher />
+            <RefreshButton onRefresh={handleRefresh} isRefreshing={isRefreshing} />
+            <AlertsNotification />
+          </div>
+        </div>
+        
+        <Card className="border-red-200 bg-red-50 dark:bg-red-950/30">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 text-red-800 dark:text-red-200">
+              <AlertTriangle className="h-5 w-5" />
+              <div>
+                <h3 className="font-semibold">Veri yüklenirken hata oluştu</h3>
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  {error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu'}
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRefresh}
+                  className="mt-3"
+                >
+                  Tekrar Dene
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

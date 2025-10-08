@@ -37,7 +37,7 @@ export function PWAInstallPrompt () {
         setShowPrompt(false);
       }
     } catch (error) {
-      console.error('Install failed:', error);
+      logger.error('Install failed:', error);
     } finally {
       setIsInstalling(false);
     }

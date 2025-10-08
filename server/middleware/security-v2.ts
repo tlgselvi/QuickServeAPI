@@ -12,6 +12,7 @@ import {
   logUserActivitySchema
 } from '../../shared/schema';
 import { z } from 'zod';
+import { logger } from '../utils/logger';
 
 // Extended Request interface for security context
 export interface SecurityRequest extends Request {
@@ -63,7 +64,7 @@ export const requirePermission = (permission: PermissionV2Type) => {
 
       next();
     } catch (error) {
-      console.error('Permission check error:', error);
+      logger.error('Permission check error:', error);
       res.status(500).json({ error: 'Permission check failed' });
     }
   };
@@ -101,7 +102,7 @@ export const requireAnyPermission = (permissions: PermissionV2Type[]) => {
 
       next();
     } catch (error) {
-      console.error('Permission check error:', error);
+      logger.error('Permission check error:', error);
       res.status(500).json({ error: 'Permission check failed' });
     }
   };
@@ -137,7 +138,7 @@ export const requireRole = (roles: UserRoleV2Type[]) => {
 
       next();
     } catch (error) {
-      console.error('Role check error:', error);
+      logger.error('Role check error:', error);
       res.status(500).json({ error: 'Role check failed' });
     }
   };
@@ -165,7 +166,7 @@ export const checkAccountLockout = async (req: SecurityRequest, res: Response, n
 
     next();
   } catch (error) {
-    console.error('Account lockout check error:', error);
+    logger.error('Account lockout check error:', error);
     next(); // Continue on error
   }
 };
@@ -208,7 +209,7 @@ export const checkSessionTimeout = async (req: SecurityRequest, res: Response, n
 
     next();
   } catch (error) {
-    console.error('Session timeout check error:', error);
+    logger.error('Session timeout check error:', error);
     next(); // Continue on error
   }
 };
@@ -232,7 +233,7 @@ export const logActivity = (action: string, resource?: string) => {
       }
       next();
     } catch (error) {
-      console.error('Activity logging error:', error);
+      logger.error('Activity logging error:', error);
       next(); // Continue on error
     }
   };
@@ -268,7 +269,7 @@ export const securityContext = async (req: SecurityRequest, res: Response, next:
 
     next();
   } catch (error) {
-    console.error('Security context error:', error);
+    logger.error('Security context error:', error);
     next(); // Continue on error
   }
 };
@@ -290,7 +291,7 @@ export const logUserActivity = async (
 
     await db.insert(userActivityLogs).values(logData);
   } catch (error) {
-    console.error('Failed to log user activity:', error);
+    logger.error('Failed to log user activity:', error);
   }
 };
 
@@ -317,7 +318,7 @@ export const rateLimitByRole = (limits: Record<UserRoleV2Type, { windowMs: numbe
       
       next();
     } catch (error) {
-      console.error('Rate limiting error:', error);
+      logger.error('Rate limiting error:', error);
       next(); // Continue on error
     }
   };
