@@ -34,6 +34,12 @@ export default function Register () {
     mutationFn: async (data: RegisterRequest) => {
       logger.info('📝 Attempting registration for:', data.email);
       const response = await apiRequest('POST', '/api/auth/register', data);
+      // API'den gelen yanıtın başarılı olup olmadığını kontrol et
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Kayıt sırasında bir sunucu hatası oluştu.' }));
+        // Hata durumunda bir Error fırlatarak onError bloğunu tetikle
+        throw new Error(errorData.message || 'Kayıt işlemi başarısız oldu.');
+      }
       return response.json();
     },
     onSuccess: (data) => {
@@ -42,8 +48,11 @@ export default function Register () {
         title: 'Kayıt Başarılı',
         description: 'Hesabınız oluşturuldu! Giriş sayfasına yönlendiriliyorsunuz...',
       });
-      // Redirect to login after successful registration
-      setTimeout(() => setLocation('/login'), 1500);
+      // Use requestAnimationFrame for a more reliable redirect after state updates and rendering.
+      // This ensures the browser is ready before changing the location.
+      requestAnimationFrame(() => {
+        setLocation('/login');
+      });
     },
     onError: (error: any) => {
       logger.error('❌ Registration error:', error);

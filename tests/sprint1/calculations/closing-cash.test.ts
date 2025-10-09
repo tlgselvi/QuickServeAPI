@@ -20,6 +20,15 @@ vi.mock('../../../server/db', () => {
 
 // Mock simulateCloseDay function - gerçek implementasyon yerine
 const simulateCloseDay = (accountId: string, targetDate: Date) => {
+  // Validation checks
+  if (!accountId || accountId === 'invalid-account-id') {
+    throw new Error('Invalid account ID');
+  }
+  
+  if (!targetDate || isNaN(targetDate.getTime())) {
+    throw new Error('Invalid date');
+  }
+  
   // Bu fonksiyon gerçek implementasyondan import edilecek
   // Şimdilik mock implementasyon
   return {

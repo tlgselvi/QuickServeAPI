@@ -37,6 +37,10 @@ export default function FixedExpenses () {
     queryKey: ['/api/fixed-expenses'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/fixed-expenses');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Sabit giderler alınamadı.' }));
+        throw new Error(errorData.message || 'Sabit giderler alınırken bir hata oluştu.');
+      }
       return response.json();
     },
     staleTime: 30000,

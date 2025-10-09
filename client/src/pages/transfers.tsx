@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useFormatCurrency } from '@/lib/utils/formatCurrency';
+import { logger } from '@/lib/logger';
 import type { Account, Transaction } from '@shared/schema';
 
 export default function Transfers () {
@@ -29,6 +30,10 @@ export default function Transfers () {
     queryKey: ['/api/accounts', 'all'], // Unique queryKey for transfers page
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/accounts');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Hesaplar alınamadı.' }));
+        throw new Error(errorData.message || 'Hesaplar alınırken bir hata oluştu.');
+      }
       const data = await response.json();
       logger.info('💸 Transfers: Fetched all accounts:', data);
       return data;
@@ -41,6 +46,10 @@ export default function Transfers () {
     queryKey: ['/api/transactions', 'transfers'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/transactions?type=transfer&limit=20');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Transferler alınamadı.' }));
+        throw new Error(errorData.message || 'Transferler alınırken bir hata oluştu.');
+      }
       const data = await response.json();
       logger.info('💸 Transfers: Fetched transfer transactions:', data);
       return data;

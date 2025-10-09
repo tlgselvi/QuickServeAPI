@@ -40,11 +40,11 @@ async function setupSQLiteDatabase() {
       await db.insert(schema.users).values({
         id: adminId,
         email: 'admin@finbot.com',
-        password: hashedPassword,
+        username: 'admin',
+        passwordHash: hashedPassword,
         role: 'admin',
-        firstName: 'Admin',
-        lastName: 'User',
         isActive: true,
+        emailVerified: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });

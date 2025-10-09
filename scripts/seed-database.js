@@ -14,6 +14,7 @@ import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import * as schema from '../shared/schema.js';
+import { logger } from '../server/utils/logger.js';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -84,8 +85,7 @@ async function seedAdminUser(db) {
     id: crypto.randomUUID(),
     username: 'admin',
     email: 'admin@finbot.com',
-    password: adminPassword,
-    name: 'Admin User',
+    passwordHash: adminPassword,
     role: 'ADMIN',
     createdAt: new Date(),
     updatedAt: new Date()
@@ -112,8 +112,7 @@ async function seedDemoUser(db) {
     id: crypto.randomUUID(),
     username: 'demo',
     email: 'demo@finbot.com',
-    password: demoPassword,
-    name: 'Demo User',
+    passwordHash: demoPassword,
     role: 'USER',
     createdAt: new Date(),
     updatedAt: new Date()

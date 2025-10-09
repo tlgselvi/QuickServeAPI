@@ -31,10 +31,16 @@ export default function Login () {
     mutationFn: async (data: LoginRequest) => {
       logger.info('🔐 Attempting login with:', data.email);
       const response = await apiRequest('POST', '/api/auth/login', data);
+      // API'den gelen yanıtın başarılı olup olmadığını kontrol et
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Giriş sırasında bir sunucu hatası oluştu.' }));
+        // Hata durumunda bir Error fırlatarak onError bloğunu tetikle
+        throw new Error(errorData.message || 'Geçersiz e-posta veya şifre.');
+      }
       return response.json();
     },
-    onSuccess: (data: any) => {
-      logger.info('✅ Login successful:', data);
+    onSuccess: async (data: any) => {
+      logger.info('✅ Login successful, preparing for redirect:', data);
 
       // Save token to localStorage
       if (data.token) {
@@ -48,18 +54,19 @@ export default function Login () {
       }
 
       // Invalidate auth queries to refresh user state
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      logger.info('✅ Auth queries invalidated. Redirecting...');
 
       toast({
         title: 'Giriş Başarılı',
         description: "Hoş geldiniz! Dashboard'a yönlendiriliyorsunuz...",
       });
 
-      // Redirect to dashboard after successful login
-      setTimeout(() => {
-        logger.info('🔄 Redirecting to dashboard...');
+      // Redirect after all success logic is complete
+      // Use requestAnimationFrame for a more reliable redirect after state updates and rendering.
+      requestAnimationFrame(() => {
         setLocation('/');
-      }, 1000);
+      });
     },
     onError: (error: any) => {
       logger.error('❌ Login error:', error);
@@ -68,7 +75,7 @@ export default function Login () {
         title: 'Giriş Hatası',
         description: error.message || 'Giriş sırasında bir hata oluştu',
       });
-    },
+    }
   });
 
   const onSubmit = (data: LoginRequest) => {

@@ -107,11 +107,12 @@ const dbInterface = {
   
   createUser: (userData: any) => {
     const stmt = sql.prepare(`
-      INSERT INTO users (id, email, name, role, is_active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, email, username, password_hash, role, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    return stmt.run(userData.id, userData.email, userData.name, userData.role || 'personal_user',
-                   userData.is_active !== false ? 1 : 0, userData.created_at, userData.updated_at);
+    return stmt.run(userData.id, userData.email, userData.username, userData.password_hash,
+                   userData.role || 'user', userData.is_active !== false ? 1 : 0, 
+                   userData.created_at, userData.updated_at);
   },
   
   updateUser: (id: string, userData: any) => {

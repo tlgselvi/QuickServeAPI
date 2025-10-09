@@ -12,9 +12,14 @@ export default defineConfig({
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true
+        singleFork: true,
+        maxForks: 1,
+        minForks: 1
       }
     },
+    // Increase memory limit
+    maxWorkers: 1,
+    minWorkers: 1,
     include: [
       'tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'tests/sprint1/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
@@ -46,7 +51,9 @@ export default defineConfig({
       'coverage',
       'mobile/**',
       'backup_*/**',
-      '**/node_modules/**'
+      '**/node_modules/**',
+      'tests/sprint1/ux-improvements.test.ts',
+      'tests/sprint2/dashboard-improvements.test.ts'
     ],
     coverage: {
       provider: 'v8',

@@ -10,9 +10,9 @@
     "build:server": "esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:aws-sdk --external:mock-aws-s3 --external:nock",
     "preview": "vite preview",
     "start": "node dist/index.js",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test": "cross-env NODE_OPTIONS='--max-old-space-size=8192' vitest",
+    "test:run": "cross-env NODE_OPTIONS='--max-old-space-size=8192' vitest run",
+    "test:coverage": "cross-env NODE_OPTIONS='--max-old-space-size=8192' vitest run --coverage",
     "test:watch": "vitest --watch",
     "test:unit": "vitest run --reporter=verbose tests/sprint1/ tests/sprint2/ tests/sprint3/ tests/security/",
     "test:integration": "vitest run --reporter=verbose tests/integration/",
@@ -136,6 +136,7 @@
     "@typescript-eslint/parser": "^6.15.0",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
+    "cross-env": "^10.1.0",
     "drizzle-kit": "^0.18.1",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
@@ -172,10 +173,14 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/finbot/finbot-v3.git"
+    "url": "git+https://github.com/finbot/finbot-v3.git"
   },
   "bugs": {
     "url": "https://github.com/finbot/finbot-v3/issues"
   },
-  "homepage": "https://github.com/finbot/finbot-v3#readme"
+  "homepage": "https://github.com/finbot/finbot-v3#readme",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  }
 }

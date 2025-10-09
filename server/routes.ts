@@ -940,9 +940,14 @@ export async function registerRoutes (app: Express): Promise<Server> {
 
   app.post('/api/auth/login', async (req, res) => {
     try {
+      logger.info('🔐 Login attempt started');
+      logger.debug('Request body:', req.body);
+      
       const validatedData = loginSchema.parse(req.body);
+      logger.debug('✓ Validation passed');
 
       // Find user by email - use db interface
+      logger.debug('Searching for user:', validatedData.email);
       const user = dbInterface.getUserByEmail(validatedData.email) as any;
       
       if (!user) {

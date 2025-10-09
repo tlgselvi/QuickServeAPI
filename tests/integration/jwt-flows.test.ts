@@ -64,7 +64,7 @@ describe('JWT Flows Integration Tests', () => {
       await db.delete(userProfiles).where(eq(userProfiles.userId, testUserId));
       await db.delete(users).where(eq(users.id, testUserId));
     } catch (error) {
-      logger.warn('Cleanup failed:', error);
+      console.warn('Cleanup failed:', error);
     }
   });
 

@@ -69,7 +69,7 @@ describe('JWT Performance Tests', () => {
         await db.delete(users).where(eq(users.id, userId));
       }
     } catch (error) {
-      logger.warn('Cleanup failed:', error);
+      console.warn('Cleanup failed:', error);
     }
   });
 
@@ -93,7 +93,7 @@ describe('JWT Performance Tests', () => {
       const totalTime = endTime - startTime;
       const averageTime = totalTime / iterations;
 
-      logger.info(`Generated ${iterations} token pairs in ${totalTime}ms (avg: ${averageTime}ms)`);
+      console.info(`Generated ${iterations} token pairs in ${totalTime}ms (avg: ${averageTime}ms)`);
 
       // Should complete within reasonable time (5 seconds for 100 tokens)
       expect(totalTime).toBeLessThan(5000);
@@ -166,7 +166,7 @@ describe('JWT Performance Tests', () => {
       const totalTime = endTime - startTime;
       const averageTime = totalTime / iterations;
 
-      logger.info(`Refreshed ${iterations} tokens in ${totalTime}ms (avg: ${averageTime}ms)`);
+      console.info(`Refreshed ${iterations} tokens in ${totalTime}ms (avg: ${averageTime}ms)`);
 
       // Should complete within reasonable time (3 seconds for 50 refreshes)
       expect(totalTime).toBeLessThan(3000);
@@ -232,7 +232,7 @@ describe('JWT Performance Tests', () => {
       const totalTime = endTime - startTime;
       const averageTime = totalTime / tokensToRevoke.length;
 
-      logger.info(`Revoked ${tokensToRevoke.length} tokens in ${totalTime}ms (avg: ${averageTime}ms)`);
+      console.info(`Revoked ${tokensToRevoke.length} tokens in ${totalTime}ms (avg: ${averageTime}ms)`);
 
       // Should complete within reasonable time (2 seconds for 20 revocations)
       expect(totalTime).toBeLessThan(2000);
@@ -250,7 +250,7 @@ describe('JWT Performance Tests', () => {
       const endTime = Date.now();
       const totalTime = endTime - startTime;
 
-      logger.info(`Bulk revoked all tokens for user in ${totalTime}ms`);
+      console.info(`Bulk revoked all tokens for user in ${totalTime}ms`);
 
       // Should complete within reasonable time (1 second for bulk revocation)
       expect(totalTime).toBeLessThan(1000);
@@ -289,7 +289,7 @@ describe('JWT Performance Tests', () => {
       const totalTime = endTime - startTime;
       const averageTime = totalTime / iterations;
 
-      logger.info(`Verified ${iterations} tokens in ${totalTime}ms (avg: ${averageTime}ms)`);
+      console.info(`Verified ${iterations} tokens in ${totalTime}ms (avg: ${averageTime}ms)`);
 
       // Should complete within reasonable time (1 second for 200 verifications)
       expect(totalTime).toBeLessThan(1000);
@@ -347,7 +347,7 @@ describe('JWT Performance Tests', () => {
       const result = await tokenService.cleanupExpiredTokens();
       const endTime = Date.now();
 
-      logger.info(`Cleaned up ${result.deleted} expired tokens in ${endTime - startTime}ms`);
+      console.info(`Cleaned up ${result.deleted} expired tokens in ${endTime - startTime}ms`);
 
       // Should complete within reasonable time (2 seconds for cleanup)
       expect(endTime - startTime).toBeLessThan(2000);
@@ -377,7 +377,7 @@ describe('JWT Performance Tests', () => {
       const finalMemory = process.memoryUsage();
       const memoryIncrease = finalMemory.heapUsed - initialMemory.heapUsed;
 
-      logger.info(`Memory increase after ${iterations} operations: ${memoryIncrease} bytes`);
+      console.info(`Memory increase after ${iterations} operations: ${memoryIncrease} bytes`);
 
       // Memory increase should be reasonable (less than 50MB)
       expect(memoryIncrease).toBeLessThan(50 * 1024 * 1024);
@@ -407,7 +407,7 @@ describe('JWT Performance Tests', () => {
       const endTime = Date.now();
       const totalTime = endTime - startTime;
 
-      logger.info(`Generated ${tokenCount} tokens in ${totalTime}ms`);
+      console.info(`Generated ${tokenCount} tokens in ${totalTime}ms`);
 
       // Should complete within reasonable time (30 seconds for 1000 tokens)
       expect(totalTime).toBeLessThan(30000);

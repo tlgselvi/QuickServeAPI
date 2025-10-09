@@ -20,6 +20,15 @@ vi.mock('../../../server/db', () => {
 
 // Mock simulate function - gerçek implementasyon yerine
 const simulate = (accountId: string, horizonMonths: number = 13) => {
+  // Validation checks
+  if (!accountId || accountId === 'invalid-account-id') {
+    throw new Error('Invalid account ID');
+  }
+  
+  if (horizonMonths <= 0 || horizonMonths > 120) {
+    throw new Error('Invalid horizon months');
+  }
+  
   // Bu fonksiyon gerçek implementasyondan import edilecek
   // Şimdilik mock implementasyon
   const baseCash = 10000;

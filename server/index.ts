@@ -127,18 +127,24 @@ app.get('/api/auth/me', (req, res) => {
     
     try {
       const decoded = JWTAuthService.verifyToken(token);
+      
+      if (!decoded) {
+        logger.warn('❌ Invalid or expired token');
+        return res.status(401).json({ error: 'Invalid or expired token' });
+      }
+      
       logger.info('✅ Token verified for user:', decoded.email);
       
       res.json({
         user: {
-          id: decoded.id,
+          id: decoded.userId,
           email: decoded.email,
           username: decoded.username,
           role: decoded.role,
         },
       });
     } catch (tokenError) {
-      logger.warn('❌ Invalid token:', tokenError);
+      logger.warn('❌ Token verification error:', tokenError);
       return res.status(401).json({ error: 'Invalid token' });
     }
   } catch (error) {

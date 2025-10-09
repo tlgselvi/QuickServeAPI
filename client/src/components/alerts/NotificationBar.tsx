@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useFormatCurrency } from '@/lib/utils/formatCurrency';
+import { logger } from '@/lib/logger';
 
 export interface FutureRiskAlert {
   id: string;
