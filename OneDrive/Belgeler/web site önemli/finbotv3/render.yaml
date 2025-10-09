@@ -3,6 +3,7 @@ services:
     name: finbot-v3
     env: node
     plan: starter
+    rootDir: QuickServeAPI
     buildCommand: npm install && npm run build
     startCommand: node dist/index.js
     envVars:
