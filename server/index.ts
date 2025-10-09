@@ -17,7 +17,8 @@ const env = validateEnvironment();
 logEnvironmentConfig(env);
 
 const app = express();
-const PORT = process.env.NODE_ENV === 'test' ? 0 : env.API_PORT; // Use random port for tests
+// Use Render's PORT environment variable if available, otherwise use env.API_PORT
+const PORT = process.env.NODE_ENV === 'test' ? 0 : (process.env.PORT || env.API_PORT);
 const WS_PORT = process.env.NODE_ENV === 'test' ? 0 : (process.env.WS_PORT || 5050);
 
 // Middleware

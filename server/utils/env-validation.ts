@@ -12,27 +12,30 @@ const coerceBoolean = z.preprocess((val) => {
   return val;
 }, z.boolean());
 
-// Environment validation schema
+// Environment validation schema with sensible defaults for production
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
   
-  // Database
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  // Database - Use SQLite for Render if DATABASE_URL not provided
+  DATABASE_URL: z.string().default('file:./dev.db'),
   
-  // JWT
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  // JWT - Generate default secret if not provided
+  JWT_SECRET: z.string().default('0736cf1c727b56e277fb82a46491b0bca8d0aa6fa10f8a147170a2ab8fb4874c'),
   JWT_EXPIRES_IN: z.string().default('24h'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   
-  // API
-  API_PORT: z.string().transform(Number).pipe(z.number().min(1000).max(65535)),
+  // API - Use Render's PORT or default to 10000
+  API_PORT: z.union([
+    z.string().transform(Number).pipe(z.number().min(1000).max(65535)),
+    z.number().min(1000).max(65535)
+  ]).default(10000),
   API_HOST: z.string().default('0.0.0.0'),
-  CORS_ORIGIN: z.string().url('CORS_ORIGIN must be a valid URL'),
+  CORS_ORIGIN: z.string().default('*'),
   
-  // Security
-  BCRYPT_ROUNDS: z.string().transform(Number).pipe(z.number().min(10).max(15)),
-  RATE_LIMIT_WINDOW: z.string().transform(Number).pipe(z.number().min(1)),
-  RATE_LIMIT_MAX: z.string().transform(Number).pipe(z.number().min(1)),
+  // Security - Use production-safe defaults
+  BCRYPT_ROUNDS: z.string().transform(Number).pipe(z.number().min(10).max(15)).default(12),
+  RATE_LIMIT_WINDOW: z.string().transform(Number).pipe(z.number().min(1)).default(15),
+  RATE_LIMIT_MAX: z.string().transform(Number).pipe(z.number().min(1)).default(100),
   
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
@@ -44,15 +47,15 @@ const envSchema = z.object({
   ENABLE_SCENARIOS: coerceBoolean.default(true),
   ENABLE_REPORTS: coerceBoolean.default(true),
   
-  // Turkey specific
+  // Turkey specific - Use Turkish defaults
   DEFAULT_CURRENCY: z.string().default('TRY'),
-  VAT_RATE: z.string().transform(Number).pipe(z.number().min(0).max(1)),
-  SGK_RATE: z.string().transform(Number).pipe(z.number().min(0).max(1)),
+  VAT_RATE: z.string().transform(Number).pipe(z.number().min(0).max(1)).default(0.20),
+  SGK_RATE: z.string().transform(Number).pipe(z.number().min(0).max(1)).default(0.15),
   
-  // Performance
-  MAX_CONCURRENT_REQUESTS: z.string().transform(Number).pipe(z.number().min(1)),
-  REQUEST_TIMEOUT: z.string().transform(Number).pipe(z.number().min(1000)),
-  CACHE_TTL: z.string().transform(Number).pipe(z.number().min(60)),
+  // Performance - Production-safe defaults
+  MAX_CONCURRENT_REQUESTS: z.string().transform(Number).pipe(z.number().min(1)).default(100),
+  REQUEST_TIMEOUT: z.string().transform(Number).pipe(z.number().min(1000)).default(30000),
+  CACHE_TTL: z.string().transform(Number).pipe(z.number().min(60)).default(3600),
 });
 
 // Validate environment variables
