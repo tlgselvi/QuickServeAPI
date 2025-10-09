@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Bell, X, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import type { SystemAlert } from '@shared/schema';
+import { parseFloat } from 'zod';
 
 const severityConfig = {
   low: {
@@ -45,7 +46,7 @@ export function AlertsNotification () {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const dismissMutation = useMutation({
+  const dismissMutation = useMutation<unknown, Error, string>({
     mutationFn: async (alertId: string) => {
       const response = await apiRequest('POST', `/api/alerts/${alertId}/dismiss`);
       return response.json();
@@ -69,11 +70,11 @@ export function AlertsNotification () {
   const activeAlerts = (alerts as SystemAlert[]).filter(alert => alert.isActive && !alert.isDismissed);
   const alertCount = activeAlerts.length;
 
-  const handleDismiss = (alertId: string) => {
+  const handleDismiss = useCallback((alertId: string) => {
     dismissMutation.mutate(alertId);
-  };
+  }, [dismissMutation]);
 
-  const formatDate = (date: string | Date) => {
+  const formatDate = useCallback((date: string | Date) => {
     return new Date(date).toLocaleDateString('tr-TR', {
       day: '2-digit',
       month: '2-digit',
@@ -81,19 +82,17 @@ export function AlertsNotification () {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
+  }, []);
 
-  const getAlertMetadata = (alert: SystemAlert) => {
-    if (!alert.metadata) {
-      return null;
-    }
-
+  const getAlertMetadata = useCallback((metadataString: string | null | undefined) => {
+    if (!metadataString) return null;
     try {
-      return JSON.parse(alert.metadata);
-    } catch {
+      return JSON.parse(metadataString);
+    } catch (e) {
+      console.error("Failed to parse alert metadata:", e);
       return null;
     }
-  };
+  }, []);
 
   if (isLoading) {
     return (
@@ -148,7 +147,7 @@ export function AlertsNotification () {
                 {activeAlerts.map((alert, index) => {
                   const config = severityConfig[alert.severity as keyof typeof severityConfig];
                   const Icon = config.icon;
-                  const metadata = getAlertMetadata(alert);
+                  const metadata = getAlertMetadata(alert.metadata);
 
                   return (
                     <div key={alert.id}>
@@ -183,7 +182,7 @@ export function AlertsNotification () {
                               size="sm"
                               className="h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
                               onClick={() => handleDismiss(alert.id)}
-                              disabled={dismissMutation.isPending}
+                              disabled={dismissMutation.isPending && dismissMutation.variables === alert.id}
                               data-testid={`button-dismiss-${alert.id}`}
                             >
                               <X className="h-3 w-3" />
